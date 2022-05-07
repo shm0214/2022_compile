@@ -215,7 +215,6 @@ class GepInstruction : public Instruction {
     void setLast() { last = true; };
     Operand* getInit() const { return init; };
     void setInit(Operand* init) { this->init = init; };
-
 };
 
 #endif

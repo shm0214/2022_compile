@@ -204,7 +204,6 @@ class MachineBlock {
     MachineFunction* getParent() const { return parent; };
 };
 
-
 class MachineFunction {
    private:
     MachineUnit* parent;
@@ -238,7 +237,6 @@ class MachineFunction {
     int getParamsNum() const { return paramsNum; };
     MachineUnit* getParent() const { return parent; };
 };
-
 
 class MachineUnit {
    private:

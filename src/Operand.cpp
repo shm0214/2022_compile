@@ -1,17 +1,14 @@
 #include "Operand.h"
-#include <sstream>
-#include <algorithm>
 #include <string.h>
+#include <algorithm>
+#include <sstream>
 
-std::string Operand::toStr() const
-{
+std::string Operand::toStr() const {
     return se->toStr();
 }
 
-void Operand::removeUse(Instruction *inst)
-{
+void Operand::removeUse(Instruction* inst) {
     auto i = std::find(uses.begin(), uses.end(), inst);
-    if(i != uses.end())
+    if (i != uses.end())
         uses.erase(i);
 }
-

@@ -1,20 +1,18 @@
 #include "Function.h"
-#include "Unit.h"
-#include "Type.h"
 #include <list>
+#include "Type.h"
+#include "Unit.h"
 
 extern FILE* yyout;
 
-Function::Function(Unit *u, SymbolEntry *s)
-{
+Function::Function(Unit* u, SymbolEntry* s) {
     u->insertFunc(this);
     entry = new BasicBlock(this);
     sym_ptr = s;
     parent = u;
 }
 
-Function::~Function()
-{
+Function::~Function() {
     // auto delete_list = block_list;
     // for (auto &i : delete_list)
     //     delete i;
@@ -22,8 +20,7 @@ Function::~Function()
 }
 
 // remove the basicblock bb from its block_list.
-void Function::remove(BasicBlock *bb)
-{
+void Function::remove(BasicBlock* bb) {
     block_list.erase(std::find(block_list.begin(), block_list.end(), bb));
 }
 
@@ -64,20 +61,17 @@ void Function::output() const {
     fprintf(yyout, "}\n");
 }
 
-void Function::genMachineCode(AsmBuilder* builder) 
-{
+void Function::genMachineCode(AsmBuilder* builder) {
     auto cur_unit = builder->getUnit();
     auto cur_func = new MachineFunction(cur_unit, this->sym_ptr);
     builder->setFunction(cur_func);
     std::map<BasicBlock*, MachineBlock*> map;
-    for(auto block : block_list)
-    {
+    for (auto block : block_list) {
         block->genMachineCode(builder);
         map[block] = builder->getBlock();
     }
     // Add pred and succ for every block
-    for(auto block : block_list)
-    {
+    for (auto block : block_list) {
         auto mblock = map[block];
         for (auto pred = block->pred_begin(); pred != block->pred_end(); pred++)
             mblock->addPred(map[*pred]);
@@ -85,5 +79,4 @@ void Function::genMachineCode(AsmBuilder* builder)
             mblock->addSucc(map[*succ]);
     }
     cur_unit->InsertFunc(cur_func);
-
 }

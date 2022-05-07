@@ -13,30 +13,29 @@
 
 class Unit;
 
-class Function
-{
-    typedef std::vector<BasicBlock *>::iterator iterator;
-    typedef std::vector<BasicBlock *>::reverse_iterator reverse_iterator;
+class Function {
+    typedef std::vector<BasicBlock*>::iterator iterator;
+    typedef std::vector<BasicBlock*>::reverse_iterator reverse_iterator;
 
-private:
-    std::vector<BasicBlock *> block_list;
-    SymbolEntry *sym_ptr;
-    BasicBlock *entry;
-    Unit *parent;
+   private:
+    std::vector<BasicBlock*> block_list;
+    SymbolEntry* sym_ptr;
+    BasicBlock* entry;
+    Unit* parent;
 
-public:
-    Function(Unit *, SymbolEntry *);
+   public:
+    Function(Unit*, SymbolEntry*);
     ~Function();
-    void insertBlock(BasicBlock *bb) { block_list.push_back(bb); };
-    BasicBlock *getEntry() { return entry; };
-    void remove(BasicBlock *bb);
+    void insertBlock(BasicBlock* bb) { block_list.push_back(bb); };
+    BasicBlock* getEntry() { return entry; };
+    void remove(BasicBlock* bb);
     void output() const;
-    std::vector<BasicBlock *> &getBlockList(){return block_list;};
+    std::vector<BasicBlock*>& getBlockList() { return block_list; };
     iterator begin() { return block_list.begin(); };
     iterator end() { return block_list.end(); };
     reverse_iterator rbegin() { return block_list.rbegin(); };
     reverse_iterator rend() { return block_list.rend(); };
-    SymbolEntry *getSymPtr() { return sym_ptr; };
+    SymbolEntry* getSymPtr() { return sym_ptr; };
     void genMachineCode(AsmBuilder*);
 };
 

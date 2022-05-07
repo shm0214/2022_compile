@@ -522,7 +522,7 @@ void DeclStmt::genCode() {
                                 flag = false;
                             }
                             if (type == TypeSystem::intType ||
-                                type == TypeSystem::constIntType){
+                                type == TypeSystem::constIntType) {
                                 gep->setLast();
                                 init = tempDst;
                                 break;
@@ -1018,7 +1018,7 @@ int BinaryExpr::getValue() {
             value = expr1->getValue() * expr2->getValue();
             break;
         case DIV:
-            if(expr2->getValue())
+            if (expr2->getValue())
                 value = expr1->getValue() / expr2->getValue();
             break;
         case MOD:

@@ -83,7 +83,8 @@ void MachineOperand::output() {
             else if (this->label.substr(0, 1) == "@")
                 fprintf(yyout, "%s", this->label.c_str() + 1);
             else
-                fprintf(yyout, "addr_%s%d", this->label.c_str(), parent->getParent()->getParent()->getParent()->getN());
+                fprintf(yyout, "addr_%s%d", this->label.c_str(),
+                        parent->getParent()->getParent()->getParent()->getN());
         default:
             break;
     }
@@ -522,11 +523,11 @@ void MachineFunction::output() {
     for (auto iter : block_list) {
         iter->output();
         count += iter->getSize();
-        if(count > 160){
+        if (count > 160) {
             fprintf(yyout, "\tb .F%d\n", parent->getN());
             fprintf(yyout, ".LTORG\n");
             parent->printGlobal();
-            fprintf(yyout, ".F%d:\n", parent->getN()-1);
+            fprintf(yyout, ".F%d:\n", parent->getN() - 1);
             count = 0;
         }
     }
@@ -621,7 +622,7 @@ void MachineUnit::insertGlobal(SymbolEntry* se) {
     global_list.push_back(se);
 }
 
-void MachineUnit::printGlobal(){
+void MachineUnit::printGlobal() {
     for (auto s : global_list) {
         IdentifierSymbolEntry* se = (IdentifierSymbolEntry*)s;
         fprintf(yyout, "addr_%s%d:\n", se->toStr().c_str(), n);

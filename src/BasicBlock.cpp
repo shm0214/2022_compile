@@ -62,20 +62,17 @@ void BasicBlock::addPred(BasicBlock* bb) {
 void BasicBlock::removePred(BasicBlock* bb) {
     pred.erase(std::find(pred.begin(), pred.end(), bb));
 }
-void BasicBlock::genMachineCode(AsmBuilder* builder) 
-{
+void BasicBlock::genMachineCode(AsmBuilder* builder) {
     auto cur_func = builder->getFunction();
     auto cur_block = new MachineBlock(cur_func, no);
     builder->setBlock(cur_block);
-    for (auto i = head->getNext(); i != head; i = i->getNext())
-    {
+    for (auto i = head->getNext(); i != head; i = i->getNext()) {
         i->genMachineCode(builder);
     }
     cur_func->InsertBlock(cur_block);
 }
 
-BasicBlock::BasicBlock(Function *f)
-{
+BasicBlock::BasicBlock(Function* f) {
     this->no = SymbolTable::getLabel();
     f->insertBlock(this);
     parent = f;
@@ -83,20 +80,18 @@ BasicBlock::BasicBlock(Function *f)
     head->setParent(this);
 }
 
-BasicBlock::~BasicBlock()
-{
-    Instruction *inst;
+BasicBlock::~BasicBlock() {
+    Instruction* inst;
     inst = head->getNext();
-    while (inst != head)
-    {
-        Instruction *t;
+    while (inst != head) {
+        Instruction* t;
         t = inst;
         inst = inst->getNext();
         delete t;
     }
-    for(auto &bb:pred)
+    for (auto& bb : pred)
         bb->removeSucc(this);
-    for(auto &bb:succ)
+    for (auto& bb : succ)
         bb->removePred(this);
     parent->remove(this);
 }

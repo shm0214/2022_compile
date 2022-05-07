@@ -859,11 +859,12 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
     MachineInstruction* cur_inst;
     auto dst = genMachineOperand(operands[0]);
     auto idx = genMachineOperand(operands[2]);
-    if(init){
-        if(last){
+    if (init) {
+        if (last) {
             auto base = genMachineOperand(init);
-            cur_inst = new BinaryMInstruction(
-                cur_block, BinaryMInstruction::ADD, dst, base, genMachineImm(4));
+            cur_inst =
+                new BinaryMInstruction(cur_block, BinaryMInstruction::ADD, dst,
+                                       base, genMachineImm(4));
             cur_block->InsertInst(cur_inst);
         }
         return;

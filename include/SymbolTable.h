@@ -2,8 +2,8 @@
 #define __SYMBOLTABLE_H__
 
 #include <assert.h>
-#include <string>
 #include <map>
+#include <string>
 
 class Type;
 class Operand;
@@ -136,7 +136,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     void setAllZero() { allZero = true; };
     bool isAllZero() const { return allZero; };
     int getParamNo() const { return paramNo; };
-    void setConst() { constant = true;};
+    void setConst() { constant = true; };
     bool getConst() const { return constant; };
 
     // You can add any function you need here.
@@ -160,23 +160,22 @@ class IdentifierSymbolEntry : public SymbolEntry {
     | t1                 | 1     |
     | t2                 | 2     |
 */
-class TemporarySymbolEntry : public SymbolEntry
-{
-private:
+class TemporarySymbolEntry : public SymbolEntry {
+   private:
     int stack_offset;
     int label;
-public:
-    TemporarySymbolEntry(Type *type, int label);
-    virtual ~TemporarySymbolEntry() {};
+
+   public:
+    TemporarySymbolEntry(Type* type, int label);
+    virtual ~TemporarySymbolEntry(){};
     std::string toStr();
-    int getLabel() const {return label;};
+    int getLabel() const { return label; };
     void setOffset(int offset) { this->stack_offset = offset; };
     int getOffset() { return this->stack_offset; };
     // You can add any function you need here.
 };
 
-
-extern SymbolTable *identifiers;
-extern SymbolTable *globals;
+extern SymbolTable* identifiers;
+extern SymbolTable* globals;
 
 #endif

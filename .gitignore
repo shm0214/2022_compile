@@ -18,3 +18,4 @@ example
 *.s
 performance/
 test1
+.VSCodeCounter/

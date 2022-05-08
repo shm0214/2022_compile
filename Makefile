@@ -2,6 +2,7 @@ SRC_PATH ?= src
 INC_PATH += include
 BUILD_PATH ?= build
 TEST_PATH ?= test
+# TEST_PATH = test/float
 OBJ_PATH ?= $(BUILD_PATH)/obj
 BINARY ?= $(BUILD_PATH)/compiler
 SYSLIB_PATH ?= sysyruntimelibrary
@@ -26,6 +27,7 @@ OUTPUT_ASM = $(addsuffix .s, $(basename $(TESTCASE)))
 OUTPUT_RES = $(addsuffix .res, $(basename $(TESTCASE)))
 OUTPUT_BIN = $(addsuffix .bin, $(basename $(TESTCASE)))
 OUTPUT_LOG = $(addsuffix .log, $(basename $(TESTCASE)))
+OUTPUT_TOK = $(addsuffix .toks, $(basename $(TESTCASE)))
 
 .phony:all app run gdb test clean clean-all clean-test clean-app llvmir gccasm run1
 
@@ -84,6 +86,16 @@ $(TEST_PATH)/%.s:$(TEST_PATH)/%.sy
 llvmir:$(LLVM_IR)
 
 gccasm:$(GCC_ASM)
+
+testlexer:app
+	@for file in $(sort $(TESTCASE))
+	do
+		LOG=$${file%.*}.log
+		TOK=$${file%.*}.toks
+		FILE=$${file##*/}
+		FILE=$${FILE%.*}
+		timeout 500s $(BINARY) -t $${file} -o $${TOK}
+	done
 
 .ONESHELL:
 test:app
@@ -144,7 +156,7 @@ clean-app:
 	@rm -rf $(BUILD_PATH) $(PARSER) $(LEXER) $(PARSERH)
 
 clean-test:
-	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(LLVM_IR) $(GCC_ASM) ./example.ast ./example.ll ./example.s
+	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(OUTPUT_TOK) $(LLVM_IR) $(GCC_ASM) ./example.ast ./example.ll ./example.s
 
 clean-all:clean-test clean-app
 

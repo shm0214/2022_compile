@@ -112,6 +112,7 @@ void FunctionDef::genCode() {
                     new RetInstruction(new Operand(new ConstantSymbolEntry(
                                            TypeSystem::intType, 0)),
                                        dst);
+                // [ ] float
                 else if (((FunctionType*)(se->getType()))->getRetType() ==
                          TypeSystem::voidType)
                     new RetInstruction(nullptr, dst);
@@ -1007,7 +1008,7 @@ void BinaryExpr::output(int level) {
 
 int BinaryExpr::getValue() {
     int value = 0;
-    switch (op) {
+    switch (op) { // [ ] float
         case ADD:
             value = expr1->getValue() + expr2->getValue();
             break;
@@ -1050,6 +1051,10 @@ int BinaryExpr::getValue() {
             break;
     }
     return value;
+}
+
+float BinaryExpr::getFValue() {
+    // TODO
 }
 
 UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
@@ -1115,6 +1120,10 @@ int UnaryExpr::getValue() {
     return value;
 }
 
+float UnaryExpr::getFValue() {
+    // TODO
+}
+
 void CallExpr::output(int level) {
     std::string name, type;
     int scope;
@@ -1145,9 +1154,17 @@ int Constant::getValue() {
     return ((ConstantSymbolEntry*)symbolEntry)->getValue();
 }
 
+float Constant::getFValue() {
+    // TODO
+}
+
 int Id::getValue() {
     // assert(symbolEntry->getType()->isInt());
     return ((IdentifierSymbolEntry*)symbolEntry)->getValue();
+}
+
+float Id::getFValue() {
+    // TODO
 }
 
 void Id::output(int level) {

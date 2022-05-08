@@ -33,6 +33,12 @@ ConstantSymbolEntry::ConstantSymbolEntry(Type* type, int value)
     this->value = value;
 }
 
+ConstantSymbolEntry::ConstantSymbolEntry(Type* type, float fvalue)
+    : SymbolEntry(type, SymbolEntry::CONSTANT) {
+    assert(type->isFloat());
+    this->fvalue = fvalue;
+}
+
 ConstantSymbolEntry::ConstantSymbolEntry(Type* type, std::string value)
     : SymbolEntry(type, SymbolEntry::CONSTANT) {
     assert(type->isString());
@@ -49,6 +55,11 @@ int ConstantSymbolEntry::getValue() const {
     return value;
 }
 
+float ConstantSymbolEntry::getFValue() const {
+    assert(type->isFloat());
+    return fvalue;
+}
+
 std::string ConstantSymbolEntry::getStrValue() const {
     assert(type->isString());
     return strValue;
@@ -56,8 +67,11 @@ std::string ConstantSymbolEntry::getStrValue() const {
 
 std::string ConstantSymbolEntry::toStr() {
     std::ostringstream buffer;
+    // [ ] float
     if (type->isInt())
         buffer << value;
+    else if (type->isFloat())
+        buffer << fvalue;
     else if (type->isString())
         buffer << strValue;
     return buffer.str();
@@ -92,6 +106,19 @@ void IdentifierSymbolEntry::setValue(int value) {
     }
 }
 
+void IdentifierSymbolEntry::setFValue(float fvalue) {
+    if (((FloatType*)(this->getType()))->isConst()) {
+        if (!initial) {
+            this->fvalue = fvalue;
+            initial = true;
+        } else {
+            // 
+        }
+    } else {
+        this->fvalue = fvalue;
+    }
+}
+
 void IdentifierSymbolEntry::setArrayValue(int* arrayValue) {
     if (((IntType*)(this->getType()))->isConst()) {
         if (!initial) {
@@ -103,6 +130,20 @@ void IdentifierSymbolEntry::setArrayValue(int* arrayValue) {
     } else {
         this->arrayValue = arrayValue;
     }
+}
+
+void IdentifierSymbolEntry::setFArrayValue(float* floatValue) {
+    if (((FloatType*)(this->getType()))->isConst()) {
+        if (!initial) {
+            this->farrayValue = farrayValue;
+            initial = true;
+        } else {
+            // 需要报错
+        }
+    } else {
+        this->farrayValue = farrayValue;
+    }
+
 }
 
 std::string IdentifierSymbolEntry::toStr() {

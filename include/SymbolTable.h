@@ -61,14 +61,17 @@ class SymbolTable {
 class ConstantSymbolEntry : public SymbolEntry {
    private:
     int value;
+    float fvalue;
     std::string strValue;
 
    public:
     ConstantSymbolEntry(Type* type, int value);
+    ConstantSymbolEntry(Type* type, float fvalue);
     ConstantSymbolEntry(Type* type, std::string strValue);
     ConstantSymbolEntry(Type* type);
     virtual ~ConstantSymbolEntry(){};
     int getValue() const;
+    float getFValue() const;
     std::string getStrValue() const;
     std::string toStr();
     // You can add any function you need here.
@@ -102,10 +105,12 @@ class IdentifierSymbolEntry : public SymbolEntry {
     std::string name;
     int scope;
     int value;
+    float fvalue;
     int label;
     bool initial;
     bool sysy;
     int* arrayValue;
+    float* farrayValue;
     bool allZero;
     int paramNo;
     bool constant;
@@ -129,8 +134,12 @@ class IdentifierSymbolEntry : public SymbolEntry {
     Operand* getAddr() { return addr; };
     void setValue(int value);
     int getValue() const { return value; };
+    void setFValue(float fvalue);
+    float getFValue() const { return fvalue; };
     void setArrayValue(int* arrayValue);
     int* getArrayValue() const { return arrayValue; };
+    void setFArrayValue(float* farrayValue);
+    float* getFArrayValue() const { return farrayValue; };
     int getLabel() const { return label; };
     void setLabel() { label = SymbolTable::getLabel(); };
     void setAllZero() { allZero = true; };

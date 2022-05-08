@@ -58,6 +58,7 @@ class ExprNode : public Node {
     Operand* getOperand() { return dst; };
     void output(int level);
     virtual int getValue() { return -1; };
+    virtual float getFValue() { return -1; };
     bool isExpr() const { return kind == EXPR; };
     bool isInitValueListExpr() const { return kind == INITVALUELISTEXPR; };
     bool isImplictCastExpr() const { return kind == IMPLICTCASTEXPR; };
@@ -93,6 +94,7 @@ class BinaryExpr : public ExprNode {
     BinaryExpr(SymbolEntry* se, int op, ExprNode* expr1, ExprNode* expr2);
     void output(int level);
     int getValue();
+    float getFValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
 };
@@ -107,6 +109,7 @@ class UnaryExpr : public ExprNode {
     UnaryExpr(SymbolEntry* se, int op, ExprNode* expr);
     void output(int level);
     int getValue();
+    float getFValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
     int getOp() const { return op; };
@@ -128,10 +131,16 @@ class Constant : public ExprNode {
    public:
     Constant(SymbolEntry* se) : ExprNode(se) {
         dst = new Operand(se);
+        // if (se) {
+        //     type = se->getType();
+        // } else {
+        //     type = TypeSystem::intType; // default?
+        // }
         type = TypeSystem::intType;
     };
     void output(int level);
     int getValue();
+    float getFValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
 };
@@ -150,6 +159,10 @@ class Id : public ExprNode {
                 SymbolEntry* temp = new TemporarySymbolEntry(
                     TypeSystem::intType, SymbolTable::getLabel());
                 dst = new Operand(temp);
+            } else if (type->isFloat()) {
+                SymbolEntry* temp = new TemporarySymbolEntry(
+                    TypeSystem::floatType, SymbolTable::getLabel());
+                dst = new Operand(temp);
             } else if (type->isArray()) {
                 SymbolEntry* temp = new TemporarySymbolEntry(
                     new PointerType(((ArrayType*)type)->getElementType()),
@@ -162,6 +175,7 @@ class Id : public ExprNode {
     bool typeCheck(Type* retType = nullptr);
     void genCode();
     int getValue();
+    float getFValue();
     ExprNode* getArrIdx() { return arrIdx; };
     Type* getType();
     bool isLeft() const { return left; };
@@ -196,6 +210,7 @@ class InitValueListExpr : public ExprNode {
 };
 
 // 仅用于int2bool
+// [ ] int <=> float
 class ImplictCastExpr : public ExprNode {
    private:
     ExprNode* expr;

@@ -29,6 +29,10 @@ BLOCKCOMMENTELEMENT .
 BLOCKCOMMENTEND \*\/
 %x BLOCKCOMMENT
 LINECOMMENT \/\/[^\n]*
+
+DECIMAL_FLOAT (([1-9][0-9]*\.[0-9]*|0\.)([eE]?[+-]?[0-9]*))
+HEXADECIMAL_FLOAT ((0[xX][0-9A-Fa-f]*\.[0-9A-Fa-f]*|0\.)([pP]?[+-]?[0-9]*))
+
 %%
 "int" {
     /*
@@ -40,6 +44,20 @@ LINECOMMENT \/\/[^\n]*
         DEBUG_FOR_LAB4("INT\tint");
     chars += strlen("int");
     return INT;
+}
+"float" {
+    /*
+
+    [ ] float literal number
+    [-] float keyword
+    [ ] getfloat putfloat getfarray putfarray
+
+    */
+    if(dump_tokens)
+        DEBUG_FOR_LAB4("FLOAT\tfloat");
+    chars += strlen("float");
+    return FLOAT;
+
 }
 "void" {
     if(dump_tokens)
@@ -249,6 +267,26 @@ LINECOMMENT \/\/[^\n]*
         DEBUG_FOR_LAB4(string("NUMBER\t") + to_string(temp));
     yylval.itype = temp;
     return INTEGER;
+}
+
+{DECIMAL_FLOAT} {
+    float temp;
+    sscanf(yytext, "%f", &temp);
+    if (dump_tokens)
+        DEBUG_FOR_LAB4(string("NUMBER\t") + to_string(temp));
+    // chars += strlen(yytext);
+    yylval.ftype = temp;
+    return FLOATING;
+}
+
+{HEXADECIMAL_FLOAT} {
+    float temp;
+    sscanf(yytext, "%f", &temp);
+    if (dump_tokens)
+        DEBUG_FOR_LAB4(string("NUMBER\t") + to_string(temp));
+    // chars += strlen(yytext);
+    yylval.ftype = temp;
+    return FLOATING;
 }
 
 "putint" {

@@ -48,7 +48,7 @@ HEXADECIMAL_FLOAT ((0[xX][0-9A-Fa-f]*\.[0-9A-Fa-f]*|0\.)([pP]?[+-]?[0-9]*))
 "float" {
     /*
 
-    [ ] float literal number
+    [-] float literal number
     [-] float keyword
     [ ] getfloat putfloat getfarray putfarray
 
@@ -361,6 +361,42 @@ HEXADECIMAL_FLOAT ((0[xX][0-9A-Fa-f]*\.[0-9A-Fa-f]*|0\.)([pP]?[+-]?[0-9]*))
     return ID;
 }
 
+"putfloat" {
+    if(dump_tokens)
+        DEBUG_FOR_LAB4(yytext);
+    char *lexeme;
+    lexeme = new char[strlen(yytext) + 1];
+    strcpy(lexeme, yytext);
+    yylval.strtype = lexeme;
+    std::vector<Type*> vec;
+    std::vector<SymbolEntry*> vec1;
+    vec.push_back(TypeSystem::floatType);
+    Type* funcType = new FunctionType(TypeSystem::voidType, vec, vec1);
+    SymbolTable* st = identifiers;
+    while(st->getPrev())
+        st = st->getPrev();
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    st->install(yytext, se);
+    return ID;
+}
+
+"getfloat" {
+    if(dump_tokens)
+        DEBUG_FOR_LAB4(yytext);
+    char *lexeme;
+    lexeme = new char[strlen(yytext) + 1];
+    strcpy(lexeme, yytext);
+    yylval.strtype = lexeme;
+    std::vector<Type*> vec;
+    std::vector<SymbolEntry*> vec1;
+    Type* funcType = new FunctionType(TypeSystem::floatType, vec, vec1);
+    SymbolTable* st = identifiers;
+    while(st->getPrev())
+        st = st->getPrev();
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    st->install(yytext, se);
+    return ID;
+}
 "putarray" {
     if(dump_tokens)
         DEBUG_FOR_LAB4(yytext);
@@ -394,6 +430,48 @@ HEXADECIMAL_FLOAT ((0[xX][0-9A-Fa-f]*\.[0-9A-Fa-f]*|0\.)([pP]?[+-]?[0-9]*))
     ArrayType* arr = new ArrayType(TypeSystem::intType, -1);
     vec.push_back(arr);
     Type* funcType = new FunctionType(TypeSystem::intType, vec, vec1);
+    SymbolTable* st = identifiers;
+    while(st->getPrev())
+        st = st->getPrev();
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    st->install(yytext, se);
+    return ID;
+}
+"putfarray" {
+    // TODO: test
+    if(dump_tokens)
+        DEBUG_FOR_LAB4(yytext);
+    char *lexeme;
+    lexeme = new char[strlen(yytext) + 1];
+    strcpy(lexeme, yytext);
+    yylval.strtype = lexeme;
+    std::vector<Type*> vec;
+    std::vector<SymbolEntry*> vec1;
+    vec.push_back(TypeSystem::intType); // param 1 is int
+    ArrayType* arr = new ArrayType(TypeSystem::floatType, -1);
+    vec.push_back(arr);
+    Type* funcType = new FunctionType(TypeSystem::voidType, vec, vec1);
+    SymbolTable* st = identifiers;
+    while(st->getPrev())
+        st = st->getPrev();
+    SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    st->install(yytext, se);
+    return ID;
+}
+
+"getfarray" {
+    if(dump_tokens)
+        DEBUG_FOR_LAB4(yytext);
+    char *lexeme;
+    lexeme = new char[strlen(yytext) + 1];
+    strcpy(lexeme, yytext);
+    yylval.strtype = lexeme;
+    std::vector<Type*> vec;
+    std::vector<SymbolEntry*> vec1;
+    ArrayType* arr = new ArrayType(TypeSystem::floatType, -1);
+    vec.push_back(arr);
+    // return length so shall be int
+    Type* funcType = new FunctionType(TypeSystem::intType, vec, vec1); 
     SymbolTable* st = identifiers;
     while(st->getPrev())
         st = st->getPrev();

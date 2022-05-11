@@ -1,7 +1,10 @@
 #include "Function.h"
 #include <list>
+#include <vector>
 #include "Type.h"
 #include "Unit.h"
+
+using namespace std;
 
 extern FILE* yyout;
 
@@ -79,4 +82,20 @@ void Function::genMachineCode(AsmBuilder* builder) {
             mblock->addSucc(map[*succ]);
     }
     cur_unit->InsertFunc(cur_func);
+}
+
+vector<vector<int>> Function::getBlockMap() {
+    int len = block_list.size();
+    vector<vector<int>> m(len, vector<int>(len, 0));
+    for (int i = 0; i < len; i++) {
+        auto iter = block_list[i]->succ_begin();
+        auto end = block_list[i]->succ_end();
+        while (iter != end) {
+            int j = find(block_list.begin(), block_list.end(), *iter) -
+                    block_list.begin();
+            m[i][j] = 1;
+            iter++;
+        }
+    }
+    return m;
 }

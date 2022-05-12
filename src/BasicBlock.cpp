@@ -1,7 +1,9 @@
 #include "BasicBlock.h"
 #include <algorithm>
 #include "Function.h"
+#include <vector>
 
+using namespace std;
 extern FILE* yyout;
 
 // insert the instruction to the front of the basicblock.
@@ -94,4 +96,10 @@ BasicBlock::~BasicBlock() {
     for (auto& bb : succ)
         bb->removePred(this);
     parent->remove(this);
+}
+
+void BasicBlock::cleanSucc() {
+    for (auto i : succ)
+        i->removePred(this);
+    vector<BasicBlock*>().swap(succ);
 }

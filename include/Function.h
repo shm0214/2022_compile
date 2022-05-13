@@ -37,6 +37,7 @@ class Function {
     reverse_iterator rend() { return block_list.rend(); };
     SymbolEntry* getSymPtr() { return sym_ptr; };
     void genMachineCode(AsmBuilder*);
+    std::vector<std::vector<int>> getBlockMap();
 };
 
 #endif

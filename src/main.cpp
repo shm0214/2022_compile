@@ -2,8 +2,10 @@
 #include <unistd.h>
 #include <iostream>
 #include "Ast.h"
+#include "ElimUnreachCode.h"
 #include "LinearScan.h"
 #include "MachineCode.h"
+#include "Starighten.h"
 #include "Unit.h"
 using namespace std;
 
@@ -67,6 +69,10 @@ int main(int argc, char* argv[]) {
         ast.output();
     ast.typeCheck();
     ast.genCode(&unit);
+    ElimUnreachCode e(&unit);
+    Starighten s(&unit);
+    s.pass();
+    e.pass();
     if (dump_ir)
         unit.output();
     unit.genMachineCode(&mUnit);

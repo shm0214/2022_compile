@@ -30,6 +30,7 @@ class Instruction {
     MachineOperand* genMachineImm(int val);
     MachineOperand* genMachineLabel(int block_no);
     virtual void genMachineCode(AsmBuilder*) = 0;
+    int getInstType() { return instType; }
 
    protected:
     unsigned instType;

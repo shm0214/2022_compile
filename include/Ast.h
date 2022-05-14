@@ -57,8 +57,7 @@ class ExprNode : public Node {
         : kind(kind), symbolEntry(symbolEntry){};
     Operand* getOperand() { return dst; };
     void output(int level);
-    virtual int getValue() { return -1; };
-    virtual float getFValue() { return -1; };
+    virtual double getValue() { return -1; };
     bool isExpr() const { return kind == EXPR; };
     bool isInitValueListExpr() const { return kind == INITVALUELISTEXPR; };
     bool isImplictCastExpr() const { return kind == IMPLICTCASTEXPR; };
@@ -93,8 +92,7 @@ class BinaryExpr : public ExprNode {
     };
     BinaryExpr(SymbolEntry* se, int op, ExprNode* expr1, ExprNode* expr2);
     void output(int level);
-    int getValue();
-    float getFValue();
+    double getValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
 };
@@ -108,8 +106,7 @@ class UnaryExpr : public ExprNode {
     enum { NOT, SUB };
     UnaryExpr(SymbolEntry* se, int op, ExprNode* expr);
     void output(int level);
-    int getValue();
-    float getFValue();
+    double getValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
     int getOp() const { return op; };
@@ -139,8 +136,7 @@ class Constant : public ExprNode {
         type = TypeSystem::intType;
     };
     void output(int level);
-    int getValue();
-    float getFValue();
+    double getValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
 };
@@ -174,8 +170,7 @@ class Id : public ExprNode {
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
-    int getValue();
-    float getFValue();
+    double getValue();
     ExprNode* getArrIdx() { return arrIdx; };
     Type* getType();
     bool isLeft() const { return left; };

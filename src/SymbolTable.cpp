@@ -27,16 +27,10 @@ SymbolEntry::SymbolEntry(Type* type, int kind) {
     this->kind = kind;
 }
 
-ConstantSymbolEntry::ConstantSymbolEntry(Type* type, int value)
+ConstantSymbolEntry::ConstantSymbolEntry(Type* type, double value)
     : SymbolEntry(type, SymbolEntry::CONSTANT) {
     assert(type->isInt());
     this->value = value;
-}
-
-ConstantSymbolEntry::ConstantSymbolEntry(Type* type, float fvalue)
-    : SymbolEntry(type, SymbolEntry::CONSTANT) {
-    assert(type->isFloat());
-    this->fvalue = fvalue;
 }
 
 ConstantSymbolEntry::ConstantSymbolEntry(Type* type, std::string value)
@@ -50,14 +44,9 @@ ConstantSymbolEntry::ConstantSymbolEntry(Type* type)
     // assert(type->isArray());
 }
 
-int ConstantSymbolEntry::getValue() const {
-    assert(type->isInt());
+double ConstantSymbolEntry::getValue() const {
+    assert(type->isInt() || type->isFloat());
     return value;
-}
-
-float ConstantSymbolEntry::getFValue() const {
-    assert(type->isFloat());
-    return fvalue;
 }
 
 std::string ConstantSymbolEntry::getStrValue() const {
@@ -69,9 +58,9 @@ std::string ConstantSymbolEntry::toStr() {
     std::ostringstream buffer;
     // [ ] float
     if (type->isInt())
-        buffer << value;
+        buffer << (int)value;
     else if (type->isFloat())
-        buffer << fvalue;
+        buffer << value;
     else if (type->isString())
         buffer << strValue;
     return buffer.str();
@@ -93,7 +82,7 @@ IdentifierSymbolEntry::IdentifierSymbolEntry(Type* type,
     this->constant = false;
 }
 
-void IdentifierSymbolEntry::setValue(int value) {
+void IdentifierSymbolEntry::setValue(double value) {
     if (((IntType*)(this->getType()))->isConst()) {
         if (!initial) {
             this->value = value;
@@ -106,20 +95,7 @@ void IdentifierSymbolEntry::setValue(int value) {
     }
 }
 
-void IdentifierSymbolEntry::setFValue(float fvalue) {
-    if (((FloatType*)(this->getType()))->isConst()) {
-        if (!initial) {
-            this->fvalue = fvalue;
-            initial = true;
-        } else {
-            // 
-        }
-    } else {
-        this->fvalue = fvalue;
-    }
-}
-
-void IdentifierSymbolEntry::setArrayValue(int* arrayValue) {
+void IdentifierSymbolEntry::setArrayValue(double* arrayValue) {
     if (((IntType*)(this->getType()))->isConst()) {
         if (!initial) {
             this->arrayValue = arrayValue;
@@ -130,20 +106,6 @@ void IdentifierSymbolEntry::setArrayValue(int* arrayValue) {
     } else {
         this->arrayValue = arrayValue;
     }
-}
-
-void IdentifierSymbolEntry::setFArrayValue(float* floatValue) {
-    if (((FloatType*)(this->getType()))->isConst()) {
-        if (!initial) {
-            this->farrayValue = farrayValue;
-            initial = true;
-        } else {
-            // 需要报错
-        }
-    } else {
-        this->farrayValue = farrayValue;
-    }
-
 }
 
 std::string IdentifierSymbolEntry::toStr() {

@@ -561,12 +561,12 @@ void MachineUnit::PrintGlobalDecl() {
                     se->getType()->getSize() / 8);
             fprintf(yyout, "%s:\n", se->toStr().c_str());
             if (!se->getType()->isArray()) {
-                fprintf(yyout, "\t.word %d\n", se->getValue());
+                fprintf(yyout, "\t.word %d\n", (int)se->getValue());
             } else {
                 int n = se->getType()->getSize() / 32;
-                int* p = se->getArrayValue();
+                double* p = se->getArrayValue();
                 for (int i = 0; i < n; i++) {
-                    fprintf(yyout, "\t.word %d\n", p[i]);
+                    fprintf(yyout, "\t.word %d\n", (int)p[i]);
                 }
             }
         }
@@ -581,12 +581,12 @@ void MachineUnit::PrintGlobalDecl() {
                     se->getType()->getSize() / 8);
             fprintf(yyout, "%s:\n", se->toStr().c_str());
             if (!se->getType()->isArray()) {
-                fprintf(yyout, "\t.word %d\n", se->getValue());
+                fprintf(yyout, "\t.word %d\n", (int)se->getValue());
             } else {
                 int n = se->getType()->getSize() / 32;
-                int* p = se->getArrayValue();
+                double* p = se->getArrayValue();
                 for (int i = 0; i < n; i++) {
-                    fprintf(yyout, "\t.word %d\n", p[i]);
+                    fprintf(yyout, "\t.word %d\n", (int)p[i]);
                 }
             }
         }

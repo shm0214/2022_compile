@@ -31,11 +31,11 @@ void Unit::output() const {
         if (se->getType()->isInt())
             fprintf(yyout, "%s = global %s %d, align 4\n", se->toStr().c_str(),
                     se->getType()->toStr().c_str(),
-                    ((IdentifierSymbolEntry*)se)->getValue());
+                    (int)((IdentifierSymbolEntry*)se)->getValue());
         else if (se->getType()->isArray()) {
             ArrayType* type = (ArrayType*)(se->getType());
             // int size = type->getSize() / TypeSystem::intType->getSize();
-            int* val = ((IdentifierSymbolEntry*)se)->getArrayValue();
+            double* val = ((IdentifierSymbolEntry*)se)->getArrayValue();
             int i = 0;
             fprintf(yyout, "%s = global ", se->toStr().c_str());
             if (((IdentifierSymbolEntry*)se)->isAllZero()) {
@@ -53,7 +53,7 @@ void Unit::output() const {
                         for (int j = 0; j < temp->getLength(); j++) {
                             if (j != 0)
                                 fprintf(yyout, ", ");
-                            fprintf(yyout, "i32 %d", val[i++]);
+                            fprintf(yyout, "i32 %d", (int)val[i++]);
                         }
                         fprintf(yyout, "]");
                         stk1.pop();

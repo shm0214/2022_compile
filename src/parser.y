@@ -10,8 +10,7 @@
     int yyerror(char const*);
     ArrayType* arrayType;
     int idx;
-    int* arrayValue;
-    float* farrayValue;
+    double* arrayValue; // store all number in float
     std::stack<InitValueListExpr*> stk;
     std::stack<StmtNode*> whileStk;
     InitValueListExpr* top;
@@ -29,8 +28,7 @@
 }
 
 %union {
-    int itype;
-    float ftype;
+    double numtype; // store all number in float
     char* strtype;
     StmtNode* stmttype;
     ExprNode* exprtype;
@@ -40,8 +38,7 @@
 
 %start Program
 %token <strtype> ID STRING
-%token <itype> INTEGER
-%token <ftype> FLOATING
+%token <numtype> INTEGER FLOATING
 %token IF ELSE WHILE
 %token INT VOID FLOAT // [ ] float
 %token LPAREN RPAREN LBRACE RBRACE SEMICOLON LBRACKET RBRACKET COMMA  
@@ -435,7 +432,7 @@ VarDef
         std::stack<InitValueListExpr*>().swap(stk);
         se = new IdentifierSymbolEntry(type, $1, identifiers->getLevel());
         $<se>$ = se;
-        arrayValue = new int[arrayType->getSize()];
+        arrayValue = new double[arrayType->getSize()];
     }
       InitVal {
         ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
@@ -481,7 +478,7 @@ ConstDef
         se = new IdentifierSymbolEntry(type, $1, identifiers->getLevel());
         ((IdentifierSymbolEntry*)se)->setConst();
         $<se>$ = se;
-        arrayValue = new int[arrayType->getSize()];
+        arrayValue = new double[arrayType->getSize()];
     }
       ConstInitVal {
         ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);

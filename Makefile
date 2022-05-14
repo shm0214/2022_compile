@@ -28,8 +28,9 @@ OUTPUT_RES = $(addsuffix .res, $(basename $(TESTCASE)))
 OUTPUT_BIN = $(addsuffix .bin, $(basename $(TESTCASE)))
 OUTPUT_LOG = $(addsuffix .log, $(basename $(TESTCASE)))
 OUTPUT_TOK = $(addsuffix .toks, $(basename $(TESTCASE)))
+OUTPUT_IR = $(addsuffix .ll, $(basename $(TESTCASE)))
 
-.phony:all app run gdb test clean clean-all clean-test clean-app llvmir gccasm run1
+.phony:all app run gdb test clean clean-all clean-test clean-app llvmir gccasm run1 testlexer testir
 
 all:app
 
@@ -86,6 +87,8 @@ $(TEST_PATH)/%.s:$(TEST_PATH)/%.sy
 llvmir:$(LLVM_IR)
 
 gccasm:$(GCC_ASM)
+
+testir:app $(LLVM_IR) $(OUTPUT_IR)
 
 testlexer:app
 	@for file in $(sort $(TESTCASE))
@@ -156,7 +159,7 @@ clean-app:
 	@rm -rf $(BUILD_PATH) $(PARSER) $(LEXER) $(PARSERH)
 
 clean-test:
-	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(OUTPUT_TOK) $(LLVM_IR) $(GCC_ASM) ./example.ast ./example.ll ./example.s
+	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(OUTPUT_TOK) $(OUTPUT_IR) $(LLVM_IR) $(GCC_ASM) ./example.ast ./example.ll ./example.s
 
 clean-all:clean-test clean-app
 

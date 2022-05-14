@@ -1006,8 +1006,8 @@ void BinaryExpr::output(int level) {
     expr2->output(level + 4);
 }
 
-int BinaryExpr::getValue() {
-    int value = 0;
+double BinaryExpr::getValue() {
+    double value = 0;
     switch (op) { // [ ] float
         case ADD:
             value = expr1->getValue() + expr2->getValue();
@@ -1023,7 +1023,7 @@ int BinaryExpr::getValue() {
                 value = expr1->getValue() / expr2->getValue();
             break;
         case MOD:
-            value = expr1->getValue() % expr2->getValue();
+            value = (int)(expr1->getValue()) % (int)(expr2->getValue());
             break;
         case AND:
             value = expr1->getValue() && expr2->getValue();
@@ -1053,9 +1053,6 @@ int BinaryExpr::getValue() {
     return value;
 }
 
-float BinaryExpr::getFValue() {
-    // TODO
-}
 
 UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
     : ExprNode(se, UNARYEXPR), op(op), expr(expr) {
@@ -1107,8 +1104,8 @@ void UnaryExpr::output(int level) {
     expr->output(level + 4);
 }
 
-int UnaryExpr::getValue() {
-    int value = 0;
+double UnaryExpr::getValue() {
+    double value = 0;
     switch (op) {
         case NOT:
             value = !(expr->getValue());
@@ -1120,9 +1117,6 @@ int UnaryExpr::getValue() {
     return value;
 }
 
-float UnaryExpr::getFValue() {
-    // TODO
-}
 
 void CallExpr::output(int level) {
     std::string name, type;
@@ -1149,22 +1143,14 @@ void Constant::output(int level) {
             value.c_str(), type.c_str());
 }
 
-int Constant::getValue() {
+double Constant::getValue() {
     // assert(symbolEntry->getType()->isInt());
     return ((ConstantSymbolEntry*)symbolEntry)->getValue();
 }
 
-float Constant::getFValue() {
-    // TODO
-}
-
-int Id::getValue() {
+double Id::getValue() {
     // assert(symbolEntry->getType()->isInt());
     return ((IdentifierSymbolEntry*)symbolEntry)->getValue();
-}
-
-float Id::getFValue() {
-    // TODO
 }
 
 void Id::output(int level) {

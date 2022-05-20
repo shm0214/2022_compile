@@ -9,7 +9,8 @@ class Starighten {
    public:
     Starighten(Unit* unit) : unit(unit){};
     void pass();
-    void pass(Function* function);
+    void pass1(Function* function);
+    void pass2(Function* function);
     void fuseBlock(Function* function, BasicBlock* i, BasicBlock* j);
 };
 

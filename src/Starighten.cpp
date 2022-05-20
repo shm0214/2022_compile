@@ -7,6 +7,7 @@ void Starighten::pass() {
     while (iter != unit->end()) {
         pass1(*iter);
         //pass2(*iter);
+        pass3(*iter);
         iter++;
     }
 }
@@ -36,6 +37,37 @@ void Starighten::pass2(Function* func) {
             auto jumpBB = ((UncondBrInstruction*)(i->rbegin()))->getBranch();
             if (nextBB == jumpBB)
                 i->remove(i->rbegin());
+        }
+    }
+}
+void Starighten::pass3(Function* func) {
+    // 删除只有一句无条件跳转的基本块
+    auto& blocklist = func->getBlockList();
+    for (auto it = blocklist.begin(); it != blocklist.end();) {
+        if ((*it)->begin() == (*it)->rbegin() && (*it)->begin()->isUncond()) {
+            auto block = ((UncondBrInstruction*)((*it)->begin()))->getBranch();
+            block->removePred(*it);
+            for (auto it1 = (*it)->pred_begin(); it1 != (*it)->pred_end();
+                 it1++) {
+                auto ins = (*it1)->rbegin();
+                if (ins->isCond()) {
+                    auto condIns = (CondBrInstruction*)ins;
+                    if (condIns->getTrueBranch() == *it)
+                        condIns->setTrueBranch(block);
+                    if (condIns->getFalseBranch() == *it)
+                        condIns->setFalseBranch(block);
+                } else if (ins->isUncond()) {
+                    auto unCondIns = (UncondBrInstruction*)ins;
+                    if (unCondIns->getBranch() == *it)
+                        unCondIns->setBranch(block);
+                }
+                (*it1)->removeSucc(*it);
+                (*it1)->addSucc(block);
+                block->addPred(*it1);
+            }
+            it = blocklist.erase(it);
+        } else {
+            it++;
         }
     }
 }

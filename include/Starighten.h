@@ -11,6 +11,7 @@ class Starighten {
     void pass();
     void pass1(Function* function);
     void pass2(Function* function);
+    void pass3(Function* function);
     void fuseBlock(Function* function, BasicBlock* i, BasicBlock* j);
 };
 

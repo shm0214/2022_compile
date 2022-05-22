@@ -1,7 +1,6 @@
 *.ast
 *.o
 .vscode/
-*.out
 build/*
 parser.h
 parser.cpp

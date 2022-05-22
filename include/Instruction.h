@@ -30,7 +30,8 @@ class Instruction {
     MachineOperand* genMachineImm(int val);
     MachineOperand* genMachineLabel(int block_no);
     virtual void genMachineCode(AsmBuilder*) = 0;
-    int getInstType() { return instType; }
+    int getInstType() { return instType; };
+    std::vector<Operand*> getOperands(){ return operands; }
 
    protected:
     unsigned instType;

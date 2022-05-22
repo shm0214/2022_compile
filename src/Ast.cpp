@@ -132,7 +132,7 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
                        int op,
                        ExprNode* expr1,
                        ExprNode* expr2)
-    : ExprNode(se), op(op), expr1(expr1), expr2(expr2) {
+    : ExprNode(se, BINARYEXPR), op(op), expr1(expr1), expr2(expr2) {
     dst = new Operand(se);
     std::string op_str;
     switch (op) {
@@ -197,6 +197,7 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
         }
     } else
         type = TypeSystem::intType;
+    
 };
 
 void BinaryExpr::genCode() {
@@ -299,6 +300,17 @@ void BinaryExpr::genCode() {
     }
 }
 
+ExprNode* BinaryExpr::getLeft(){
+    return this->expr1;
+}
+
+ExprNode* BinaryExpr::getRight(){
+    return this->expr2;
+}
+
+ExprNode* UnaryExpr::getSubExpr(){
+    return this->expr;
+}
 void Constant::genCode() {
     // we don't need to generate code.
 }
@@ -674,6 +686,44 @@ void UnaryExpr::genCode() {
 void ExprNode::genCode() {
     // Todo
 }
+ExprNode* ExprNode::const_fold(){
+    ExprNode* res;
+    bool flag = true;
+    int fconst = this->fold_const(flag);
+    if(flag){
+        SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
+        res = new Constant(se);
+    } else{
+        res = this;
+    }
+    return res;
+}
+
+int ExprNode::fold_const(bool &flag){
+    if(this->isBinaryExpr()){
+        ExprNode *lhs = ((BinaryExpr*)this)->getLeft(), *rhs = ((BinaryExpr*)this)->getRight();
+        lhs->fold_const(flag);
+        rhs->fold_const(flag);
+        if(flag){
+            return ((BinaryExpr*)this)->getValue();
+        }
+        else return 0;
+    }
+    else if(this->isUnaryExpr()){
+        ExprNode *hs = ((UnaryExpr*)this)->getSubExpr();
+        hs->fold_const(flag);
+        if(flag){
+            return ((UnaryExpr*)this)->getValue();
+        }
+        else return 0;
+    }
+    else if(this->getSymbolEntry()->isConstant()){
+        return 0;
+    }
+    flag = 0;
+    return 0;
+}
+
 
 bool ContinueStmt::typeCheck(Type* retType) {
     return false;

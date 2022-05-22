@@ -1,0 +1,56 @@
+stages:
+  - compile
+  - functional
+  - performance
+  - deploy
+
+compile:
+  stage: compile
+  tags:
+    - compile
+  script:
+    - sudo cp /home/ubuntu/compile/makefile .
+    - make app
+    - sudo cp /home/ubuntu/compile/compile.py .
+    - python compile.py
+    - zip -r asm.zip functional/ performance/
+  artifacts:
+    paths:
+      - asm.zip
+
+functional:
+  stage: functional
+  tags:
+    - timer
+  script:
+    - unzip asm.zip
+    - cp /home/pi/compiler/functional.py .
+    - python functional.py
+  dependencies:
+    - compile 
+
+performance:
+  stage: performance
+  tags:
+    - timer
+  needs:
+    - [functional, compile]
+  script:
+    - unzip asm.zip
+    - cp /home/pi/compiler/performance.py .
+    - python performance.py
+    - cp /home/pi/compiler/data.csv .
+  dependencies:
+    - compile 
+  artifacts:
+    paths:
+      - data.csv
+
+deploy:
+  stage: deploy
+  tags:
+    - deploy
+  needs:
+    - [performance]
+  script:
+    - sudo cp ./data.csv /usr/local/webserver/nginx/html/data.csv -S NKU.cs.lk

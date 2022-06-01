@@ -3,10 +3,10 @@
 .vscode/
 # *.out
 build/*
-parser.h
-parser.cpp
-lexer.h
-lexer.cpp
+# parser.h
+# parser.cpp
+# lexer.h
+# lexer.cpp
 *.ll
 *.bin
 *.log
@@ -16,6 +16,6 @@ example
 *.ast
 *.toks
 *.s
-performance/
+# performance/
 test1
 .VSCodeCounter/

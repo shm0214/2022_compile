@@ -7,6 +7,7 @@
 #include "MachineCode.h"
 #include "Starighten.h"
 #include "Unit.h"
+#include "CopyProp.h"
 using namespace std;
 
 Ast ast;
@@ -73,6 +74,8 @@ int main(int argc, char* argv[]) {
     Starighten s(&unit);
     s.pass();
     e.pass();
+    CopyProp c(&unit);
+    c.copy_prop();
     if (dump_ir)
         unit.output();
     unit.genMachineCode(&mUnit);

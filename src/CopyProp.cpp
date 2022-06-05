@@ -1,12 +1,15 @@
 #include "CopyProp.h"
 #include <vector>
+#include <set>
 #include <queue>
-#include <unordered_map>
 using namespace std;
+const int N = 10010;
+typedef vector<BasicBlock*>::iterator bb_iterator;
+bool st[N]; // 标记基本块是否已遍历过
 
-vector<unordered_map<SymbolEntry*, SymbolEntry*>> copy, kill, cpin, cpout;
-
-void remove_ACP(unordered_map<SymbolEntry*, SymbolEntry*> ACP, SymbolEntry* sym){
+unordered_map<int, USS> COPY, KILL, CPin, CPout, load_sym;
+unordered_map<int, USO> opds;
+void remove_ACP(USS ACP, SymbolEntry* sym){
     for(auto iter = ACP.begin();iter!=ACP.end();){
         if(iter->first==sym || iter->second==sym){
             ACP.erase(iter++);
@@ -17,97 +20,174 @@ void remove_ACP(unordered_map<SymbolEntry*, SymbolEntry*> ACP, SymbolEntry* sym)
     }
 }
 
-SymbolEntry* copy_value(Operand* opd, unordered_map<SymbolEntry*, SymbolEntry*> ACP){
+SymbolEntry* copy_value(Operand* opd, USS ACP, bool &flag){
     SymbolEntry* sym = opd->getEntry();
-    bool isVar = opd->getEntry()->isVariable();
-    for(auto iter = ACP.begin(); iter!=ACP.end();iter++){
-        SymbolEntry* key = iter->first;
-        SymbolEntry* value = iter->second;
-        if(isVar && sym == key){
-            return value;
+    bool nconst = !sym->isConstant();
+    if(nconst){
+        for(auto iter = ACP.begin(); iter!=ACP.end();iter++){
+            SymbolEntry* key = iter->first;
+            SymbolEntry* value = iter->second;
+            if(sym == key){
+                flag = true;
+                return value;
+            }
         }
     }
+    flag = false;
     return sym;
+}
+
+/* 工具函数: 求交集 */
+//两个map求交集
+USS map_intersection(USS u1, USS u2){
+    USS res;
+	for(auto i: u1){
+        if(u2.find(i.first) != u2.end()){
+            if(u2[i.first] == i.second){
+                res[i.first] = i.second;
+            }
+        }
+    }
+    return res;
+}
+
+USS map_union(USS u1, USS u2){
+    USS res;
+    for (auto v : u1) {
+        res[v.first] = v.second;
+    }
+    for (auto v : u2) {
+        res[v.first] = v.second;
+    }
+    return res;
+}
+
+//多个map求交集
+USS intersection(BasicBlock* bb){
+    USS res;
+    bb_iterator iter = bb->pred_begin();
+    bb_iterator end = bb->pred_end();
+    vector<USS> tmp;
+    while(iter != end){
+        int no = (*iter)->getNo();
+        if(st[no]){
+            res = map_intersection(res, CPout[no]);
+        }
+        iter++;
+    }
+    return res;
 }
 
 void CopyProp::copy_prop(){
     auto iter = unit->begin();
-    unordered_map<SymbolEntry*, SymbolEntry*> ACP;
+    USS ACP;
     while (iter != unit->end()){
-        vector<BasicBlock*> block_list = (*iter++)->getBlockList();
-        BasicBlock* bb;
-        for(int i=0;i<block_list.size();i++){
-            // find the first block(has no preds)
-            bb = block_list[i];
-            if(bb->predEmpty()){
-                break;
-            }
-        }
+        vector<BasicBlock*> block_list = (*iter)->getBlockList();
+        BasicBlock* bb = (*iter)->getEntry(); // 函数入口基本块
+        COPY[bb->getNo()];
         queue<BasicBlock*> q;
         q.push(bb);
         bool first = true;
         while(!q.empty()){
             BasicBlock* bb = q.front();
+            q.pop();
             int no = bb->getNo();
+            st[no] = true;
             if(first){
-                // cpin[no] = none
+                CPin[no];
+                first = false;
             }
             else{
-                //cpin[no] = 
+                CPin[no] = intersection(bb);
             }
-            local_copy_prop(bb);
+            local_copy_prop(bb, ACP);
             for(auto succ = bb->succ_begin(); succ != bb->succ_end(); succ++){
-
-            }
-        }
-    }
-}
-
-void CopyProp::local_copy_prop(BasicBlock* bb){
-    int no = bb->getNo();
-    enum {
-        BINARY,
-        COND,
-        UNCOND,
-        RET,
-        LOAD,
-        STORE,
-        CMP,
-        ALLOCA,
-        CALL,
-        ZEXT,
-        XOR,
-        GEP
-    };
-    unordered_map<SymbolEntry*, SymbolEntry*> ACP;
-    for(auto iter = bb->begin();iter!=bb->end();iter++){
-        int kind = iter->getInstType();
-        vector<Operand*> operands = iter->getOperands();
-        if (kind == BINARY)
-        {
-            SymbolEntry* sym1 = copy_value(operands[1], ACP);
-            SymbolEntry* sym2 = copy_value(operands[2], ACP);
-            operands[1]->setEntry(sym1);
-            operands[2]->setEntry(sym2);
-        }
-        else{
-            if(kind == LOAD){
-                SymbolEntry* sym1 = operands[0]->getEntry();
-                remove_ACP(ACP, sym1);
-                if(operands[1]->getEntry()->isVariable()){
-                    SymbolEntry* sym2 = operands[1]->getEntry();
-                    ACP[sym1] = sym2;
+                if(!st[(*succ)->getNo()]){
+                    q.push(*succ);
                 }
             }
         }
+        iter++;
     }
-    //copy.push_back(ACP);
+    // global_copy_prop
+    iter = unit->begin();
+    ACP.clear();
+    while (iter != unit->end()){
+        vector<BasicBlock*> block_list = (*iter)->getBlockList();
+        for(auto bb: block_list){
+            ACP = CPin[bb->getNo()];
+            local_copy_prop(bb, ACP);
+        }
+        iter++;
+    }
+}
+
+void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP){
+    int no = bb->getNo();
+    opds[no];
+    load_sym[no];
+    bool flag;
+    for(auto iter = bb->begin();iter!=bb->end();iter=iter->getNext()){
+        vector<Operand*> operands(iter->getOperands());
+        if (iter->isBin())
+        {
+            if(!operands[1]->getEntry()->isConstant()){
+                auto iter_def = operands[1]->getDef();
+                vector<Operand*> def_operands(iter_def->getOperands());
+                SymbolEntry* sym1 = copy_value(def_operands[1], ACP, flag);
+                // 多余load指令删除
+                if(flag){
+                    operands[1]->setEntry(load_sym[no][sym1]);
+                    iter_def->remove();
+                    opds[no][sym1]->addUse(iter);
+                    operands[1]->setDef(opds[no][sym1]->getDef());
+                }
+            }
+            if(!operands[2]->getEntry()->isConstant()){
+                auto iter_def = operands[2]->getDef();
+                vector<Operand*> def_operands(iter_def->getOperands());
+                SymbolEntry* sym2 = copy_value(def_operands[1], ACP, flag);
+                if(flag){
+                    operands[2]->setEntry(load_sym[no][sym2]);
+                    iter_def->remove();
+                    opds[no][sym2]->addUse(iter);
+                    operands[2]->setDef(opds[no][sym2]->getDef());
+                }
+            }
+        }
+        else if(iter->isStore()){
+            if(!operands[1]->getEntry()->isConstant())
+            {
+                auto iter_def = operands[1]->getDef();
+                if(iter_def->isLoad()){
+                    SymbolEntry* sym1 = operands[0]->getEntry();
+                    remove_ACP(ACP, sym1);
+                    remove_ACP(CPin[no], sym1); // cpin[i]-kill[i]
+                    vector<Operand*> prev_operands(iter_def->getOperands());
+                    SymbolEntry* sym2 = copy_value(prev_operands[1], ACP, flag);
+                    if(flag){
+                        operands[1]->setEntry(load_sym[no][sym2]);
+                        iter_def->remove();
+                        opds[no][sym2]->addUse(iter);
+                        operands[1]->setDef(opds[no][sym2]->getDef());
+                    } else{
+                        opds[no][sym2] = prev_operands[0];
+                        load_sym[no][sym2] = prev_operands[0]->getEntry();
+                    }
+                    ACP[sym1] = sym2;
+                    // cout<<"<"<<sym1->toStr()<<", "<<sym2->toStr()<<">"<<endl;
+                }
+            }
+        }
+        operands.clear();
+    }
+    // cout<<"here acp:"<<ACP.size()<<endl;
+    CPout[no] = map_union(ACP, CPin[no]);
+    // cout<<"cpout[no]:"<<CPout[no].size()<<endl;
+    ACP.clear();
 }
 
 
-
-void CopyProp::global_copy_prop(BasicBlock* bb){
-
+CopyProp::~CopyProp(){
+    COPY.clear(), KILL.clear(), CPin.clear(), CPout.clear(), load_sym.clear(), opds.clear();
 }
-
-

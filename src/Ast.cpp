@@ -319,8 +319,9 @@ void Id::genCode() {
     BasicBlock* bb = builder->getInsertBB();
     Operand* addr =
         dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getAddr();
-    if (type->isInt())
+    if (type->isInt()){
         new LoadInstruction(dst, addr, bb);
+    }
     else if (type->isArray()) {
         if (arrIdx) {
             Type* type = ((ArrayType*)(this->type))->getElementType();
@@ -483,8 +484,9 @@ void DeclStmt::genCode() {
         // if (se->isParam() && se->getType()->isArray())
         //     type = new PointerType(TypeSystem::intType);
         // else
-        type = new PointerType(se->getType());
-        addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel());
+        type = new PointerType(se->getType()); //yr
+        addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel()); //yr
+        // addr_se = se; //yr
         addr = new Operand(addr_se);
         alloca = new AllocaInstruction(addr, se);
         // allocate space for local id in function stack.

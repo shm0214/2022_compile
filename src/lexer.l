@@ -30,8 +30,8 @@ BLOCKCOMMENTEND \*\/
 %x BLOCKCOMMENT
 LINECOMMENT \/\/[^\n]*
 
-DECIMAL_FLOAT (([1-9][0-9]*\.[0-9]*|0\.)([eE]?[+-]?[0-9]*))
-HEXADECIMAL_FLOAT ((0[xX][0-9A-Fa-f]*\.[0-9A-Fa-f]*|0\.)([pP]?[+-]?[0-9]*))
+DECIMAL_FLOAT ([+-]?(([0-9]*[.][0-9]*([eE][+-]?[0-9]+)?)|([0-9]+[eE][+-]?[0-9]+))[fLlL]?)
+HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][+-]?[0-9]+))[fLlL]?)
 
 %%
 "int" {

@@ -128,12 +128,7 @@ class Constant : public ExprNode {
    public:
     Constant(SymbolEntry* se) : ExprNode(se) {
         dst = new Operand(se);
-        // if (se) {
-        //     type = se->getType();
-        // } else {
-        //     type = TypeSystem::intType; // default?
-        // }
-        type = TypeSystem::intType;
+        type = se->getType();
     };
     void output(int level);
     double getValue();

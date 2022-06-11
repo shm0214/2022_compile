@@ -12,6 +12,7 @@ build/*
 *.log
 *.res
 example.*
+!example.sy
 example
 *.ast
 *.toks

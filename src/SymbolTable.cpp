@@ -29,7 +29,7 @@ SymbolEntry::SymbolEntry(Type* type, int kind) {
 
 ConstantSymbolEntry::ConstantSymbolEntry(Type* type, double value)
     : SymbolEntry(type, SymbolEntry::CONSTANT) {
-    assert(type->isInt());
+    assert(type->isInt() || type->isFloat());
     this->value = value;
 }
 
@@ -56,7 +56,6 @@ std::string ConstantSymbolEntry::getStrValue() const {
 
 std::string ConstantSymbolEntry::toStr() {
     std::ostringstream buffer;
-    // [ ] float
     if (type->isInt())
         buffer << (int)value;
     else if (type->isFloat())

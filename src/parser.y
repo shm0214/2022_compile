@@ -9,6 +9,7 @@
     int yylex();
     int yyerror(char const*);
     ArrayType* arrayType;
+    Type* declType; // store type for variable declarations.
     int idx;
     double* arrayValue; // store all number in float
     std::stack<InitValueListExpr*> stk;
@@ -40,7 +41,7 @@
 %token <strtype> ID STRING
 %token <numtype> INTEGER FLOATING
 %token IF ELSE WHILE
-%token INT VOID FLOAT // [ ] float
+%token INT VOID FLOAT
 %token LPAREN RPAREN LBRACE RBRACE SEMICOLON LBRACKET RBRACKET COMMA  
 %token ADD SUB MUL DIV MOD OR AND LESS LESSEQUAL GREATER GREATEREQUAL ASSIGN EQUAL NOTEQUAL NOT
 %token CONST
@@ -213,7 +214,6 @@ PrimaryExp
     | FLOATING {
         SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::floatType, $1);
         $$ = new Constant(se);
-        // [ ] ast for floating number
     }
     ;
 UnaryExp 
@@ -330,12 +330,14 @@ FuncRParams
 Type
     : INT {
         $$ = TypeSystem::intType;
+        declType = TypeSystem::intType;
     }
     | VOID {
         $$ = TypeSystem::voidType;
     }
     | FLOAT {
         $$ = TypeSystem::floatType;
+        declType = TypeSystem::floatType;
     }
     ;
 DeclStmt
@@ -367,8 +369,9 @@ ConstDefList
     ;
 VarDef
     : ID {
-        SymbolEntry* se; // [ ] float
-        se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
+        SymbolEntry* se;
+        // printf("[ID] declType: %s\n", declType->toStr().c_str());
+        se = new IdentifierSymbolEntry(declType, $1, identifiers->getLevel());
         if (!identifiers->install($1, se))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         $$ = new DeclStmt(new Id(se));
@@ -402,8 +405,8 @@ VarDef
         delete []$1;
     }
     | ID ASSIGN InitVal {
-        SymbolEntry* se; // [ ] float
-        se = new IdentifierSymbolEntry(TypeSystem::intType, $1, identifiers->getLevel());
+        SymbolEntry* se;
+        se = new IdentifierSymbolEntry(declType, $1, identifiers->getLevel());
         if (!identifiers->install($1, se))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         // 这里要不要存值不确定
@@ -446,8 +449,17 @@ VarDef
     ;
 ConstDef
     : ID ASSIGN ConstInitVal {
+
+        if (declType->isFloat()) {
+            declType = TypeSystem::constFloatType;
+        } else if (declType->isInt()) {
+            declType = TypeSystem::constIntType;
+        } else {
+            // error
+        }
+
         SymbolEntry* se;
-        se = new IdentifierSymbolEntry(TypeSystem::constIntType, $1, identifiers->getLevel());
+        se = new IdentifierSymbolEntry(declType, $1, identifiers->getLevel());
         ((IdentifierSymbolEntry*)se)->setConst();
         if (!identifiers->install($1, se))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
@@ -500,12 +512,12 @@ ArrayIndices
     ;
 InitVal 
     : Exp {
-        if (!$1->getType()->isInt()){
-            fprintf(stderr,
-                "cannot initialize a variable of type \'int\' with an rvalue "
-                "of type \'%s\'\n",
-                $1->getType()->toStr().c_str());
-        } // [ ] float 
+        // if (!$1->getType()->isInt()){
+        //     fprintf(stderr,
+        //         "cannot initialize a variable of type \'int\' with an rvalue "
+        //         "of type \'%s\'\n",
+        //         $1->getType()->toStr().c_str());
+        // }
         $$ = $1;
         if (!stk.empty()){
             arrayValue[idx++] = $1->getValue();

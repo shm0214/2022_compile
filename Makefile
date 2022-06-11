@@ -1,8 +1,7 @@
 SRC_PATH ?= src
 INC_PATH += include
 BUILD_PATH ?= build
-TEST_PATH ?= test
-# TEST_PATH = test/float
+TEST_PATH ?= test/functional
 OBJ_PATH ?= $(BUILD_PATH)/obj
 BINARY ?= $(BUILD_PATH)/compiler
 SYSLIB_PATH ?= sysyruntimelibrary
@@ -29,8 +28,9 @@ OUTPUT_BIN = $(addsuffix .bin, $(basename $(TESTCASE)))
 OUTPUT_LOG = $(addsuffix .log, $(basename $(TESTCASE)))
 OUTPUT_TOK = $(addsuffix .toks, $(basename $(TESTCASE)))
 OUTPUT_IR = $(addsuffix .ll, $(basename $(TESTCASE)))
+OUTPUT_AST = $(addsuffix .ast, $(basename $(TESTCASE)))
 
-.phony:all app run gdb test clean clean-all clean-test clean-app llvmir gccasm run1 testlexer testir
+.phony:all app run gdb test clean clean-all clean-test clean-app llvmir gccasm run1 run2 testlexer testir testast
 
 all:app
 
@@ -57,6 +57,11 @@ run1:app
 	arm-linux-gnueabihf-gcc example.s $(SYSLIB_PATH)/sylib.a -o example
 	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
 	echo $$?
+
+run2:app
+	@$(BINARY) -o example.s -S example.sy
+	@$(BINARY) -o example.ast -a example.sy
+	@$(BINARY) -o example.toks -t example.sy
 
 gdb:app
 	@gdb $(BINARY)
@@ -90,15 +95,9 @@ gccasm:$(GCC_ASM)
 
 testir:app $(LLVM_IR) $(OUTPUT_IR)
 
-testlexer:app
-	@for file in $(sort $(TESTCASE))
-	do
-		LOG=$${file%.*}.log
-		TOK=$${file%.*}.toks
-		FILE=$${file##*/}
-		FILE=$${FILE%.*}
-		timeout 500s $(BINARY) -t $${file} -o $${TOK}
-	done
+testlexer:app $(OUTPUT_TOK)
+
+testast:app $(OUTPUT_AST)
 
 .ONESHELL:
 test:app
@@ -135,19 +134,13 @@ test:app
 			RETURN_VALUE=$$?
 			FINAL=`tail -c 1 $${RES}`
 			[ $${FINAL} ] && echo "\n$${RETURN_VALUE}" >> $${RES} || echo "$${RETURN_VALUE}" >> $${RES}
-			if [ "$${RETURN_VALUE}" = "124" ]; then
-				echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mExecute Timeout\033[0m"
-			else if [ "$${RETURN_VALUE}" = "127" ]; then
-				echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mExecute Error\033[0m"
-				else
-					diff -Z $${RES} $${OUT} >/dev/null 2>&1
-					if [ $$? != 0 ]; then
-						echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mWrong Answer\033[0m"
-					else
-						success=$$((success + 1))
-						echo "\033[1;32mPASS:\033[0m $${FILE}"
-					fi
-				fi
+
+			diff -Z $${RES} $${OUT} >/dev/null 2>&1
+			if [ $$? != 0 ]; then
+				echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mWrong Answer\033[0m"
+			else
+				success=$$((success + 1))
+				echo "\033[1;32mPASS:\033[0m $${FILE}"
 			fi
 		fi
 	done
@@ -159,7 +152,7 @@ clean-app:
 	@rm -rf $(BUILD_PATH) $(PARSER) $(LEXER) $(PARSERH)
 
 clean-test:
-	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(OUTPUT_TOK) $(OUTPUT_IR) $(LLVM_IR) $(GCC_ASM) ./example.ast ./example.ll ./example.s
+	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(OUTPUT_TOK) $(OUTPUT_IR) $(LLVM_IR) $(GCC_ASM) $(OUTPUT_AST) ./example.ast ./example.ll ./example.s
 
 clean-all:clean-test clean-app
 

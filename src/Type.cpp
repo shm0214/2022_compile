@@ -29,14 +29,7 @@ std::string IntType::toStr() {
 }
 
 std::string FloatType::toStr() {
-    std::ostringstream buffer;
-    if (constant)
-        buffer << "f";
-    else
-        buffer << "f";
-
-    buffer << size;
-    return buffer.str();
+    return "float";
 }
 
 std::string VoidType::toStr() {
@@ -59,11 +52,16 @@ std::string ArrayType::toStr() {
         }
         temp = ((ArrayType*)temp)->getElementType();
     }
-    assert(temp->isInt());
     std::ostringstream buffer;
     for (auto it = vec.begin(); it != vec.end(); it++)
         buffer << *it;
-    buffer << "i32"; // [ ] float
+    if (temp->isInt()) {
+        buffer << "i32";
+    } else if (temp->isFloat()) {
+        buffer << "float"; // [ ] float
+    } else {
+        assert(false); // invalid type
+    }
     while (count--)
         buffer << ']';
     if (flag)

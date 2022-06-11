@@ -654,7 +654,7 @@ void UnaryExpr::genCode() {
             new CmpInstruction(
                 CmpInstruction::NE, temp, src,
                 new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0)),
-                bb);
+                bb);  // [ ] float
             src = temp;
         }
         new XorInstruction(dst, src, bb);
@@ -908,7 +908,7 @@ AssignStmt::AssignStmt(ExprNode* lval, ExprNode* expr)
         fprintf(stderr,
                 "cannot initialize a variable of type \'int\' with an rvalue "
                 "of type \'%s\'\n",
-                expr->getType()->toStr().c_str());
+                expr->getType()->toStr().c_str());  // [ ] float
     }
 }
 
@@ -1008,7 +1008,7 @@ void BinaryExpr::output(int level) {
 
 double BinaryExpr::getValue() {
     double value = 0;
-    switch (op) { // [ ] float
+    switch (op) {
         case ADD:
             value = expr1->getValue() + expr2->getValue();
             break;
@@ -1052,7 +1052,6 @@ double BinaryExpr::getValue() {
     }
     return value;
 }
-
 
 UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
     : ExprNode(se, UNARYEXPR), op(op), expr(expr) {
@@ -1117,7 +1116,6 @@ double UnaryExpr::getValue() {
     return value;
 }
 
-
 void CallExpr::output(int level) {
     std::string name, type;
     int scope;
@@ -1139,8 +1137,13 @@ void Constant::output(int level) {
     std::string type, value;
     type = symbolEntry->getType()->toStr();
     value = symbolEntry->toStr();
-    fprintf(yyout, "%*cIntegerLiteral\tvalue: %s\ttype: %s\n", level, ' ',
-            value.c_str(), type.c_str());
+    if (symbolEntry->getType()->isInt()) {
+        fprintf(yyout, "%*cIntegerLiteral\tvalue: %s\ttype: %s\n", level, ' ',
+                value.c_str(), type.c_str());
+    } else if (symbolEntry->getType()->isFloat()) {
+        fprintf(yyout, "%*cFloatLiteral\tvalue: %s\ttype: %s\n", level, ' ',
+                value.c_str(), type.c_str());
+    }
 }
 
 double Constant::getValue() {

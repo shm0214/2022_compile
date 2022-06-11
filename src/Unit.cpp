@@ -53,7 +53,7 @@ void Unit::output() const {
                         for (int j = 0; j < temp->getLength(); j++) {
                             if (j != 0)
                                 fprintf(yyout, ", ");
-                            fprintf(yyout, "i32 %d", (int)val[i++]);
+                            fprintf(yyout, "i32 %d", (int)val[i++]); // [ ] float
                         }
                         fprintf(yyout, "]");
                         stk1.pop();

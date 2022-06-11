@@ -1,0 +1,24 @@
+const float PI = 03.141592653589793;
+float float_var_0 = 1.4e2;
+float float_var_1 = 1e-6;
+
+int int_var;
+
+const int cnst_int_var_0 = 12345;
+
+float float_arr_0[100];
+float float_arr_1[5] = {.1, 2.1, -3.01e2, 4.e-3, 5.e3};
+
+int int_arr_0[100];
+int int_arr_1[5] = {1, 2, 3, 4, 5};
+
+int int_arr_2[2][3] = {
+    {1, 2, 3},
+    {4, 5, 6}};
+
+int main()
+{
+    float a = 1.0;
+    int b = 120;
+    return 0;
+}

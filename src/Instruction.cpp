@@ -907,9 +907,12 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
             }
             cur_block->InsertInst(cur_inst);
         }
+        // printf("[type1]\t%s\n", operands[1]->getType()->toStr().c_str());
+        // printf("[type2]\t%s\n", ((PointerType*)(operands[1]->getType()))->getType()->toStr().c_str());
         ArrayType* type =
             (ArrayType*)(((PointerType*)(operands[1]->getType()))->getType());
-        size = type->getElementType()->getSize() / 8;
+        Type* elementType = type->getElementType();
+        size = elementType->getSize() / 8;
     }
     auto size1 = genMachineVReg();
     if (size > -255 && size < 255) {

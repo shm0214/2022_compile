@@ -4,8 +4,6 @@
 #include <vector>
 #include "SymbolTable.h"
 
-// [ ] float type
-
 class Type {
    private:
     int kind;

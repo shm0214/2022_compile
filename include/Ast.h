@@ -48,7 +48,7 @@ class ExprNode : public Node {
     int kind;
 
    protected:
-    enum { EXPR, INITVALUELISTEXPR, IMPLICTCASTEXPR, UNARYEXPR };
+    enum { EXPR, INITVALUELISTEXPR, IMPLICITCASTEXPR, UNARYEXPR };
     Type* type;
     SymbolEntry* symbolEntry;
     Operand* dst;  // The result of the subtree is stored into dst.
@@ -60,7 +60,7 @@ class ExprNode : public Node {
     virtual double getValue() { return -1; };
     bool isExpr() const { return kind == EXPR; };
     bool isInitValueListExpr() const { return kind == INITVALUELISTEXPR; };
-    bool isImplictCastExpr() const { return kind == IMPLICTCASTEXPR; };
+    bool isImplicitCastExpr() const { return kind == IMPLICITCASTEXPR; };
     bool isUnaryExpr() const { return kind == UNARYEXPR; };
     SymbolEntry* getSymbolEntry() { return symbolEntry; };
     virtual bool typeCheck(Type* retType = nullptr) { return false; };
@@ -201,14 +201,14 @@ class InitValueListExpr : public ExprNode {
 
 // 仅用于int2bool
 // [ ] int <=> float
-class ImplictCastExpr : public ExprNode {
+class ImplicitCastExpr : public ExprNode {
    private:
     ExprNode* expr;
 
    public:
-    ImplictCastExpr(ExprNode* expr)
-        : ExprNode(nullptr, IMPLICTCASTEXPR), expr(expr) {
-        type = TypeSystem::boolType;
+    ImplicitCastExpr(ExprNode* expr, Type* dstType = TypeSystem::boolType)
+        : ExprNode(nullptr, IMPLICITCASTEXPR), expr(expr) {
+        type = dstType;
         dst = new Operand(
             new TemporarySymbolEntry(type, SymbolTable::getLabel()));
     };
@@ -287,7 +287,7 @@ class IfStmt : public StmtNode {
     IfStmt(ExprNode* cond, StmtNode* thenStmt)
         : cond(cond), thenStmt(thenStmt) {
         if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
-            ImplictCastExpr* temp = new ImplictCastExpr(cond);
+            ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
         }
     };
@@ -306,7 +306,7 @@ class IfElseStmt : public StmtNode {
     IfElseStmt(ExprNode* cond, StmtNode* thenStmt, StmtNode* elseStmt)
         : cond(cond), thenStmt(thenStmt), elseStmt(elseStmt) {
         if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
-            ImplictCastExpr* temp = new ImplictCastExpr(cond);
+            ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
         }
     };
@@ -326,7 +326,7 @@ class WhileStmt : public StmtNode {
     WhileStmt(ExprNode* cond, StmtNode* stmt = nullptr)
         : cond(cond), stmt(stmt) {
         if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
-            ImplictCastExpr* temp = new ImplictCastExpr(cond);
+            ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
         }
     };

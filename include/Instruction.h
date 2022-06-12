@@ -50,7 +50,9 @@ class Instruction {
         CALL,
         ZEXT,
         XOR,
-        GEP
+        GEP,
+        FPTOSI, // floating point to signed int
+        SITOFP, // signed int to floating point
     };
 };
 
@@ -216,5 +218,8 @@ class GepInstruction : public Instruction {
     Operand* getInit() const { return init; };
     void setInit(Operand* init) { this->init = init; };
 };
+
+class FptosiInstruction; // TODO
+class SitofpInstruction; // TODO
 
 #endif

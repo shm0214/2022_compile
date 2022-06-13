@@ -257,13 +257,7 @@ class DeclStmt : public StmtNode {
     ExprNode* expr;
 
    public:
-    DeclStmt(Id* id, ExprNode* expr = nullptr) : id(id) {
-        if (expr) {
-            this->expr = expr;
-            if (expr->isInitValueListExpr())
-                ((InitValueListExpr*)(this->expr))->fill();
-        }
-    };
+    DeclStmt(Id* id, ExprNode* expr = nullptr);
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
@@ -286,7 +280,8 @@ class IfStmt : public StmtNode {
    public:
     IfStmt(ExprNode* cond, StmtNode* thenStmt)
         : cond(cond), thenStmt(thenStmt) {
-        if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
+        if ((cond->getType()->isInt() || cond->getType()->isFloat()) &&
+            cond->getType()->getSize() == 32) {
             ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
         }
@@ -305,7 +300,8 @@ class IfElseStmt : public StmtNode {
    public:
     IfElseStmt(ExprNode* cond, StmtNode* thenStmt, StmtNode* elseStmt)
         : cond(cond), thenStmt(thenStmt), elseStmt(elseStmt) {
-        if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
+        if ((cond->getType()->isInt() || cond->getType()->isFloat()) &&
+            cond->getType()->getSize() == 32) {
             ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
         }
@@ -325,7 +321,8 @@ class WhileStmt : public StmtNode {
    public:
     WhileStmt(ExprNode* cond, StmtNode* stmt = nullptr)
         : cond(cond), stmt(stmt) {
-        if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
+        if ((cond->getType()->isInt() || cond->getType()->isFloat()) &&
+            cond->getType()->getSize() == 32) {
             ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
         }

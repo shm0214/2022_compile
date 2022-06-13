@@ -1,7 +1,9 @@
 SRC_PATH ?= src
 INC_PATH += include
 BUILD_PATH ?= build
-TEST_PATH ?= test/functional
+# TEST_PATH ?= test/functional
+TEST_PATH ?= test
+
 OBJ_PATH ?= $(BUILD_PATH)/obj
 BINARY ?= $(BUILD_PATH)/compiler
 SYSLIB_PATH ?= sysyruntimelibrary
@@ -154,7 +156,7 @@ clean-app:
 	@rm -rf $(BUILD_PATH) $(PARSER) $(LEXER) $(PARSERH)
 
 clean-test:
-	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(OUTPUT_TOK) $(OUTPUT_IR) $(LLVM_IR) $(GCC_ASM) $(OUTPUT_AST) ./example.ast ./example.ll ./example.s
+	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(OUTPUT_TOK) $(OUTPUT_IR) $(LLVM_IR) $(GCC_ASM) $(OUTPUT_AST) ./example.ast ./example.ll ./example.s ./example.toks ./example_std.ll ./example
 
 clean-all:clean-test clean-app
 

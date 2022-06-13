@@ -1,20 +1,31 @@
 const float PI = 03.141592653589793;
+
+const int cnst_int_var = 20;
+const int cnst_int_var_0 = 12345;
+const int cnst_int_var_1 = 2.e-7;
+const float cnst_float_var = 10;
+
+const float cnst_float_arr_0[5] = {.1, 2.1, -3.01e2, 4.e-3, 5.e3};
+const float cnst_float_arr_1[5] = {.1, 2, 1, 4.e-3, 5.e3};
+const float cnst_float_arr_2[2][3] = {{1, 2., 3e-4}, {4, 5.29, 6}};
+
+const int cnst_int_arr_0[5] = {1, 2, 3.0, 4, 5};
+const int cnst_int_arr_1[2][3] = {{1, 2., 3e-4}, {4, 5.29, 6}};
+
 float float_var_0 = 1.4e2;
 float float_var_1 = 1e-6;
 
 int int_var;
 
-const int cnst_int_var_0 = 12345;
-const float cnst_float_arr_0[5] = {.1, 2.1, -3.01e2, 4.e-3, 5.e3};
-
 float float_arr_0[100];
-float float_arr_1[5] = {.1, 2.1, -3.01e2, 4.e-3, 5.e3};
-float float_arr_2[5][5];
+float float_arr_1[5] = {.1, 2, 1, 4.e-3, 5.e3};
+// float float_arr_2[5][5];
 
 int int_arr_0[100];
-int int_arr_1[5] = {1, 2, 3, 4, 5};
+int int_arr_1[5] = {1, 2, 3.0, 4, 5};
 
-int int_arr_2[2][3] = {{1, 2, 3}, {4, 5, 6}};
+int int_arr_2[2][3] = {{1, 2., 3e-4}, {4, 5.29, 6}};
+float float_arr_3[2][3] = {{1, 2., 3e-4}, {4, 5.29, 6}};
 
 int int_arr_3[4][4];
 
@@ -57,5 +68,14 @@ int func2(float a[][5]) {
 int main() {
     float a = 1.0;
     int b = 120;
+    int c = 1.0;
+    // float d = 1;
+    if (a + b) {
+        return 1;
+    } else if (a + b + c) {
+        return 2;
+    } else {
+        a = 2;
+    }
     return 0;
 }

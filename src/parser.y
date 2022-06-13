@@ -75,11 +75,11 @@ Stmt
     : AssignStmt {
         $$=$1;
     }
-    | ExprStmt {$$ = $1;}
+    | ExprStmt { $$ = $1; }
     | BlockStmt {$$=$1;}
-    | BlankStmt {$$ = $1;}
-    | IfStmt {$$ = $1;}
-    | WhileStmt {$$ = $1;}
+    | BlankStmt { $$ = $1; }
+    | IfStmt { $$ = $1; }
+    | WhileStmt { $$ = $1; }
     | BreakStmt {
         if (!whileCnt)
             fprintf(stderr, "\'break\' statement not in while statement\n");
@@ -90,9 +90,9 @@ Stmt
             fprintf(stderr, "\'continue\' statement not in while statement\n");
         $$=$1;
     }
-    | ReturnStmt {$$ = $1;}
-    | DeclStmt {$$ = $1;}
-    | FuncDef {$$ = $1;}
+    | ReturnStmt { $$ = $1; }
+    | DeclStmt { $$ = $1; }
+    | FuncDef { $$ = $1; }
     ;
 LVal
     : ID {
@@ -162,7 +162,7 @@ WhileStmt
     Stmt {
         StmtNode *whileNode = $<stmttype>5; 
         ((WhileStmt*)whileNode)->setStmt($6);
-        $$=whileNode;
+        $$ = whileNode;
         whileStk.pop();
         whileCnt--;
     }
@@ -187,11 +187,11 @@ ReturnStmt
     ;
 Exp
     :
-    AddExp {$$ = $1;}
+    AddExp { $$ = $1; }
     ;
 Cond
     :
-    LOrExp {$$ = $1;}
+    LOrExp { $$ = $1; }
     ;
 PrimaryExp
     : LPAREN Exp RPAREN {
@@ -204,7 +204,7 @@ PrimaryExp
         SymbolEntry* se;
         se = globals->lookup(std::string($1));
         // 这里如果str内容和变量名相同 怎么处理
-        if (se == nullptr){
+        if (se == nullptr) {
             Type* type = new StringType(strlen($1));
             se = new ConstantSymbolEntry(type, std::string($1));
             globals->install(std::string($1), se);
@@ -223,7 +223,7 @@ PrimaryExp
     }
     ;
 UnaryExp 
-    : PrimaryExp {$$ = $1;}
+    : PrimaryExp { $$ = $1; }
     | ID LPAREN FuncRParams RPAREN {
         SymbolEntry* se;
         se = identifiers->lookup($1);
@@ -242,10 +242,11 @@ UnaryExp
         } else
             $$ = new CallExpr(se);
     }
-    | ADD UnaryExp {$$ = $2;}
+    | ADD UnaryExp { $$ = $2; }
     | SUB UnaryExp {
-        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new UnaryExpr(se, UnaryExpr::SUB, $2); // TODO
+        Type* exprType = $2->getType();
+        SymbolEntry* se = new TemporarySymbolEntry(exprType, SymbolTable::getLabel());
+        $$ = new UnaryExpr(se, UnaryExpr::SUB, $2);
     }
     | NOT UnaryExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
@@ -253,29 +254,56 @@ UnaryExp
     }
     ;
 MulExp
-    : UnaryExp {$$ = $1;}
+    : UnaryExp { $$ = $1; }
     | MulExp MUL UnaryExp {
-        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::MUL, $1, $3); // TODO
+        SymbolEntry* se;
+        if ($1->getType()->isFloat() || $3->getType()->isFloat()) {
+            se = new TemporarySymbolEntry(TypeSystem::floatType, SymbolTable::getLabel());
+        } else {
+            se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        }
+        $$ = new BinaryExpr(se, BinaryExpr::MUL, $1, $3);
     }
     | MulExp DIV UnaryExp {
-        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::DIV, $1, $3); // TODO
+        SymbolEntry* se;
+        if ($1->getType()->isFloat() || $3->getType()->isFloat()) {
+            se = new TemporarySymbolEntry(TypeSystem::floatType, SymbolTable::getLabel());
+        } else {
+            se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        }
+        $$ = new BinaryExpr(se, BinaryExpr::DIV, $1, $3);
     }
     | MulExp MOD UnaryExp {
+
+        if ($1->getType()->isFloat() || $3->getType()->isFloat()) {
+            // error
+            // already handled in `ast.cpp`
+            fprintf(stderr, "Operands of `mod` must be both integers");
+        }
+
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::MOD, $1, $3); // TODO
+        $$ = new BinaryExpr(se, BinaryExpr::MOD, $1, $3);
     }
     ;
 AddExp
-    : MulExp {$$ = $1;}
+    : MulExp { $$ = $1; }
     | AddExp ADD MulExp {
-        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::ADD, $1, $3); // TODO
+        SymbolEntry* se;
+        if ($1->getType()->isFloat() || $3->getType()->isFloat()) {
+            se = new TemporarySymbolEntry(TypeSystem::floatType, SymbolTable::getLabel());
+        } else {
+            se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        }
+        $$ = new BinaryExpr(se, BinaryExpr::ADD, $1, $3);
     }
     | AddExp SUB MulExp {
-        SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::SUB, $1, $3); // TODO
+        SymbolEntry* se;
+        if ($1->getType()->isFloat() || $3->getType()->isFloat()) {
+            se = new TemporarySymbolEntry(TypeSystem::floatType, SymbolTable::getLabel());
+        } else {
+            se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+        }
+        $$ = new BinaryExpr(se, BinaryExpr::SUB, $1, $3);
     }
     ;
 RelExp
@@ -300,7 +328,7 @@ RelExp
     }
     ;
 EqExp
-    : RelExp {$$ = $1;}
+    : RelExp { $$ = $1; }
     | EqExp EQUAL RelExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         $$ = new BinaryExpr(se, BinaryExpr::EQUAL, $1, $3);
@@ -311,24 +339,24 @@ EqExp
     }
     ;
 LAndExp
-    : EqExp {$$ = $1;}
+    : EqExp { $$ = $1; }
     | LAndExp AND EqExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         $$ = new BinaryExpr(se, BinaryExpr::AND, $1, $3);
     }
     ;
 LOrExp
-    : LAndExp {$$ = $1;}
+    : LAndExp { $$ = $1; }
     | LOrExp OR LAndExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         $$ = new BinaryExpr(se, BinaryExpr::OR, $1, $3);
     }
     ;
 ConstExp
-    : AddExp {$$ = $1;}
+    : AddExp { $$ = $1; }
     ;
 FuncRParams 
-    : Exp {$$ = $1;}
+    : Exp { $$ = $1; }
     | FuncRParams COMMA Exp {
         $$ = $1;
         $$->setNext($3);
@@ -347,11 +375,11 @@ Type
     }
     ;
 DeclStmt
-    : VarDeclStmt {$$ = $1;}
-    | ConstDeclStmt {$$ = $1;}
+    : VarDeclStmt { $$ = $1; }
+    | ConstDeclStmt { $$ = $1; }
     ;
 VarDeclStmt
-    : Type VarDefList SEMICOLON {$$ = $2;}
+    : Type VarDefList SEMICOLON { $$ = $2; }
     ;
 ConstDeclStmt
     : CONST Type ConstDefList SEMICOLON {
@@ -364,19 +392,18 @@ VarDefList
         $$ = $1;
         $1->setNext($3);
     } 
-    | VarDef {$$ = $1;}
+    | VarDef { $$ = $1; }
     ;
 ConstDefList
     : ConstDefList COMMA ConstDef {
         $$ = $1;
         $1->setNext($3);
     }
-    | ConstDef {$$ = $1;}
+    | ConstDef { $$ = $1; }
     ;
 VarDef
     : ID {
         SymbolEntry* se;
-        // printf("[ID] declType: %s\n", declType->toStr().c_str());
         se = new IdentifierSymbolEntry(declType, $1, identifiers->getLevel());
         if (!identifiers->install($1, se))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
@@ -387,13 +414,13 @@ VarDef
         SymbolEntry* se;
         std::vector<int> vec;
         ExprNode* temp = $2;
-        while(temp){
+        while (temp){
             vec.push_back(temp->getValue());
             temp = (ExprNode*)(temp->getNext());
         }
         Type* type = declType;
         Type* temp1;
-        while(!vec.empty()){
+        while (!vec.empty()) {
             temp1 = new ArrayType(type, vec.back());
             if (type->isArray())
                 ((ArrayType*)type)->setArrayType(temp1);
@@ -424,7 +451,7 @@ VarDef
         SymbolEntry* se;
         std::vector<int> vec;
         ExprNode* temp = $2;
-        while(temp){
+        while (temp) {
             vec.push_back(temp->getValue());
             temp = (ExprNode*)(temp->getNext());
         }
@@ -474,7 +501,7 @@ ConstDef
         $$ = new DeclStmt(new Id(se), $3);
         delete []$1;
     }
-    | ID ArrayIndices ASSIGN  {
+    | ID ArrayIndices ASSIGN {
 
         if (declType->isFloat()) {
             declType = TypeSystem::constFloatType;
@@ -487,7 +514,7 @@ ConstDef
         SymbolEntry* se;
         std::vector<int> vec;
         ExprNode* temp = $2;
-        while(temp){
+        while (temp) {
             vec.push_back(temp->getValue());
             temp = (ExprNode*)(temp->getNext());
         }
@@ -527,36 +554,48 @@ ArrayIndices
     ;
 InitVal 
     : Exp {
-        // if (!$1->getType()->isInt()){
+        // if (!$1->getType()->isInt()) {
         //     fprintf(stderr,
         //         "cannot initialize a variable of type \'int\' with an rvalue "
         //         "of type \'%s\'\n",
         //         $1->getType()->toStr().c_str());
         // }
         $$ = $1;
-        if (!stk.empty()){
+        if (!stk.empty()) {
             arrayValue[idx++] = $1->getValue();
             Type* arrTy = stk.top()->getSymbolEntry()->getType();
-            if (arrTy == TypeSystem::intType || arrTy == TypeSystem::floatType)
-                stk.top()->addExpr($1);
-            else
-                while(arrTy){
+            if (arrTy == TypeSystem::intType || arrTy == TypeSystem::floatType) {
+                if (arrTy != $1->getType()) {
+                    ImplicitCastExpr* temp = new ImplicitCastExpr($1, declType);
+                    stk.top()->addExpr(temp);
+                } else {
+                    stk.top()->addExpr($1);
+                }
+            } else {
+                while (arrTy) {
                     if (((ArrayType*)arrTy)->getElementType() != TypeSystem::intType &&
-                        ((ArrayType*)arrTy)->getElementType() != TypeSystem::floatType){
+                        ((ArrayType*)arrTy)->getElementType() != TypeSystem::floatType) {
                         arrTy = ((ArrayType*)arrTy)->getElementType();
                         SymbolEntry* se = new ConstantSymbolEntry(arrTy);
                         InitValueListExpr* list = new InitValueListExpr(se);
                         stk.top()->addExpr(list);
                         stk.push(list);
-                    }else{
-                        stk.top()->addExpr($1);
-                        while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+                    } else {
+                        Type* elemType = ((ArrayType*)arrTy)->getElementType();
+                        if (elemType != $1->getType()) {
+                            ImplicitCastExpr* temp = new ImplicitCastExpr($1, elemType);
+                            stk.top()->addExpr(temp);
+                        } else {
+                            stk.top()->addExpr($1);
+                        }
+                        while (stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt) {
                             arrTy = ((ArrayType*)arrTy)->getArrayType();
                             stk.pop();
                         }
                         break;
                     }
                 }
+            }
         }         
     }
     | LBRACE RBRACE {
@@ -579,7 +618,7 @@ InitVal
             se = new ConstantSymbolEntry(type);
             list = new InitValueListExpr(se);
             stk.top()->addExpr(list);
-            while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+            while (stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt) {
                 stk.pop();
             }
         }
@@ -592,7 +631,7 @@ InitVal
                 ((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
         se = new ConstantSymbolEntry(arrayType);
         if (arrayType->getElementType() != TypeSystem::intType &&
-            arrayType->getElementType() != TypeSystem::floatType){
+            arrayType->getElementType() != TypeSystem::floatType) {
             arrayType = (ArrayType*)(arrayType->getElementType());
         }
         InitValueListExpr* expr = new InitValueListExpr(se);
@@ -604,17 +643,17 @@ InitVal
     } 
       InitValList RBRACE {
         leftCnt--;
-        while(stk.top() != $<exprtype>2 && stk.size() > (long unsigned int)(leftCnt + 1))
+        while (stk.top() != $<exprtype>2 && stk.size() > (long unsigned int)(leftCnt + 1))
             stk.pop();
         if (stk.top() == $<exprtype>2)
             stk.pop();
         $$ = $<exprtype>2;
         if (!stk.empty())
-            while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+            while (stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt) {
                 stk.pop();
             }
-        int size = ((ArrayType*)($$->getSymbolEntry()->getType()))->getSize()/ declType->getSize();
-        while(idx % size != 0)
+        int size = ((ArrayType*)($$->getSymbolEntry()->getType()))->getSize() / declType->getSize();
+        while (idx % size != 0)
             arrayValue[idx++] = 0;
         if (!stk.empty())
             arrayType = (ArrayType*)(
@@ -625,42 +664,63 @@ InitVal
 ConstInitVal
     : ConstExp {
         $$ = $1;
-        if (!stk.empty()){
+        if (!stk.empty()) {
             arrayValue[idx++] = $1->getValue();
             Type* arrTy = stk.top()->getSymbolEntry()->getType();
-            if (arrTy == TypeSystem::constIntType || arrTy == TypeSystem::constFloatType)
-                stk.top()->addExpr($1);
-            else
-                while(arrTy){
+            if (arrTy == TypeSystem::constIntType || arrTy == TypeSystem::constFloatType) {
+                if ((arrTy->isFloat() && $1->getType()->isInt()) || 
+                    (arrTy->isInt() && $1->getType()->isFloat())) {
+
+                    ImplicitCastExpr* temp = new ImplicitCastExpr($1, arrTy); 
+                    // arrTy is const here
+                    stk.top()->addExpr(temp);
+
+                } else {
+                    stk.top()->addExpr($1);
+                }
+            } else {
+                while (arrTy) {
                     if (((ArrayType*)arrTy)->getElementType() != TypeSystem::constIntType &&
-                        ((ArrayType*)arrTy)->getElementType() != TypeSystem::constFloatType){
+                        ((ArrayType*)arrTy)->getElementType() != TypeSystem::constFloatType) {
                         arrTy = ((ArrayType*)arrTy)->getElementType();
                         SymbolEntry* se = new ConstantSymbolEntry(arrTy);
                         InitValueListExpr* list = new InitValueListExpr(se);
                         stk.top()->addExpr(list);
                         stk.push(list);
-                    }else{
-                        stk.top()->addExpr($1);
-                        while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+                    } else {
+                        Type* elemType = ((ArrayType*)arrTy)->getElementType();
+                        if ((elemType->isFloat() && $1->getType()->isInt()) || 
+                            (elemType->isInt() && $1->getType()->isFloat())) {
+
+                            ImplicitCastExpr* temp = new ImplicitCastExpr($1, elemType); 
+                            // `elemType` is const here
+                            stk.top()->addExpr(temp);
+
+                        } else {
+                            stk.top()->addExpr($1);
+                        }
+
+                        while (stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt) {
                             arrTy = ((ArrayType*)arrTy)->getArrayType();
                             stk.pop();
                         }
                         break;
                     }
                 }
+            }
         }
     }
     | LBRACE RBRACE {
         SymbolEntry* se;
         ExprNode* list;
-        if (stk.empty()){
+        if (stk.empty()) {
             // 如果只用一个{}初始化数组，那么栈一定为空
             // 此时也没必要再加入栈了
             memset(arrayValue, 0, arrayType->getSize());
             idx += arrayType->getSize() / declType->getSize();
             se = new ConstantSymbolEntry(arrayType);
             list = new InitValueListExpr(se);
-        }else{
+        } else {
             // 栈不空说明肯定不是只有{}
             // 此时需要确定{}到底占了几个元素
             Type* type = ((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType();
@@ -670,7 +730,7 @@ ConstInitVal
             se = new ConstantSymbolEntry(type);
             list = new InitValueListExpr(se);
             stk.top()->addExpr(list);
-            while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+            while (stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt) {
                 stk.pop();
             }
         }
@@ -683,7 +743,7 @@ ConstInitVal
                 ((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
         se = new ConstantSymbolEntry(arrayType);
         if (arrayType->getElementType() != TypeSystem::intType &&
-            arrayType->getElementType() != TypeSystem::floatType){
+            arrayType->getElementType() != TypeSystem::floatType) {
             arrayType = (ArrayType*)(arrayType->getElementType());
         }
         InitValueListExpr* expr = new InitValueListExpr(se);
@@ -695,16 +755,17 @@ ConstInitVal
     } 
       ConstInitValList RBRACE {
         leftCnt--;
-        while(stk.top() != $<exprtype>2 && stk.size() > (long unsigned int)(leftCnt + 1))
+        while (stk.top() != $<exprtype>2 && stk.size() > (long unsigned int)(leftCnt + 1))
             stk.pop();
         if (stk.top() == $<exprtype>2)
             stk.pop();
         $$ = $<exprtype>2;
         if (!stk.empty())
-            while(stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+            while (stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
                 stk.pop();
             }
-        while(idx % (((ArrayType*)($$->getSymbolEntry()->getType()))->getSize()/ sizeof(int)) !=0 )
+        while (
+            idx % (((ArrayType*)($$->getSymbolEntry()->getType()))->getSize() / sizeof(int)) != 0)
             arrayValue[idx++] = 0;
         if (!stk.empty())
             arrayType = (ArrayType*)(
@@ -739,7 +800,7 @@ FuncDef
         std::vector<Type*> vec;
         std::vector<SymbolEntry*> vec1;
         DeclStmt* temp = (DeclStmt*)$5;
-        while(temp){
+        while (temp){
             vec.push_back(temp->getId()->getSymbolEntry()->getType());
             vec1.push_back(temp->getId()->getSymbolEntry());
             temp = (DeclStmt*)(temp->getNext());
@@ -761,7 +822,7 @@ FuncDef
     }
     ;
 MaybeFuncFParams
-    : FuncFParams {$$ = $1;}
+    : FuncFParams { $$ = $1; }
     | %empty {$$ = nullptr;}
 FuncFParams
     : FuncFParams COMMA FuncFParam {
@@ -789,11 +850,11 @@ FuncFParam
         Type* arr = $1;
         Type* arr1;
         std::stack<ExprNode*> stk;
-        while(temp){
+        while (temp){
             stk.push(temp);
             temp = (ExprNode*)(temp->getNext());
         }
-        while(!stk.empty()){
+        while (!stk.empty()){
             arr1 = new ArrayType(arr, stk.top()->getValue());
             if (arr->isArray())
                 ((ArrayType*)arr)->setArrayType(arr1);

@@ -2381,18 +2381,17 @@ yyreduce:
   case 88:
 #line 556 "src/parser.y"
           {
-        // if (!$1->getType()->isInt()) {
-        //     fprintf(stderr,
-        //         "cannot initialize a variable of type \'int\' with an rvalue "
-        //         "of type \'%s\'\n",
-        //         $1->getType()->toStr().c_str());
-        // }
+        if (!(yyvsp[0].exprtype)->getType()->isInt() && !(yyvsp[0].exprtype)->getType()->isFloat()) {
+            // error
+            fprintf(stderr, "rval is invalid.\n");
+        }
         (yyval.exprtype) = (yyvsp[0].exprtype);
         if (!stk.empty()) {
             arrayValue[idx++] = (yyvsp[0].exprtype)->getValue();
             Type* arrTy = stk.top()->getSymbolEntry()->getType();
             if (arrTy == TypeSystem::intType || arrTy == TypeSystem::floatType) {
-                if (arrTy != (yyvsp[0].exprtype)->getType()) {
+                if ((arrTy->isInt() && (yyvsp[0].exprtype)->getType()->isFloat()) ||
+                    (arrTy->isFloat() && (yyvsp[0].exprtype)->getType()->isInt())) {
                     ImplicitCastExpr* temp = new ImplicitCastExpr((yyvsp[0].exprtype), declType);
                     stk.top()->addExpr(temp);
                 } else {
@@ -2409,7 +2408,8 @@ yyreduce:
                         stk.push(list);
                     } else {
                         Type* elemType = ((ArrayType*)arrTy)->getElementType();
-                        if (elemType != (yyvsp[0].exprtype)->getType()) {
+                        if ((elemType->isInt() && (yyvsp[0].exprtype)->getType()->isFloat()) ||
+                            (elemType->isFloat() && (yyvsp[0].exprtype)->getType()->isInt())) {
                             ImplicitCastExpr* temp = new ImplicitCastExpr((yyvsp[0].exprtype), elemType);
                             stk.top()->addExpr(temp);
                         } else {

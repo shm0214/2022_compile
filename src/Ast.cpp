@@ -216,6 +216,8 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
             new ImplicitCastExpr(expr1, TypeSystem::floatType);
         this->expr1 = temp;
         type = TypeSystem::floatType;
+    } else if (expr1->getType()->isFloat() && expr2->getType()->isFloat()) {
+        type = TypeSystem::floatType;
     } else {
         type = TypeSystem::intType;
     }
@@ -329,7 +331,7 @@ void Id::genCode() {
     BasicBlock* bb = builder->getInsertBB();
     Operand* addr =
         dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getAddr();
-    if (type->isInt())
+    if (type->isInt() || type->isFloat())
         new LoadInstruction(dst, addr, bb);
     else if (type->isArray()) {
         if (arrIdx) {
@@ -371,8 +373,11 @@ void Id::genCode() {
                 if (flag)
                     flag = false;
                 if (type == TypeSystem::intType ||
-                    type == TypeSystem::constIntType)
+                    type == TypeSystem::constIntType ||
+                    type == TypeSystem::floatType ||
+                    type == TypeSystem::constFloatType) {
                     break;
+                }
                 type = ((ArrayType*)type)->getElementType();
                 type1 = ((ArrayType*)type1)->getElementType();
                 tempSrc = tempDst;
@@ -383,8 +388,8 @@ void Id::genCode() {
             dst = tempDst;
             // 如果是右值还需要一条load
             if (!left && !pointer) {
-                Operand* dst1 = new Operand(new TemporarySymbolEntry(
-                    TypeSystem::intType, SymbolTable::getLabel()));
+                Operand* dst1 = new Operand(
+                    new TemporarySymbolEntry(type, SymbolTable::getLabel()));
                 new LoadInstruction(dst1, dst, bb);
                 dst = dst1;
             }
@@ -729,7 +734,7 @@ void AssignStmt::genCode() {
     BasicBlock* bb = builder->getInsertBB();
     expr->genCode();
     Operand* addr = nullptr;
-    if (lval->getOriginType()->isInt())
+    if (lval->getOriginType()->isInt() || lval->getOriginType()->isFloat())
         addr = dynamic_cast<IdentifierSymbolEntry*>(lval->getSymbolEntry())
                    ->getAddr();
     else if (lval->getOriginType()->isArray()) {
@@ -858,6 +863,7 @@ bool AssignStmt::typeCheck(Type* retType) {
 CallExpr::CallExpr(SymbolEntry* se, ExprNode* param)
     : ExprNode(se), param(param) {
     // 做参数的检查
+    // TODO: implicit cast
     dst = nullptr;
     SymbolEntry* s = se;
     int paramCnt = 0;
@@ -936,7 +942,7 @@ AssignStmt::AssignStmt(ExprNode* lval, ExprNode* expr)
         flag = false;
     }
     if (flag) {
-        if (type != exprType) {  // comparing ptr
+        if (type != exprType) {  // comparing ptr, how about const?
             if (type->isInt() && exprType->isFloat()) {
                 ImplicitCastExpr* temp =
                     new ImplicitCastExpr(expr, TypeSystem::intType);
@@ -967,12 +973,12 @@ Type* Id::getType() {
         fprintf(stderr, "subscripted value is not an array\n");
         return TypeSystem::voidType;
     } else {
-        ArrayType* temp1 = (ArrayType*)type;
-        ExprNode* temp2 = arrIdx;
+        ArrayType* temp1 = (ArrayType*)type; // whole type of array
+        ExprNode* temp2 = arrIdx;            // current index
         while (!temp1->getElementType()->isInt() &&
                !temp1->getElementType()->isFloat()) {
             if (!temp2) {
-                return temp1;
+                return temp1; // return array
             }
             temp2 = (ExprNode*)(temp2->getNext());
             temp1 = (ArrayType*)(temp1->getElementType());
@@ -984,8 +990,10 @@ Type* Id::getType() {
             fprintf(stderr, "subscripted value is not an array\n");
             return TypeSystem::voidType;
         }
+        // printf("[temp1]\t%s\n", temp1->getElementType()->toStr().c_str());
+
+        return temp1->getElementType(); // should be ok, probably.
     }
-    return TypeSystem::intType;  // TODO
 }
 
 void ExprNode::output(int level) {
@@ -1127,7 +1135,7 @@ UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
         if (expr->isUnaryExpr()) {
             UnaryExpr* ue = (UnaryExpr*)expr;
             if (ue->getOp() == UnaryExpr::NOT)
-                if (ue->getType() == TypeSystem::intType)
+                if (ue->getType() == TypeSystem::intType)  // TODO
                     ue->setType(TypeSystem::boolType);
         }
     }
@@ -1297,9 +1305,8 @@ DeclStmt::DeclStmt(Id* id, ExprNode* expr) : id(id) {
             Type* idType = id->getType();
             Type* exprType = expr->getType();
             if ((idType->isFloat() && exprType->isInt()) ||
-                (idType->isInt() && exprType->isFloat())) {  // comparing ptr
-                ImplicitCastExpr* temp =
-                    new ImplicitCastExpr(expr, idType);
+                (idType->isInt() && exprType->isFloat())) {
+                ImplicitCastExpr* temp = new ImplicitCastExpr(expr, idType);
                 this->expr = temp;
             }
         }
@@ -1376,9 +1383,10 @@ void FunctionDef::output(int level) {
 }
 
 void ImplicitCastExpr::genCode() {
-    if (type == TypeSystem::boolType) {  // comparing ptr
-        expr->genCode();
-        BasicBlock* bb = builder->getInsertBB();
+    expr->genCode();
+    BasicBlock* bb = builder->getInsertBB();
+
+    if (type == TypeSystem::boolType) {  // comparing ptr, should be ok here.
         Function* func = bb->getParent();
         BasicBlock* trueBB = new BasicBlock(func);
         BasicBlock* tempbb = new BasicBlock(func);
@@ -1391,10 +1399,11 @@ void ImplicitCastExpr::genCode() {
             new CondBrInstruction(trueBB, tempbb, this->dst, bb));
         this->falseList().push_back(new UncondBrInstruction(falseBB, tempbb));
     } else if (type->isInt()) {
-        // TODO
+        new FptosiInstruction(dst, this->expr->getOperand(), bb);
     } else if (type->isFloat()) {
-        // TODO
+        new SitofpInstruction(dst, this->expr->getOperand(), bb);
     } else {
         // error
+        assert(false);
     }
 }

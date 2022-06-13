@@ -554,18 +554,17 @@ ArrayIndices
     ;
 InitVal 
     : Exp {
-        // if (!$1->getType()->isInt()) {
-        //     fprintf(stderr,
-        //         "cannot initialize a variable of type \'int\' with an rvalue "
-        //         "of type \'%s\'\n",
-        //         $1->getType()->toStr().c_str());
-        // }
+        if (!$1->getType()->isInt() && !$1->getType()->isFloat()) {
+            // error
+            fprintf(stderr, "rval is invalid.\n");
+        }
         $$ = $1;
         if (!stk.empty()) {
             arrayValue[idx++] = $1->getValue();
             Type* arrTy = stk.top()->getSymbolEntry()->getType();
             if (arrTy == TypeSystem::intType || arrTy == TypeSystem::floatType) {
-                if (arrTy != $1->getType()) {
+                if ((arrTy->isInt() && $1->getType()->isFloat()) ||
+                    (arrTy->isFloat() && $1->getType()->isInt())) {
                     ImplicitCastExpr* temp = new ImplicitCastExpr($1, declType);
                     stk.top()->addExpr(temp);
                 } else {
@@ -582,7 +581,8 @@ InitVal
                         stk.push(list);
                     } else {
                         Type* elemType = ((ArrayType*)arrTy)->getElementType();
-                        if (elemType != $1->getType()) {
+                        if ((elemType->isInt() && $1->getType()->isFloat()) ||
+                            (elemType->isFloat() && $1->getType()->isInt())) {
                             ImplicitCastExpr* temp = new ImplicitCastExpr($1, elemType);
                             stk.top()->addExpr(temp);
                         } else {

@@ -78,16 +78,16 @@ IdentifierSymbolEntry::IdentifierSymbolEntry(Type* type,
     this->initial = false;
     this->label = -1;
     this->allZero = false;
-    this->constant = false;
+    this->constant = false;    
 }
 
 void IdentifierSymbolEntry::setValue(double value) {
-    if (((IntType*)(this->getType()))->isConst()) {
+    if (((IntType*)(this->getType()))->isConst()) {  // IntType is ok here.
         if (!initial) {
             this->value = value;
             initial = true;
         } else {
-            // 需要报错
+            fprintf(stderr, "trying to set value for constant.\n");
         }
     } else {
         this->value = value;
@@ -95,12 +95,12 @@ void IdentifierSymbolEntry::setValue(double value) {
 }
 
 void IdentifierSymbolEntry::setArrayValue(double* arrayValue) {
-    if (((IntType*)(this->getType()))->isConst()) {
+    if (((ArrayType*)(this->getType()))->isConst()) {
         if (!initial) {
             this->arrayValue = arrayValue;
             initial = true;
         } else {
-            // 需要报错
+            fprintf(stderr, "trying to set value for constant.\n");
         }
     } else {
         this->arrayValue = arrayValue;

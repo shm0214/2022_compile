@@ -253,7 +253,7 @@ AllocaInstruction::~AllocaInstruction() {
 void AllocaInstruction::output() const {
     std::string dst, type;
     dst = operands[0]->toStr();
-    if (se->getType()->isInt()) {
+    if (se->getType()->isInt() || se->getType()->isFloat()) {
         type = se->getType()->toStr();
         fprintf(yyout, "  %s = alloca %s, align 4\n", dst.c_str(),
                 type.c_str());
@@ -776,6 +776,54 @@ GepInstruction::~GepInstruction() {
     operands[2]->removeUse(this);
 }
 
+FptosiInstruction::FptosiInstruction(Operand* dst,
+                                     Operand* src,
+                                     BasicBlock* insert_bb)
+    : Instruction(FPTOSI, insert_bb) {
+    operands.push_back(dst);
+    operands.push_back(src);
+    dst->setDef(this);
+    src->addUse(this);
+}
+
+void FptosiInstruction::output() const {
+    Operand* dst = operands[0];
+    Operand* src = operands[1];
+    fprintf(yyout, "  %s = fptosi float %s to i32\n", dst->toStr().c_str(),
+            src->toStr().c_str());
+}
+
+FptosiInstruction::~FptosiInstruction() {
+    operands[0]->setDef(nullptr);
+    if (operands[0]->usersNum() == 0)
+        delete operands[0];
+    operands[1]->removeUse(this);
+}
+
+SitofpInstruction::SitofpInstruction(Operand* dst,
+                                     Operand* src,
+                                     BasicBlock* insert_bb)
+    : Instruction(FPTOSI, insert_bb) {
+    operands.push_back(dst);
+    operands.push_back(src);
+    dst->setDef(this);
+    src->addUse(this);
+}
+
+void SitofpInstruction::output() const {
+    Operand* dst = operands[0];
+    Operand* src = operands[1];
+    fprintf(yyout, "  %s = sitofp i32 %s to float\n", dst->toStr().c_str(),
+            src->toStr().c_str());  // i32 should be no problem here, probably.
+}
+
+SitofpInstruction::~SitofpInstruction() {
+    operands[0]->setDef(nullptr);
+    if (operands[0]->usersNum() == 0)
+        delete operands[0];
+    operands[1]->removeUse(this);
+}
+
 void CallInstruction::genMachineCode(AsmBuilder* builder) {
     auto cur_block = builder->getBlock();
     MachineOperand* operand;  //, *num;
@@ -908,7 +956,8 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
             cur_block->InsertInst(cur_inst);
         }
         // printf("[type1]\t%s\n", operands[1]->getType()->toStr().c_str());
-        // printf("[type2]\t%s\n", ((PointerType*)(operands[1]->getType()))->getType()->toStr().c_str());
+        // printf("[type2]\t%s\n",
+        // ((PointerType*)(operands[1]->getType()))->getType()->toStr().c_str());
         ArrayType* type =
             (ArrayType*)(((PointerType*)(operands[1]->getType()))->getType());
         Type* elementType = type->getElementType();
@@ -950,4 +999,12 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
         }
         cur_block->InsertInst(cur_inst);
     }
+}
+
+void FptosiInstruction::genMachineCode(AsmBuilder* builder) {
+    // TODO
+}
+
+void SitofpInstruction::genMachineCode(AsmBuilder* builder) {
+    // TODO
 }

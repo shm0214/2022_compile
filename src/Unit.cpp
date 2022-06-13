@@ -28,16 +28,25 @@ void Unit::insertDeclare(SymbolEntry* se) {
 
 void Unit::output() const {
     for (auto se : global_list) {
-        if (se->getType()->isInt())
-            fprintf(yyout, "%s = global %s %d, align 4\n", se->toStr().c_str(),
+        if (se->getType()->isInt()) {
+            fprintf(yyout, "@%s = global %s %d, align 4\n", se->toStr().c_str(),
                     se->getType()->toStr().c_str(),
                     (int)((IdentifierSymbolEntry*)se)->getValue());
-        else if (se->getType()->isArray()) {
+
+        } else if (se->getType()->isFloat()) {
+            double temp = (float)(((IdentifierSymbolEntry*)se)->getValue());
+            uint64_t val = reinterpret_cast<uint64_t&>(temp);
+
+            fprintf(yyout, "@%s = global %s 0x%lX, align 4\n",
+                    se->toStr().c_str(), se->getType()->toStr().c_str(), val);
+            // format floating point to llvm format.
+
+        } else if (se->getType()->isArray()) {
             ArrayType* type = (ArrayType*)(se->getType());
             // int size = type->getSize() / TypeSystem::intType->getSize();
             double* val = ((IdentifierSymbolEntry*)se)->getArrayValue();
             int i = 0;
-            fprintf(yyout, "%s = global ", se->toStr().c_str());
+            fprintf(yyout, "@%s = global ", se->toStr().c_str());
             if (((IdentifierSymbolEntry*)se)->isAllZero()) {
                 fprintf(yyout, "%s zeroinitializer", type->toStr().c_str());
             } else {
@@ -48,12 +57,17 @@ void Unit::output() const {
                 ArrayType* temp;
                 while (!stk.empty()) {
                     temp = stk.top();
-                    if (temp->getElementType()->isInt()) {
+                    Type* elemType = temp->getElementType();
+                    if (elemType->isInt() || elemType->isFloat()) {
                         fprintf(yyout, "%s [", temp->toStr().c_str());
                         for (int j = 0; j < temp->getLength(); j++) {
                             if (j != 0)
                                 fprintf(yyout, ", ");
-                            fprintf(yyout, "i32 %d", (int)val[i++]); // [ ] float
+                            if (elemType->isInt()) {
+                                fprintf(yyout, "i32 %d", (int)val[i++]);
+                            } else if (elemType->isFloat()) {
+                                fprintf(yyout, "float %f", (float)val[i++]);
+                            }
                         }
                         fprintf(yyout, "]");
                         stk1.pop();
@@ -63,6 +77,7 @@ void Unit::output() const {
                         stk1.top()++;
                         continue;
                     }
+
                     if (stk1.top() != temp->getLength()) {
                         stk.push((ArrayType*)(temp->getElementType()));
                         if (stk1.top() == 0)

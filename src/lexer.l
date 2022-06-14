@@ -46,13 +46,7 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     return INT;
 }
 "float" {
-    /*
-
-    [-] float literal number
-    [-] float keyword
-    [ ] getfloat putfloat getfarray putfarray
-
-    */
+    // TODO: getfloat putfloat getfarray putfarray
     if(dump_tokens)
         DUMP_TOKEN("FLOAT\tfloat");
     chars += strlen("float");
@@ -438,7 +432,6 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     return ID;
 }
 "putfarray" {
-    // TODO: test
     if(dump_tokens)
         DUMP_TOKEN(yytext);
     char *lexeme;

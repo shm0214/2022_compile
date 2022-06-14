@@ -774,7 +774,8 @@ bool FunctionDef::typeCheck(Type* retType) {
         return false;
     }
     if (!stmt->typeCheck(ret)) {
-        fprintf(stderr, "function does not have a return statement\n");
+        // fprintf(stderr, "function does not have a return statement\n");
+        // TODO
         return false;
     }
     return false;

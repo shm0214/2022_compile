@@ -34,12 +34,9 @@ void Unit::output() const {
                     (int)((IdentifierSymbolEntry*)se)->getValue());
 
         } else if (se->getType()->isFloat()) {
-            double temp = (float)(((IdentifierSymbolEntry*)se)->getValue());
-            uint64_t val = reinterpret_cast<uint64_t&>(temp);
-
-            fprintf(yyout, "@%s = global %s 0x%lX, align 4\n",
-                    se->toStr().c_str(), se->getType()->toStr().c_str(), val);
-            // format floating point to llvm format.
+            fprintf(yyout, "@%s = global %s 0x%f, align 4\n",
+                    se->toStr().c_str(), se->getType()->toStr().c_str(),
+                    (float)(((IdentifierSymbolEntry*)se)->getValue()));
 
         } else if (se->getType()->isArray()) {
             ArrayType* type = (ArrayType*)(se->getType());

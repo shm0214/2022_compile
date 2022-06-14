@@ -899,13 +899,7 @@ case 2:
 YY_RULE_SETUP
 #line 48 "src/lexer.l"
 {
-    /*
-
-    [-] float literal number
-    [-] float keyword
-    [ ] getfloat putfloat getfarray putfarray
-
-    */
+    // TODO: getfloat putfloat getfarray putfarray
     if(dump_tokens)
         DUMP_TOKEN("FLOAT\tfloat");
     chars += strlen("float");
@@ -915,7 +909,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 62 "src/lexer.l"
+#line 56 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("VOID\tvoid");
@@ -925,7 +919,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 68 "src/lexer.l"
+#line 62 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("CONST\tconst");
@@ -935,7 +929,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 5:
 YY_RULE_SETUP
-#line 74 "src/lexer.l"
+#line 68 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("IF\tif");
@@ -945,7 +939,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 80 "src/lexer.l"
+#line 74 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("ELSE\telse");
@@ -955,7 +949,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-#line 86 "src/lexer.l"
+#line 80 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("RETURN\treturn");
@@ -965,7 +959,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 8:
 YY_RULE_SETUP
-#line 92 "src/lexer.l"
+#line 86 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("WHILE\twhile");
@@ -975,7 +969,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 9:
 YY_RULE_SETUP
-#line 98 "src/lexer.l"
+#line 92 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("BREAK\tbreak");
@@ -985,7 +979,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 10:
 YY_RULE_SETUP
-#line 104 "src/lexer.l"
+#line 98 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("CONTINUE\tcontinue");
@@ -995,7 +989,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 110 "src/lexer.l"
+#line 104 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("EQUAL\t==");
@@ -1005,7 +999,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-#line 116 "src/lexer.l"
+#line 110 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("NOTEQUAL\t!=");
@@ -1015,7 +1009,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 13:
 YY_RULE_SETUP
-#line 122 "src/lexer.l"
+#line 116 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("ASSIGN\t=");
@@ -1025,7 +1019,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 128 "src/lexer.l"
+#line 122 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("LESS\t<");
@@ -1035,7 +1029,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 134 "src/lexer.l"
+#line 128 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("LESSEQUAL\t<");
@@ -1045,7 +1039,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-#line 140 "src/lexer.l"
+#line 134 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("GREATER\t<");
@@ -1055,7 +1049,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-#line 146 "src/lexer.l"
+#line 140 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("GREATEREQUAL\t<");
@@ -1065,7 +1059,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 18:
 YY_RULE_SETUP
-#line 152 "src/lexer.l"
+#line 146 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("ADD\t+");
@@ -1075,7 +1069,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 19:
 YY_RULE_SETUP
-#line 158 "src/lexer.l"
+#line 152 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("SUB\t-");
@@ -1085,7 +1079,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-#line 164 "src/lexer.l"
+#line 158 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("MUL\t*");
@@ -1095,7 +1089,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-#line 170 "src/lexer.l"
+#line 164 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("DIV\t/");
@@ -1105,7 +1099,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-#line 176 "src/lexer.l"
+#line 170 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("MOD\t%");
@@ -1115,7 +1109,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-#line 182 "src/lexer.l"
+#line 176 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("AND\t&&");
@@ -1125,7 +1119,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-#line 188 "src/lexer.l"
+#line 182 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("OR\t||");
@@ -1135,7 +1129,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-#line 194 "src/lexer.l"
+#line 188 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("NOT\t!");
@@ -1145,7 +1139,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-#line 200 "src/lexer.l"
+#line 194 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("SEMICOLON\t;");
@@ -1155,7 +1149,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-#line 206 "src/lexer.l"
+#line 200 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("LPAREN\t(");
@@ -1165,7 +1159,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-#line 212 "src/lexer.l"
+#line 206 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("RPAREN\t)");
@@ -1175,7 +1169,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-#line 218 "src/lexer.l"
+#line 212 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("LBRACE\t{");
@@ -1185,7 +1179,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-#line 224 "src/lexer.l"
+#line 218 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("RBRACE\t}");
@@ -1195,7 +1189,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 31:
 YY_RULE_SETUP
-#line 230 "src/lexer.l"
+#line 224 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("LBRACKET\t[");
@@ -1205,7 +1199,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 32:
 YY_RULE_SETUP
-#line 236 "src/lexer.l"
+#line 230 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("RBRACKET\t]");
@@ -1215,7 +1209,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 33:
 YY_RULE_SETUP
-#line 242 "src/lexer.l"
+#line 236 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN("COMMA\t,");
@@ -1225,7 +1219,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-#line 248 "src/lexer.l"
+#line 242 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(string("NUMBER\t") + string(yytext));
@@ -1236,7 +1230,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-#line 255 "src/lexer.l"
+#line 249 "src/lexer.l"
 {
     int temp;
     sscanf(yytext, "%o", &temp);
@@ -1248,7 +1242,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-#line 263 "src/lexer.l"
+#line 257 "src/lexer.l"
 {
     int temp;
     sscanf(yytext, "%x", &temp);
@@ -1260,7 +1254,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-#line 272 "src/lexer.l"
+#line 266 "src/lexer.l"
 {
     double temp;
     sscanf(yytext, "%lf", &temp);
@@ -1273,7 +1267,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-#line 282 "src/lexer.l"
+#line 276 "src/lexer.l"
 {
     double temp;
     sscanf(yytext, "%lf", &temp);
@@ -1286,7 +1280,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-#line 292 "src/lexer.l"
+#line 286 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1308,7 +1302,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 311 "src/lexer.l"
+#line 305 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1329,7 +1323,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 328 "src/lexer.l"
+#line 322 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1351,7 +1345,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 346 "src/lexer.l"
+#line 340 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1372,7 +1366,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 364 "src/lexer.l"
+#line 358 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1394,7 +1388,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 383 "src/lexer.l"
+#line 377 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1415,7 +1409,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 400 "src/lexer.l"
+#line 394 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1439,7 +1433,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 421 "src/lexer.l"
+#line 415 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1462,9 +1456,8 @@ YY_RULE_SETUP
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 440 "src/lexer.l"
+#line 434 "src/lexer.l"
 {
-    // TODO: test
     if(dump_tokens)
         DUMP_TOKEN(yytext);
     char *lexeme;
@@ -1487,7 +1480,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 462 "src/lexer.l"
+#line 455 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1511,7 +1504,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 483 "src/lexer.l"
+#line 476 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1534,7 +1527,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 502 "src/lexer.l"
+#line 495 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1560,7 +1553,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 524 "src/lexer.l"
+#line 517 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1586,7 +1579,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 547 "src/lexer.l"
+#line 540 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1599,7 +1592,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 556 "src/lexer.l"
+#line 549 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1613,7 +1606,7 @@ YY_RULE_SETUP
 case 54:
 /* rule 54 can match eol */
 YY_RULE_SETUP
-#line 565 "src/lexer.l"
+#line 558 "src/lexer.l"
 {
     chars += strlen(yytext);
     yylineno++;
@@ -1622,35 +1615,35 @@ YY_RULE_SETUP
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 570 "src/lexer.l"
+#line 563 "src/lexer.l"
 
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 571 "src/lexer.l"
+#line 564 "src/lexer.l"
 {}
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 572 "src/lexer.l"
+#line 565 "src/lexer.l"
 {BEGIN BLOCKCOMMENT;}
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 573 "src/lexer.l"
+#line 566 "src/lexer.l"
 {}
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 574 "src/lexer.l"
+#line 567 "src/lexer.l"
 {BEGIN INITIAL;}
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 577 "src/lexer.l"
+#line 570 "src/lexer.l"
 ECHO;
 	YY_BREAK
-#line 1654 "src/lexer.cpp"
+#line 1647 "src/lexer.cpp"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(BLOCKCOMMENT):
 	yyterminate();
@@ -2656,6 +2649,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 577 "src/lexer.l"
+#line 570 "src/lexer.l"
 
 

@@ -34,6 +34,7 @@ class Node {
     static void setIRBuilder(IRBuilder* ib) { builder = ib; };
     virtual void output(int level) = 0;
     void setNext(Node* node);
+    void setAdjNext(Node* node) { next = node; }
     Node* getNext() { return next; }
     virtual bool typeCheck(Type* retType = nullptr) = 0;
     virtual void genCode() = 0;
@@ -199,8 +200,7 @@ class InitValueListExpr : public ExprNode {
     void fill();
 };
 
-// 仅用于int2bool
-// [ ] int <=> float
+// int2bool, int2float, float2int
 class ImplicitCastExpr : public ExprNode {
    private:
     ExprNode* expr;
@@ -217,6 +217,7 @@ class ImplicitCastExpr : public ExprNode {
     bool typeCheck(Type* retType = nullptr) { return false; };
     void genCode();
 };
+
 class StmtNode : public Node {
    private:
     int kind;
@@ -362,7 +363,7 @@ class ReturnStmt : public StmtNode {
     ExprNode* retValue;
 
    public:
-    ReturnStmt(ExprNode* retValue = nullptr) : retValue(retValue){};
+    ReturnStmt(ExprNode* retValue = nullptr) : retValue(retValue) {};
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();

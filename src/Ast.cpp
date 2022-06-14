@@ -891,15 +891,35 @@ CallExpr::CallExpr(SymbolEntry* se, ExprNode* param)
         }
         std::vector<Type*> params = ((FunctionType*)type)->getParamsType();
         ExprNode* temp = param;
+        ExprNode* temp1 = nullptr;
+
         for (auto it = params.begin(); it != params.end(); it++) {
             if (temp == nullptr) {
                 fprintf(stderr, "too few arguments to function %s %s\n",
                         symbolEntry->toStr().c_str(), type->toStr().c_str());
                 break;
-            } else if ((*it)->getKind() != temp->getType()->getKind())
-                fprintf(stderr, "parameter's type %s can't convert to %s\n",
-                        temp->getType()->toStr().c_str(),
-                        (*it)->toStr().c_str());
+            } else if ((*it)->getKind() != temp->getType()->getKind()) {
+                if (((*it)->isFloat() && temp->getType()->isInt()) ||
+                    ((*it)->isInt() && temp->getType()->isFloat())) {
+                    ImplicitCastExpr* implicitCastExpr =
+                        new ImplicitCastExpr(temp, (*it));
+                    implicitCastExpr->setNext((ExprNode*)(temp->getNext()));
+
+                    if (it != params.begin()) {
+                        temp1->setAdjNext(implicitCastExpr);
+                        temp = implicitCastExpr;
+                    } else {
+                        temp = implicitCastExpr;
+                        this->param = implicitCastExpr;
+                    }
+
+                } else {
+                    fprintf(stderr, "parameter's type %s can't convert to %s\n",
+                            temp->getType()->toStr().c_str(),
+                            (*it)->toStr().c_str());
+                }
+            }
+            temp1 = temp;
             temp = (ExprNode*)(temp->getNext());
         }
         if (temp != nullptr) {
@@ -973,12 +993,12 @@ Type* Id::getType() {
         fprintf(stderr, "subscripted value is not an array\n");
         return TypeSystem::voidType;
     } else {
-        ArrayType* temp1 = (ArrayType*)type; // whole type of array
-        ExprNode* temp2 = arrIdx;            // current index
+        ArrayType* temp1 = (ArrayType*)type;  // whole type of array
+        ExprNode* temp2 = arrIdx;             // current index
         while (!temp1->getElementType()->isInt() &&
                !temp1->getElementType()->isFloat()) {
             if (!temp2) {
-                return temp1; // return array
+                return temp1;  // return array
             }
             temp2 = (ExprNode*)(temp2->getNext());
             temp1 = (ArrayType*)(temp1->getElementType());
@@ -992,7 +1012,7 @@ Type* Id::getType() {
         }
         // printf("[temp1]\t%s\n", temp1->getElementType()->toStr().c_str());
 
-        return temp1->getElementType(); // should be ok, probably.
+        return temp1->getElementType();  // should be ok, probably.
     }
 }
 

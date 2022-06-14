@@ -58,7 +58,7 @@ std::string ArrayType::toStr() {
     if (temp->isInt()) {
         buffer << "i32";
     } else if (temp->isFloat()) {
-        buffer << "float"; // [ ] float
+        buffer << "float";
     } else {
         assert(false); // invalid type
     }

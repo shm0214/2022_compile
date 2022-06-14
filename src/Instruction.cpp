@@ -789,8 +789,9 @@ FptosiInstruction::FptosiInstruction(Operand* dst,
 void FptosiInstruction::output() const {
     Operand* dst = operands[0];
     Operand* src = operands[1];
-    fprintf(yyout, "  %s = fptosi float %s to i32\n", dst->toStr().c_str(),
-            src->toStr().c_str());
+    fprintf(yyout, "  %s = fptosi %s %s to %s\n", dst->toStr().c_str(),
+            src->getType()->toStr().c_str(), src->toStr().c_str(),
+            dst->getType()->toStr().c_str());
 }
 
 FptosiInstruction::~FptosiInstruction() {
@@ -813,8 +814,9 @@ SitofpInstruction::SitofpInstruction(Operand* dst,
 void SitofpInstruction::output() const {
     Operand* dst = operands[0];
     Operand* src = operands[1];
-    fprintf(yyout, "  %s = sitofp i32 %s to float\n", dst->toStr().c_str(),
-            src->toStr().c_str());  // i32 should be no problem here, probably.
+    fprintf(yyout, "  %s = sitofp %s %s to %s\n", dst->toStr().c_str(),
+            src->getType()->toStr().c_str(), src->toStr().c_str(),
+            dst->getType()->toStr().c_str());
 }
 
 SitofpInstruction::~SitofpInstruction() {

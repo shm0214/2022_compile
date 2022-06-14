@@ -189,15 +189,26 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
     if (op >= BinaryExpr::AND && op <= BinaryExpr::NOTEQUAL) {
         type = TypeSystem::boolType;
         if (op == BinaryExpr::AND || op == BinaryExpr::OR) {
-            if ((expr1->getType()->isInt() || expr1->getType()->isFloat()) &&
+            if (expr1->getType()->isInt() &&
                 expr1->getType()->getSize() == 32) {
                 ImplicitCastExpr* temp = new ImplicitCastExpr(expr1);
                 this->expr1 = temp;
+            } else if (expr1->getType()->isFloat()) {
+                ImplicitCastExpr* temp =
+                    new ImplicitCastExpr(expr1, TypeSystem::intType);
+                ImplicitCastExpr* temp1 = new ImplicitCastExpr(temp);
+                this->expr1 = temp1;
             }
-            if ((expr2->getType()->isInt() || expr2->getType()->isFloat()) &&
+
+            if (expr2->getType()->isInt() &&
                 expr2->getType()->getSize() == 32) {
                 ImplicitCastExpr* temp = new ImplicitCastExpr(expr2);
                 this->expr2 = temp;
+            } else if (expr2->getType()->isFloat()) {
+                ImplicitCastExpr* temp =
+                    new ImplicitCastExpr(expr2, TypeSystem::intType);
+                ImplicitCastExpr* temp1 = new ImplicitCastExpr(temp);
+                this->expr2 = temp1;
             }
         }
     } else if (expr1->getType()->isFloat() && expr2->getType()->isInt()) {
@@ -1155,12 +1166,12 @@ UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
         //     this->expr = temp;
         // }
     } else if (op == UnaryExpr::SUB) {
-        type = TypeSystem::intType;
+        type = expr->getType();
         dst = new Operand(se);
         if (expr->isUnaryExpr()) {
             UnaryExpr* ue = (UnaryExpr*)expr;
             if (ue->getOp() == UnaryExpr::NOT)
-                if (ue->getType() == TypeSystem::intType)  // TODO
+                if (ue->getType() == TypeSystem::intType)
                     ue->setType(TypeSystem::boolType);
         }
     }

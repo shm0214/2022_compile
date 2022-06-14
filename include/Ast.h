@@ -281,10 +281,14 @@ class IfStmt : public StmtNode {
    public:
     IfStmt(ExprNode* cond, StmtNode* thenStmt)
         : cond(cond), thenStmt(thenStmt) {
-        if ((cond->getType()->isInt() || cond->getType()->isFloat()) &&
-            cond->getType()->getSize() == 32) {
+        if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
             ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
+        } else if (cond->getType()->isFloat()) {
+            ImplicitCastExpr* temp =
+                new ImplicitCastExpr(cond, TypeSystem::intType);
+            ImplicitCastExpr* temp1 = new ImplicitCastExpr(temp);
+            this->cond = temp1;
         }
     };
     void output(int level);
@@ -301,10 +305,14 @@ class IfElseStmt : public StmtNode {
    public:
     IfElseStmt(ExprNode* cond, StmtNode* thenStmt, StmtNode* elseStmt)
         : cond(cond), thenStmt(thenStmt), elseStmt(elseStmt) {
-        if ((cond->getType()->isInt() || cond->getType()->isFloat()) &&
-            cond->getType()->getSize() == 32) {
+        if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
             ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
+        } else if (cond->getType()->isFloat()) {
+            ImplicitCastExpr* temp =
+                new ImplicitCastExpr(cond, TypeSystem::intType);
+            ImplicitCastExpr* temp1 = new ImplicitCastExpr(temp);
+            this->cond = temp1;
         }
     };
     void output(int level);
@@ -322,10 +330,14 @@ class WhileStmt : public StmtNode {
    public:
     WhileStmt(ExprNode* cond, StmtNode* stmt = nullptr)
         : cond(cond), stmt(stmt) {
-        if ((cond->getType()->isInt() || cond->getType()->isFloat()) &&
-            cond->getType()->getSize() == 32) {
+        if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
             ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
+        } else if (cond->getType()->isFloat()) {
+            ImplicitCastExpr* temp =
+                new ImplicitCastExpr(cond, TypeSystem::intType);
+            ImplicitCastExpr* temp1 = new ImplicitCastExpr(temp);
+            this->cond = temp1;
         }
     };
     void setStmt(StmtNode* stmt) { this->stmt = stmt; };

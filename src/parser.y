@@ -254,7 +254,12 @@ UnaryExp
     }
     | NOT UnaryExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
-        $$ = new UnaryExpr(se, UnaryExpr::NOT, $2);
+        if ($2->getType()->isFloat()) {
+            ImplicitCastExpr* temp = new ImplicitCastExpr($2, TypeSystem::intType);
+            $$ = new UnaryExpr(se, UnaryExpr::NOT, temp);
+        } else {
+            $$ = new UnaryExpr(se, UnaryExpr::NOT, $2);
+        }
     }
     ;
 MulExp

@@ -561,12 +561,32 @@ void MachineUnit::PrintGlobalDecl() {
                     se->getType()->getSize() / 8);
             fprintf(yyout, "%s:\n", se->toStr().c_str());
             if (!se->getType()->isArray()) {
-                fprintf(yyout, "\t.word %d\n", (int)se->getValue());
+                if (se->getType()->isFloat()) {
+                    float temp = (float)se->getValue();
+                    uint32_t val = reinterpret_cast<uint32_t&>(temp);
+                    fprintf(yyout, "\t.word %d\n", val);
+                } else {
+                    fprintf(yyout, "\t.word %d\n", (int)se->getValue());
+                }
             } else {
                 int n = se->getType()->getSize() / 32;
+                Type* arrTy = dynamic_cast<ArrayType*>(se->getType())->getElementType();
+
+                while (!arrTy->isFloat() && !arrTy->isInt()) {
+                    arrTy = dynamic_cast<ArrayType*>(arrTy)->getElementType();
+                } // TODO: fix problems of arrays;
+
                 double* p = se->getArrayValue();
-                for (int i = 0; i < n; i++) {
-                    fprintf(yyout, "\t.word %d\n", (int)p[i]);
+                if (arrTy->isFloat()) {
+                    for (int i = 0; i < n; i++) {
+                        float temp = (float)p[i];
+                        uint32_t val = reinterpret_cast<uint32_t&>(temp);
+                        fprintf(yyout, "\t.word %d\n", val);
+                    }
+                } else {
+                    for (int i = 0; i < n; i++) {
+                        fprintf(yyout, "\t.word %d\n", (int)p[i]);
+                    }
                 }
             }
         }
@@ -581,12 +601,32 @@ void MachineUnit::PrintGlobalDecl() {
                     se->getType()->getSize() / 8);
             fprintf(yyout, "%s:\n", se->toStr().c_str());
             if (!se->getType()->isArray()) {
-                fprintf(yyout, "\t.word %d\n", (int)se->getValue());
+                if (se->getType()->isFloat()) {
+                    float temp = (float)se->getValue();
+                    uint32_t val = reinterpret_cast<uint32_t&>(temp);
+                    fprintf(yyout, "\t.word %d\n", val);
+                } else {
+                    fprintf(yyout, "\t.word %d\n", (int)se->getValue());
+                }
             } else {
                 int n = se->getType()->getSize() / 32;
+                Type* arrTy = dynamic_cast<ArrayType*>(se->getType())->getElementType();
+
+                while (!arrTy->isFloat() && !arrTy->isInt()) {
+                    arrTy = dynamic_cast<ArrayType*>(arrTy)->getElementType();
+                } // TODO: fix problems of arrays;
+
                 double* p = se->getArrayValue();
-                for (int i = 0; i < n; i++) {
-                    fprintf(yyout, "\t.word %d\n", (int)p[i]);
+                if (arrTy->isFloat()) {
+                    for (int i = 0; i < n; i++) {
+                        float temp = (float)p[i];
+                        uint32_t val = reinterpret_cast<uint32_t&>(temp);
+                        fprintf(yyout, "\t.word %d\n", val);
+                    }
+                } else {
+                    for (int i = 0; i < n; i++) {
+                        fprintf(yyout, "\t.word %d\n", (int)p[i]);
+                    }
                 }
             }
         }

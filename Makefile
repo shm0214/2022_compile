@@ -66,6 +66,7 @@ run2:app example.sy
 	@$(BINARY) -o example.toks -t example.sy
 	@$(BINARY) -o example.ll -i example.sy
 	@clang -x c example.sy -S -m32 -emit-llvm -o example_std.ll
+	@arm-linux-gnueabihf-gcc -x c example.sy -S -o example_std.s
 
 gdb:app
 	@gdb $(BINARY)
@@ -156,7 +157,12 @@ clean-app:
 	@rm -rf $(BUILD_PATH) $(PARSER) $(LEXER) $(PARSERH)
 
 clean-test:
-	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(OUTPUT_TOK) $(OUTPUT_IR) $(LLVM_IR) $(GCC_ASM) $(OUTPUT_AST) ./example.ast ./example.ll ./example.s ./example.toks ./example_std.ll ./example
+	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) \
+		    $(OUTPUT_RES) $(OUTPUT_TOK) $(OUTPUT_IR)  \
+			$(LLVM_IR) $(GCC_ASM) $(OUTPUT_AST)       \
+			./example.ast ./example.ll ./example.s    \
+			./example.toks ./example_std.ll ./example \
+			./example_std.s
 
 clean-all:clean-test clean-app
 

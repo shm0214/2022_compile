@@ -209,8 +209,8 @@ class ImplicitCastExpr : public ExprNode {
     ImplicitCastExpr(ExprNode* expr, Type* dstType = TypeSystem::boolType)
         : ExprNode(nullptr, IMPLICITCASTEXPR), expr(expr) {
         type = dstType;
-        dst = new Operand(
-            new TemporarySymbolEntry(type, SymbolTable::getLabel()));
+        symbolEntry = new TemporarySymbolEntry(type, SymbolTable::getLabel());
+        dst = new Operand(symbolEntry);
     };
     void output(int level);
     ExprNode* getExpr() const { return expr; };
@@ -363,7 +363,7 @@ class ReturnStmt : public StmtNode {
     ExprNode* retValue;
 
    public:
-    ReturnStmt(ExprNode* retValue = nullptr) : retValue(retValue) {};
+    ReturnStmt(ExprNode* retValue = nullptr) : retValue(retValue){};
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();

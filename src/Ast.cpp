@@ -549,7 +549,9 @@ void DeclStmt::genCode() {
                                 flag = false;
                             }
                             if (type == TypeSystem::intType ||
-                                type == TypeSystem::constIntType) {
+                                type == TypeSystem::constIntType ||
+                                type == TypeSystem::floatType ||
+                                type == TypeSystem::constFloatType) {
                                 gep->setLast();
                                 init = tempDst;
                                 break;
@@ -767,7 +769,7 @@ bool FunctionDef::typeCheck(Type* retType) {
     StmtNode* stmt = this->stmt;
     if (stmt == nullptr) {
         if (ret != TypeSystem::voidType)
-            fprintf(stderr, "non-void function does not return a value\n");
+            fprintf(stderr, "non-void function does not return a value.\n");
         // 不嵌套函数定义就返回了
         return false;
     }
@@ -844,16 +846,19 @@ bool ReturnStmt::typeCheck(Type* retType) {
             "return-statement with a value, in function returning \'void\'\n");
         return true;
     }
-    if (!retValue || !retValue->getSymbolEntry())
+    if (!retValue || !retValue->getSymbolEntry()) {
+        fprintf(stderr, "retValue or its symbol entry error\n");
         return true;
+    }
     Type* type = retValue->getType();
     if (type != retType) {
         fprintf(stderr,
                 "cannot initialize return object of type \'%s\' with an rvalue "
                 "of type \'%s\'\n",
                 retType->toStr().c_str(), type->toStr().c_str());
+        return true;
     }
-    return true;
+    return false;
 }
 
 bool AssignStmt::typeCheck(Type* retType) {
@@ -863,7 +868,6 @@ bool AssignStmt::typeCheck(Type* retType) {
 CallExpr::CallExpr(SymbolEntry* se, ExprNode* param)
     : ExprNode(se), param(param) {
     // 做参数的检查
-    // TODO: implicit cast
     dst = nullptr;
     SymbolEntry* s = se;
     int paramCnt = 0;

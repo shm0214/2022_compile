@@ -10,6 +10,7 @@
     int yyerror(char const*);
     ArrayType* arrayType;
     Type* declType; // store type for variable declarations.
+    Type* funcRetType; // store type for return value of funtion declarations.
     int idx;
     double* arrayValue; // store all number in float
     std::stack<InitValueListExpr*> stk;
@@ -72,23 +73,21 @@ Stmts
     }
     ;
 Stmt
-    : AssignStmt {
-        $$=$1;
-    }
+    : AssignStmt { $$ = $1; }
     | ExprStmt { $$ = $1; }
-    | BlockStmt {$$=$1;}
+    | BlockStmt {$$ = $1;}
     | BlankStmt { $$ = $1; }
     | IfStmt { $$ = $1; }
     | WhileStmt { $$ = $1; }
     | BreakStmt {
         if (!whileCnt)
             fprintf(stderr, "\'break\' statement not in while statement\n");
-        $$=$1;
+        $$ = $1;
     }
     | ContinueStmt {
         if (!whileCnt)
             fprintf(stderr, "\'continue\' statement not in while statement\n");
-        $$=$1;
+        $$ = $1;
     }
     | ReturnStmt { $$ = $1; }
     | DeclStmt { $$ = $1; }
@@ -179,10 +178,15 @@ ContinueStmt
     ;
 ReturnStmt
     : RETURN SEMICOLON {
-        $$ = new ReturnStmt();
+        $$ = new ReturnStmt(); // TODO
     }
     | RETURN Exp SEMICOLON {
-        $$ = new ReturnStmt($2);
+        if (($2->getType()->isFloat() && funcRetType->isInt()) ||
+            ($2->getType()->isInt() && funcRetType->isFloat())) {
+            $$ = new ReturnStmt(new ImplicitCastExpr($2, funcRetType));
+        } else {
+            $$ = new ReturnStmt($2);            
+        }
     }
     ;
 Exp
@@ -414,7 +418,7 @@ VarDef
         SymbolEntry* se;
         std::vector<int> vec;
         ExprNode* temp = $2;
-        while (temp){
+        while (temp) {
             vec.push_back(temp->getValue());
             temp = (ExprNode*)(temp->getNext());
         }
@@ -761,7 +765,7 @@ ConstInitVal
             stk.pop();
         $$ = $<exprtype>2;
         if (!stk.empty())
-            while (stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt){
+            while (stk.top()->isFull() && stk.size() != (long unsigned int)leftCnt) {
                 stk.pop();
             }
         while (
@@ -794,13 +798,14 @@ FuncDef
         // SymbolTable::resetLabel();
         identifiers = new SymbolTable(identifiers);
         paramNo = 0;
+        funcRetType = $1;
     }
-    LPAREN MaybeFuncFParams RPAREN {
+      LPAREN MaybeFuncFParams RPAREN {
         Type* funcType;
         std::vector<Type*> vec;
         std::vector<SymbolEntry*> vec1;
         DeclStmt* temp = (DeclStmt*)$5;
-        while (temp){
+        while (temp) {
             vec.push_back(temp->getId()->getSymbolEntry()->getType());
             vec1.push_back(temp->getId()->getSymbolEntry());
             temp = (DeclStmt*)(temp->getNext());
@@ -808,12 +813,12 @@ FuncDef
         funcType = new FunctionType($1, vec, vec1);
         SymbolEntry* se = new IdentifierSymbolEntry(
             funcType, $2, identifiers->getPrev()->getLevel());
-        if (!identifiers->getPrev()->install($2, se)){
+        if (!identifiers->getPrev()->install($2, se)) {
             fprintf(stderr, "redefinition of \'%s %s\'\n", $2, se->getType()->toStr().c_str());
         }
         $<se>$ = se; 
     } 
-    BlockStmt {
+      BlockStmt {
         $$ = new FunctionDef($<se>7, (DeclStmt*)$5, $8);
         SymbolTable* top = identifiers;
         identifiers = identifiers->getPrev();
@@ -823,7 +828,7 @@ FuncDef
     ;
 MaybeFuncFParams
     : FuncFParams { $$ = $1; }
-    | %empty {$$ = nullptr;}
+    | %empty { $$ = nullptr; }
 FuncFParams
     : FuncFParams COMMA FuncFParam {
         $$ = $1;
@@ -850,11 +855,11 @@ FuncFParam
         Type* arr = $1;
         Type* arr1;
         std::stack<ExprNode*> stk;
-        while (temp){
+        while (temp) {
             stk.push(temp);
             temp = (ExprNode*)(temp->getNext());
         }
-        while (!stk.empty()){
+        while (!stk.empty()) {
             arr1 = new ArrayType(arr, stk.top()->getValue());
             if (arr->isArray())
                 ((ArrayType*)arr)->setArrayType(arr1);

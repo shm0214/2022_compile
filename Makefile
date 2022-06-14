@@ -1,8 +1,8 @@
 SRC_PATH ?= src
 INC_PATH += include
 BUILD_PATH ?= build
-# TEST_PATH ?= test/functional
-TEST_PATH ?= test
+TEST_PATH ?= test/functional
+# TEST_PATH ?= test
 
 OBJ_PATH ?= $(BUILD_PATH)/obj
 BINARY ?= $(BUILD_PATH)/compiler

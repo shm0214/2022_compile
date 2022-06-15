@@ -486,6 +486,62 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
      * LOAD/MOV instrucrion to load immediate num into register. As to other
      * instructions, such as MUL, CMP, you need to deal with this situation,
      * too.*/
+
+    if (operands[0]->getType()->isFloat()) {
+        MachineInstruction* cur_inst;
+
+        auto operand1 = genMachineReg(0);
+        auto operand2 = genMachineReg(1);
+
+        if (src1->isImm()) {
+            cur_inst = new LoadMInstruction(cur_block, operand1, src1);
+        } else {
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
+                                           operand2, src1);
+        }
+        cur_block->InsertInst(cur_inst);
+
+        if (src2->isImm()) {
+            cur_inst = new LoadMInstruction(cur_block, operand1, src2);
+        } else {
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
+                                           operand2, src2);
+        }
+        cur_block->InsertInst(cur_inst);
+
+        std::string abi_str;
+
+        switch (opcode) {
+            case ADD:
+                abi_str = "@__aeabi_fadd";
+                break;
+            case SUB:
+                abi_str = "@__aeabi_fsub";
+                break;
+            case MUL:
+                abi_str = "@__aeabi_fmul";
+                break;
+            case DIV:
+                abi_str = "@__aeabi_fdiv";
+                break;
+            default:
+                // error
+                break;
+        }
+
+        auto label = new MachineOperand(abi_str);
+        cur_inst =
+            new BranchMInstruction(cur_block, BranchMInstruction::BL, label);
+        cur_block->InsertInst(cur_inst);
+
+        auto r0 = new MachineOperand(MachineOperand::REG, 0);
+        cur_inst =
+            new MovMInstruction(cur_block, MovMInstruction::MOV, dst, r0);
+        cur_block->InsertInst(cur_inst);
+
+        return;
+    }
+
     MachineInstruction* cur_inst = nullptr;
     if (src1->isImm()) {
         auto internal_reg = genMachineVReg();
@@ -779,7 +835,7 @@ GepInstruction::~GepInstruction() {
 FptosiInstruction::FptosiInstruction(Operand* dst,
                                      Operand* src,
                                      BasicBlock* insert_bb)
-    : Instruction(FPTOSI, insert_bb) {
+    : Instruction(FPTOSI, insert_bb), dst(dst), src(src) {
     operands.push_back(dst);
     operands.push_back(src);
     dst->setDef(this);
@@ -804,7 +860,7 @@ FptosiInstruction::~FptosiInstruction() {
 SitofpInstruction::SitofpInstruction(Operand* dst,
                                      Operand* src,
                                      BasicBlock* insert_bb)
-    : Instruction(FPTOSI, insert_bb) {
+    : Instruction(FPTOSI, insert_bb), dst(dst), src(src) {
     operands.push_back(dst);
     operands.push_back(src);
     dst->setDef(this);
@@ -1004,9 +1060,56 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
 }
 
 void FptosiInstruction::genMachineCode(AsmBuilder* builder) {
-    // TODO
+    // arm fplib abi:
+    // http://users.ece.utexas.edu/~valvano/Volume1/uvision/DUI0378C_using_arm_libraries.pdf
+
+    MachineInstruction* cur_inst;
+    auto cur_block = builder->getBlock();
+
+    auto src_operand = genMachineOperand(src);
+    auto operand = genMachineReg(0);
+
+    if (src_operand->isImm()) {
+        cur_inst = new LoadMInstruction(cur_block, operand, src_operand);
+    } else {
+        cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, operand,
+                                       src_operand);
+    }
+    cur_block->InsertInst(cur_inst);
+
+    auto label = new MachineOperand("@__aeabi_f2iz");
+    cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::BL, label);
+    cur_block->InsertInst(cur_inst);
+
+    operand = genMachineOperand(dst);
+    auto r0 = new MachineOperand(MachineOperand::REG, 0);
+    cur_inst =
+        new MovMInstruction(cur_block, MovMInstruction::MOV, operand, r0);
+    cur_block->InsertInst(cur_inst);
 }
 
 void SitofpInstruction::genMachineCode(AsmBuilder* builder) {
-    // TODO
+    MachineInstruction* cur_inst;
+    auto cur_block = builder->getBlock();
+
+    auto src_operand = genMachineOperand(src);
+    auto operand = genMachineReg(0);
+
+    if (src_operand->isImm()) {
+        cur_inst = new LoadMInstruction(cur_block, operand, src_operand);
+    } else {
+        cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, operand,
+                                       src_operand);
+    }
+    cur_block->InsertInst(cur_inst);
+
+    auto label = new MachineOperand("@__aeabi_i2f");
+    cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::BL, label);
+    cur_block->InsertInst(cur_inst);
+
+    operand = genMachineOperand(dst);
+    auto r0 = new MachineOperand(MachineOperand::REG, 0);
+    cur_inst =
+        new MovMInstruction(cur_block, MovMInstruction::MOV, operand, r0);
+    cur_block->InsertInst(cur_inst);
 }

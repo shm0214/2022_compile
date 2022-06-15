@@ -220,6 +220,9 @@ class GepInstruction : public Instruction {
 };
 
 class FptosiInstruction : public Instruction {
+   private:
+    Operand* dst;
+    Operand* src;
    public:
     FptosiInstruction(Operand* dst,
                       Operand* src,
@@ -230,6 +233,9 @@ class FptosiInstruction : public Instruction {
 };
 
 class SitofpInstruction : public Instruction {
+   private:
+    Operand* dst;
+    Operand* src;
    public:
     SitofpInstruction(Operand* dst,
                       Operand* src,

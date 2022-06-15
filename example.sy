@@ -8,8 +8,11 @@ float y[2][3] = {{1.5, 0.02, 3}, {4.e-2, 5.e2, 0.1e5}};
 int main() {
     float a = 1.0;
     float b = 2.0;
-    int tmp = 1;
+    int tmp = -1;
     float c = a + b;
+    c = a - b;
+    c = a / b;
     int d = c;
+    float e = d;
     return 0;
 }

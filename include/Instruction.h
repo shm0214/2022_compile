@@ -18,6 +18,8 @@ class Instruction {
     bool isCond() const { return instType == COND; };
     bool isAlloc() const { return instType == ALLOCA; };
     bool isRet() const { return instType == RET; };
+    bool isCall() const { return instType == CALL; }
+    bool isStore() const { return instType == STORE; }
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
@@ -31,6 +33,10 @@ class Instruction {
     MachineOperand* genMachineLabel(int block_no);
     virtual void genMachineCode(AsmBuilder*) = 0;
     int getInstType() { return instType; }
+    bool isEssential() const;
+    void setMark() { mark = true; }
+    void unsetMark() { mark = false; }
+    std::vector<Operand*> getUse() { return std::vector<Operand*>(); }
 
    protected:
     unsigned instType;
@@ -39,6 +45,7 @@ class Instruction {
     Instruction* next;
     BasicBlock* parent;
     std::vector<Operand*> operands;
+    bool mark;
     enum {
         BINARY,
         COND,
@@ -84,6 +91,9 @@ class LoadInstruction : public Instruction {
     ~LoadInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
 };
 
 class StoreInstruction : public Instruction {
@@ -94,6 +104,9 @@ class StoreInstruction : public Instruction {
     ~StoreInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[0], operands[1]});
+    }
 };
 
 class BinaryInstruction : public Instruction {
@@ -107,6 +120,9 @@ class BinaryInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1], operands[2]});
+    }
 };
 
 class CmpInstruction : public Instruction {
@@ -120,6 +136,9 @@ class CmpInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     enum { E, NE, L, LE, G, GE };
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1], operands[2]});
+    }
 };
 
 // unconditional branch
@@ -149,6 +168,9 @@ class CondBrInstruction : public Instruction {
     void setFalseBranch(BasicBlock*);
     BasicBlock* getFalseBranch();
     void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[0]});
+    }
 
    protected:
     BasicBlock* true_branch;
@@ -161,6 +183,11 @@ class RetInstruction : public Instruction {
     ~RetInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        if (operands.size())
+            return std::vector<Operand*>({operands[0]});
+        return std::vector<Operand*>();
+    }
 };
 
 class CallInstruction : public Instruction {
@@ -176,6 +203,12 @@ class CallInstruction : public Instruction {
     ~CallInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        std::vector<Operand*> vec;
+        for (auto it = operands.begin() + 1; it != operands.end(); it++)
+            vec.push_back(*it);
+        return vec;
+    }
 };
 
 class ZextInstruction : public Instruction {
@@ -186,6 +219,9 @@ class ZextInstruction : public Instruction {
     ~ZextInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
 };
 
 class XorInstruction : public Instruction {
@@ -194,6 +230,9 @@ class XorInstruction : public Instruction {
     ~XorInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
 };
 
 class GepInstruction : public Instruction {
@@ -216,6 +255,9 @@ class GepInstruction : public Instruction {
     void setLast() { last = true; };
     Operand* getInit() const { return init; };
     void setInit(Operand* init) { this->init = init; };
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1], operands[2]});
+    }
 };
 
 #endif

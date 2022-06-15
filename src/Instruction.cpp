@@ -14,10 +14,27 @@ Instruction::Instruction(unsigned instType, BasicBlock* insert_bb) {
         insert_bb->insertBack(this);
         parent = insert_bb;
     }
+    mark = false;
 }
 
 Instruction::~Instruction() {
     parent->remove(this);
+}
+
+bool Instruction::isEssential() const {
+    // return value
+    if (isRet()) {
+        // 先简单处理，所有return都true
+        return true;
+    }
+    // input/output
+    if (isCall()) {
+        return true;
+    }
+    if (isStore()) {
+        return true;
+    }
+    return false;
 }
 
 BasicBlock* Instruction::getParent() {

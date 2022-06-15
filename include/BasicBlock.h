@@ -45,6 +45,7 @@ class BasicBlock {
     int getNumOfSucc() const { return succ.size(); };
     void genMachineCode(AsmBuilder*);
     void cleanSucc();
+    void cleanMark();
 };
 
 #endif

@@ -216,6 +216,7 @@ class ImplicitCastExpr : public ExprNode {
     ExprNode* getExpr() const { return expr; };
     bool typeCheck(Type* retType = nullptr) { return false; };
     void genCode();
+    double getValue();
 };
 
 class StmtNode : public Node {

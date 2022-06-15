@@ -452,7 +452,13 @@ VarDef
         if (!identifiers->install($1, se))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         // 这里要不要存值不确定
-        ((IdentifierSymbolEntry*)se)->setValue($3->getValue());
+        double val = $3->getValue();
+        if (declType->isInt() && $3->getType()->isFloat()) {
+            float temp = (float)val;
+            int temp1 = (int)temp;
+            val = (double)temp1;
+        }
+        ((IdentifierSymbolEntry*)se)->setValue(val);
         $$ = new DeclStmt(new Id(se), $3);
         delete []$1;
     }
@@ -506,7 +512,13 @@ ConstDef
         if (!identifiers->install($1, se))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         identifiers->install($1, se);
-        ((IdentifierSymbolEntry*)se)->setValue($3->getValue());
+        double val = $3->getValue();
+        if (declType->isInt() && $3->getType()->isFloat()) {
+            float temp = (float)val;
+            int temp1 = (int)temp;
+            val = (double)temp1;
+        }
+        ((IdentifierSymbolEntry*)se)->setValue(val);
         $$ = new DeclStmt(new Id(se), $3);
         delete []$1;
     }
@@ -544,7 +556,7 @@ ConstDef
         arrayValue = new double[arrayType->getSize()];
     }
       ConstInitVal {
-        ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
+        ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue); // TODO: type casting
         if (!identifiers->install($1, $<se>4))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         identifiers->install($1, $<se>4);

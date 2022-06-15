@@ -32,10 +32,13 @@ class MachineOperand {
     int val;            // value of immediate number
     int reg_no;         // register no
     std::string label;  // address label
+    bool is_float = false;
+    float fval;
    public:
     enum { IMM, VREG, REG, LABEL };
     MachineOperand(int tp, int val);
     MachineOperand(std::string label);
+    MachineOperand(int tp, float fval);
     bool operator==(const MachineOperand&) const;
     bool operator<(const MachineOperand&) const;
     bool isImm() { return this->type == IMM; };
@@ -44,6 +47,9 @@ class MachineOperand {
     bool isLabel() { return this->type == LABEL; };
     int getVal() { return this->val; };
     void setVal(int val) { this->val = val; };
+    float getFVal() { return this->fval; }
+    void setFVal(float val) { this->fval = fval; is_float = true; }
+    bool isFloat() { return this->is_float; }
     int getReg() { return this->reg_no; };
     void setReg(int regno) {
         this->type = REG;

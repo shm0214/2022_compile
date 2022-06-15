@@ -69,6 +69,8 @@ run2:app example.sy
 	@arm-linux-gnueabihf-gcc -x c example.sy -S -march=armv8-a -mfloat-abi=soft -o example_std.s
 	arm-linux-gnueabihf-gcc -mcpu=cortex-a72 -o example example.s $(SYSLIB_PATH)/sylib.a
 
+	qemu-arm -L /usr/arm-linux-gnueabihf ./example < example.in > example.out 2>> example.log
+
 gdb:app
 	@gdb $(BINARY)
 

@@ -264,22 +264,22 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
 }
 
 {DECIMAL_FLOAT} {
-    double temp;
-    sscanf(yytext, "%lf", &temp);
+    float temp;
+    sscanf(yytext, "%f", &temp);
     if (dump_tokens)
         DUMP_TOKEN(string("NUMBER\t") + to_string(temp));
     // chars += strlen(yytext);
-    yylval.numtype = temp;
+    yylval.numtype = (double)temp;
     return FLOATING;
 }
 
 {HEXADECIMAL_FLOAT} {
-    double temp;
-    sscanf(yytext, "%lf", &temp);
+    float temp;
+    sscanf(yytext, "%f", &temp);
     if (dump_tokens)
         DUMP_TOKEN(string("NUMBER\t") + to_string(temp));
     // chars += strlen(yytext);
-    yylval.numtype = temp;
+    yylval.numtype = (double)temp;
     return FLOATING;
 }
 

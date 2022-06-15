@@ -193,22 +193,16 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
                 expr1->getType()->getSize() == 32) {
                 ImplicitCastExpr* temp = new ImplicitCastExpr(expr1);
                 this->expr1 = temp;
-            } else if (expr1->getType()->isFloat()) {
-                ImplicitCastExpr* temp =
-                    new ImplicitCastExpr(expr1, TypeSystem::intType);
-                ImplicitCastExpr* temp1 = new ImplicitCastExpr(temp);
-                this->expr1 = temp1;
             }
 
             if (expr2->getType()->isInt() &&
                 expr2->getType()->getSize() == 32) {
                 ImplicitCastExpr* temp = new ImplicitCastExpr(expr2);
                 this->expr2 = temp;
-            } else if (expr2->getType()->isFloat()) {
-                ImplicitCastExpr* temp =
-                    new ImplicitCastExpr(expr2, TypeSystem::intType);
-                ImplicitCastExpr* temp1 = new ImplicitCastExpr(temp);
-                this->expr2 = temp1;
+            }
+
+            if (expr1->getType()->isFloat() && expr2->getType()->isFloat()) {
+                // TODO literal number
             }
         }
     } else if (expr1->getType()->isFloat() && expr2->getType()->isInt()) {
@@ -1097,6 +1091,57 @@ void BinaryExpr::output(int level) {
 
 double BinaryExpr::getValue() {
     double value = 0;
+    if (type->isFloat()) {
+        float val;
+        float val1 = (float)(expr1->getValue());
+        float val2 = (float)(expr2->getValue());
+
+        switch (op) {
+            case ADD:
+                val = val1 + val2;
+                break;
+            case SUB:
+                val = val1 - val2;
+                break;
+            case MUL:
+                val = val1 * val2;
+                break;
+            case DIV:
+                if (val2 != 0)
+                    val = val1 / val2;
+                break;
+            case MOD:
+                val = (int)(val1) % (int)(val2);
+                break;
+            case AND:
+                val = val1 && val2;
+                break;
+            case OR:
+                val = val1 || val2;
+                break;
+            case LESS:
+                val = val1 < val2;
+                break;
+            case LESSEQUAL:
+                val = val1 <= val2;
+                break;
+            case GREATER:
+                val = val1 > val2;
+                break;
+            case GREATEREQUAL:
+                val = val1 >= val2;
+                break;
+            case EQUAL:
+                val = val1 == val2;
+                break;
+            case NOTEQUAL:
+                val = val1 != val2;
+                break;
+        }
+        value = (double)val;
+        return value;
+    }
+
     switch (op) {
         case ADD:
             value = expr1->getValue() + expr2->getValue();
@@ -1138,7 +1183,7 @@ double BinaryExpr::getValue() {
         case NOTEQUAL:
             value = expr1->getValue() != expr2->getValue();
             break;
-    }
+    } // double should be ok here, probably...
     return value;
 }
 
@@ -1441,5 +1486,28 @@ void ImplicitCastExpr::genCode() {
     } else {
         // error
         assert(false);
+    }
+}
+
+double ImplicitCastExpr::getValue() {
+    if (type == TypeSystem::boolType) {
+        return -1;
+    }
+    double temp = expr->getValue();
+
+    Type* srcType = expr->getType();
+
+    if (type->isInt() && srcType->isFloat()) {
+        float temp1 = (float)temp;
+        int res = (int)temp1;
+        temp = (double)res;
+        return temp;
+    } else if (type->isFloat() && srcType->isInt()) {
+        int temp1 = (int)temp;
+        float res = (float)temp1;
+        temp = (double)res;
+        return temp;
+    } else {
+        return -1;  // error
     }
 }

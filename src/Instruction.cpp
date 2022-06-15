@@ -321,11 +321,17 @@ void StoreInstruction::output() const {
 MachineOperand* Instruction::genMachineOperand(Operand* ope) {
     auto se = ope->getEntry();
     MachineOperand* mope = nullptr;
-    if (se->isConstant())
-        mope = new MachineOperand(
-            MachineOperand::IMM,
-            dynamic_cast<ConstantSymbolEntry*>(se)->getValue());
-    else if (se->isTemporary())
+    if (se->isConstant()) {
+        if (se->getType()->isFloat()) {
+            mope = new MachineOperand(
+                MachineOperand::IMM,
+                (float)dynamic_cast<ConstantSymbolEntry*>(se)->getValue());
+        } else {
+            mope = new MachineOperand(
+                MachineOperand::IMM,
+                (int)dynamic_cast<ConstantSymbolEntry*>(se)->getValue());
+        }
+    } else if (se->isTemporary())
         mope = new MachineOperand(
             MachineOperand::VREG,
             dynamic_cast<TemporarySymbolEntry*>(se)->getLabel());
@@ -497,12 +503,12 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
             cur_inst = new LoadMInstruction(cur_block, operand1, src1);
         } else {
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
-                                           operand2, src1);
+                                           operand1, src1);
         }
         cur_block->InsertInst(cur_inst);
 
         if (src2->isImm()) {
-            cur_inst = new LoadMInstruction(cur_block, operand1, src2);
+            cur_inst = new LoadMInstruction(cur_block, operand2, src2);
         } else {
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
                                            operand2, src2);
@@ -616,6 +622,71 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder) {
     auto cur_block = builder->getBlock();
     auto src1 = genMachineOperand(operands[1]);
     auto src2 = genMachineOperand(operands[2]);
+
+    
+    if (operands[1]->getType()->isFloat()) {
+        MachineInstruction* cur_inst;
+
+        auto operand1 = genMachineReg(0);
+        auto operand2 = genMachineReg(1);
+
+        if (src1->isImm()) {
+            cur_inst = new LoadMInstruction(cur_block, operand1, src1);
+        } else {
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
+                                           operand1, src1);
+        }
+        cur_block->InsertInst(cur_inst);
+
+        if (src2->isImm()) {
+            cur_inst = new LoadMInstruction(cur_block, operand2, src2);
+        } else {
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
+                                           operand2, src2);
+        }
+        cur_block->InsertInst(cur_inst);
+
+        std::string abi_str;
+
+        switch (opcode) {
+            case CmpInstruction::L:
+                abi_str = "@__aeabi_fcmplt";
+                break;
+            case CmpInstruction::LE:
+                abi_str = "@__aeabi_fcmple";
+                break;
+            case CmpInstruction::G:
+                abi_str = "@__aeabi_fcmpgt";
+                break;
+            case CmpInstruction::GE:
+                abi_str = "@__aeabi_fcmpge";
+                break;
+            case CmpInstruction::E:
+                abi_str = "@__aeabi_fcmpeq";
+                break;
+            case CmpInstruction::NE:
+                // TODO
+                return;
+                break;
+            default:
+                // error
+                break;
+        }
+
+        auto label = new MachineOperand(abi_str);
+        cur_inst =
+            new BranchMInstruction(cur_block, BranchMInstruction::BL, label);
+        cur_block->InsertInst(cur_inst);
+
+        auto r0 = new MachineOperand(MachineOperand::REG, 0);
+        auto dst = genMachineOperand(operands[0]);
+        cur_inst =
+            new MovMInstruction(cur_block, MovMInstruction::MOV, dst, r0);
+        cur_block->InsertInst(cur_inst);
+
+        return;
+    }
+
     MachineInstruction* cur_inst = nullptr;
     if (src1->isImm()) {
         auto internal_reg = genMachineVReg();

@@ -1256,12 +1256,12 @@ case 37:
 YY_RULE_SETUP
 #line 266 "src/lexer.l"
 {
-    double temp;
-    sscanf(yytext, "%lf", &temp);
+    float temp;
+    sscanf(yytext, "%f", &temp);
     if (dump_tokens)
         DUMP_TOKEN(string("NUMBER\t") + to_string(temp));
     // chars += strlen(yytext);
-    yylval.numtype = temp;
+    yylval.numtype = (double)temp;
     return FLOATING;
 }
 	YY_BREAK
@@ -1269,12 +1269,12 @@ case 38:
 YY_RULE_SETUP
 #line 276 "src/lexer.l"
 {
-    double temp;
-    sscanf(yytext, "%lf", &temp);
+    float temp;
+    sscanf(yytext, "%f", &temp);
     if (dump_tokens)
         DUMP_TOKEN(string("NUMBER\t") + to_string(temp));
     // chars += strlen(yytext);
-    yylval.numtype = temp;
+    yylval.numtype = (double)temp;
     return FLOATING;
 }
 	YY_BREAK

@@ -623,7 +623,6 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder) {
     auto src1 = genMachineOperand(operands[1]);
     auto src2 = genMachineOperand(operands[2]);
 
-    
     if (operands[1]->getType()->isFloat()) {
         MachineInstruction* cur_inst;
 
@@ -648,6 +647,8 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder) {
 
         std::string abi_str;
 
+        int cmp_imm = 1;
+
         switch (opcode) {
             case CmpInstruction::L:
                 abi_str = "@__aeabi_fcmplt";
@@ -665,8 +666,8 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder) {
                 abi_str = "@__aeabi_fcmpeq";
                 break;
             case CmpInstruction::NE:
-                // TODO
-                return;
+                abi_str = "@__aeabi_fcmpeq";
+                cmp_imm = 0;
                 break;
             default:
                 // error
@@ -680,8 +681,18 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder) {
 
         auto r0 = new MachineOperand(MachineOperand::REG, 0);
         auto dst = genMachineOperand(operands[0]);
+
+        auto bool_operand = genMachineImm(cmp_imm);
         cur_inst =
-            new MovMInstruction(cur_block, MovMInstruction::MOV, dst, r0);
+            new CmpMInstruction(cur_block, r0, bool_operand, CmpMInstruction::EQ);
+        cur_block->InsertInst(cur_inst);
+
+
+        cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
+                                       genMachineImm(0), CmpInstruction::NE);
+        cur_block->InsertInst(cur_inst);
+        cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
+                                       genMachineImm(1), CmpInstruction::E);
         cur_block->InsertInst(cur_inst);
 
         return;

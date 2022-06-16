@@ -193,16 +193,44 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
                 expr1->getType()->getSize() == 32) {
                 ImplicitCastExpr* temp = new ImplicitCastExpr(expr1);
                 this->expr1 = temp;
+            } else if (expr1->getType()->isFloat()) {
+                SymbolEntry* zero =
+                    new ConstantSymbolEntry(TypeSystem::floatType, 0);
+                SymbolEntry* temp = new TemporarySymbolEntry(
+                    TypeSystem::boolType, SymbolTable::getLabel());
+                BinaryExpr* cmpZero = new BinaryExpr(temp, BinaryExpr::NOTEQUAL,
+                                                     expr1, new Constant(zero));
+                this->expr1 = cmpZero;
             }
 
             if (expr2->getType()->isInt() &&
                 expr2->getType()->getSize() == 32) {
                 ImplicitCastExpr* temp = new ImplicitCastExpr(expr2);
                 this->expr2 = temp;
+            } else if (expr2->getType()->isFloat()) {
+                SymbolEntry* zero =
+                    new ConstantSymbolEntry(TypeSystem::floatType, 0);
+                SymbolEntry* temp = new TemporarySymbolEntry(
+                    TypeSystem::boolType, SymbolTable::getLabel());
+                BinaryExpr* cmpZero = new BinaryExpr(temp, BinaryExpr::NOTEQUAL,
+                                                     expr2, new Constant(zero));
+                this->expr2 = cmpZero;
             }
-
-            if (expr1->getType()->isFloat() && expr2->getType()->isFloat()) {
-                // TODO literal number
+        }
+        // TODO optimize literal number
+        if (op == BinaryExpr::LESS || op == BinaryExpr::LESSEQUAL ||
+            op == BinaryExpr::GREATER || op == BinaryExpr::GREATEREQUAL ||
+            op == BinaryExpr::EQUAL || op == BinaryExpr::NOTEQUAL) {
+            if (expr1->getType()->isFloat() && expr2->getType()->isInt()) {
+                ImplicitCastExpr* temp =
+                    new ImplicitCastExpr(expr2, TypeSystem::floatType);
+                this->expr2 = temp;
+            } else if (expr1->getType()->isInt() &&
+                       expr2->getType()->isFloat()) {
+                ImplicitCastExpr* temp =
+                    new ImplicitCastExpr(expr1, TypeSystem::floatType);
+                this->expr1 = temp;
+                type = TypeSystem::floatType;
             }
         }
     } else if (expr1->getType()->isFloat() && expr2->getType()->isInt()) {
@@ -1113,10 +1141,10 @@ double BinaryExpr::getValue() {
             case MOD:
                 val = (int)(val1) % (int)(val2);
                 break;
-            case AND:
+            case AND:  // FIXME
                 val = val1 && val2;
                 break;
-            case OR:
+            case OR:  // FIXME
                 val = val1 || val2;
                 break;
             case LESS:
@@ -1183,7 +1211,7 @@ double BinaryExpr::getValue() {
         case NOTEQUAL:
             value = expr1->getValue() != expr2->getValue();
             break;
-    } // double should be ok here, probably...
+    }  // double should be ok here, probably...
     return value;
 }
 
@@ -1202,7 +1230,7 @@ UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
             UnaryExpr* ue = (UnaryExpr*)expr;
             if (ue->getOp() == UnaryExpr::NOT) {
                 if (ue->getType() == TypeSystem::intType)
-                    ue->setType(TypeSystem::boolType); // TODO: type?
+                    ue->setType(TypeSystem::boolType);  // TODO: type?
                 // type = TypeSystem::intType;
                 // type casting for float is done in `parser.y`
             }
@@ -1408,6 +1436,21 @@ void DeclStmt::output(int level) {
 void BlankStmt::output(int level) {
     fprintf(yyout, "%*cBlankStmt\n", level, ' ');
 }
+
+IfStmt::IfStmt(ExprNode* cond, StmtNode* thenStmt)
+    : cond(cond), thenStmt(thenStmt) {
+    if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
+        ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
+        this->cond = temp;
+    } else if (cond->getType()->isFloat()) {
+        SymbolEntry* zero = new ConstantSymbolEntry(TypeSystem::floatType, 0);
+        SymbolEntry* temp = new TemporarySymbolEntry(TypeSystem::boolType,
+                                                     SymbolTable::getLabel());
+        BinaryExpr* cmpZero = new BinaryExpr(temp, BinaryExpr::NOTEQUAL, cond,
+                                             new Constant(zero));
+        this->cond = cmpZero;
+    }
+};
 
 void IfStmt::output(int level) {
     fprintf(yyout, "%*cIfStmt\n", level, ' ');

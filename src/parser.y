@@ -255,8 +255,15 @@ UnaryExp
     | NOT UnaryExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         if ($2->getType()->isFloat()) {
-            ImplicitCastExpr* temp = new ImplicitCastExpr($2, TypeSystem::intType);
-            $$ = new UnaryExpr(se, UnaryExpr::NOT, temp);
+
+            SymbolEntry* zero =
+                new ConstantSymbolEntry(TypeSystem::constFloatType, 0);
+            SymbolEntry* temp = new TemporarySymbolEntry(
+                TypeSystem::boolType, SymbolTable::getLabel());
+            BinaryExpr* cmpZero = new BinaryExpr(temp, BinaryExpr::NOTEQUAL,
+                                                    $2, new Constant(zero));
+
+            $$ = new UnaryExpr(se, UnaryExpr::NOT, cmpZero);
         } else {
             $$ = new UnaryExpr(se, UnaryExpr::NOT, $2);
         }

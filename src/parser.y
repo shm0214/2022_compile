@@ -581,7 +581,16 @@ InitVal
         }
         $$ = $1;
         if (!stk.empty()) {
-            arrayValue[idx++] = $1->getValue();
+            
+            double val = $1->getValue();
+            if (declType->isInt() && $1->getType()->isFloat()) {
+                float temp = (float)val;
+                int temp1 = (int)temp;
+                arrayValue[idx++] = (double)temp1;
+            } else {
+                arrayValue[idx++] = val;
+            }
+
             Type* arrTy = stk.top()->getSymbolEntry()->getType();
             if (arrTy == TypeSystem::intType || arrTy == TypeSystem::floatType) {
                 if ((arrTy->isInt() && $1->getType()->isFloat()) ||
@@ -686,7 +695,16 @@ ConstInitVal
     : ConstExp {
         $$ = $1;
         if (!stk.empty()) {
-            arrayValue[idx++] = $1->getValue();
+
+            double val = $1->getValue();
+            if (declType->isInt() && $1->getType()->isFloat()) {
+                float temp = (float)val;
+                int temp1 = (int)temp;
+                arrayValue[idx++] = (double)temp1;
+            } else {
+                arrayValue[idx++] = val;
+            }
+
             Type* arrTy = stk.top()->getSymbolEntry()->getType();
             if (arrTy == TypeSystem::constIntType || arrTy == TypeSystem::constFloatType) {
                 if ((arrTy->isFloat() && $1->getType()->isInt()) || 

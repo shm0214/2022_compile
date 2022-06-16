@@ -687,7 +687,7 @@ void UnaryExpr::genCode() {
             new CmpInstruction(
                 CmpInstruction::NE, temp, src,
                 new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0)),
-                bb);  // TODO
+                bb);
             src = temp;
         }
         new XorInstruction(dst, src, bb);
@@ -1202,8 +1202,9 @@ UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
             UnaryExpr* ue = (UnaryExpr*)expr;
             if (ue->getOp() == UnaryExpr::NOT) {
                 if (ue->getType() == TypeSystem::intType)
-                    ue->setType(TypeSystem::boolType);
+                    ue->setType(TypeSystem::boolType); // TODO: type?
                 // type = TypeSystem::intType;
+                // type casting for float is done in `parser.y`
             }
         }
         // if (expr->getType()->isInt() && expr->getType()->getSize() == 32) {

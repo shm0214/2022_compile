@@ -1,17 +1,23 @@
 *.ast
 *.o
 .vscode/
-build
+# *.out
+build/*
+# parser.h
+# parser.cpp
+# lexer.h
+# lexer.cpp
 *.ll
 *.bin
 *.log
 *.res
 example.*
+!example.sy
 example
 *.ast
 *.toks
 *.s
-performance/
+# performance/
 test1
 test
 .VSCodeCounter/

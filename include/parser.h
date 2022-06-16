@@ -44,7 +44,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 24 "src/parser.y"
+#line 26 "src/parser.y"
 
     #include "Ast.h"
     #include "SymbolTable.h"
@@ -60,39 +60,41 @@ extern int yydebug;
     ID = 258,
     STRING = 259,
     INTEGER = 260,
-    IF = 261,
-    ELSE = 262,
-    WHILE = 263,
-    INT = 264,
-    VOID = 265,
-    LPAREN = 266,
-    RPAREN = 267,
-    LBRACE = 268,
-    RBRACE = 269,
-    SEMICOLON = 270,
-    LBRACKET = 271,
-    RBRACKET = 272,
-    COMMA = 273,
-    ADD = 274,
-    SUB = 275,
-    MUL = 276,
-    DIV = 277,
-    MOD = 278,
-    OR = 279,
-    AND = 280,
-    LESS = 281,
-    LESSEQUAL = 282,
-    GREATER = 283,
-    GREATEREQUAL = 284,
-    ASSIGN = 285,
-    EQUAL = 286,
-    NOTEQUAL = 287,
-    NOT = 288,
-    CONST = 289,
-    RETURN = 290,
-    CONTINUE = 291,
-    BREAK = 292,
-    THEN = 293
+    FLOATING = 261,
+    IF = 262,
+    ELSE = 263,
+    WHILE = 264,
+    INT = 265,
+    VOID = 266,
+    FLOAT = 267,
+    LPAREN = 268,
+    RPAREN = 269,
+    LBRACE = 270,
+    RBRACE = 271,
+    SEMICOLON = 272,
+    LBRACKET = 273,
+    RBRACKET = 274,
+    COMMA = 275,
+    ADD = 276,
+    SUB = 277,
+    MUL = 278,
+    DIV = 279,
+    MOD = 280,
+    OR = 281,
+    AND = 282,
+    LESS = 283,
+    LESSEQUAL = 284,
+    GREATER = 285,
+    GREATEREQUAL = 286,
+    ASSIGN = 287,
+    EQUAL = 288,
+    NOTEQUAL = 289,
+    NOT = 290,
+    CONST = 291,
+    RETURN = 292,
+    CONTINUE = 293,
+    BREAK = 294,
+    THEN = 295
   };
 #endif
 
@@ -100,16 +102,16 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 30 "src/parser.y"
+#line 32 "src/parser.y"
 
-    int itype;
+    double numtype; // store all number in float
     char* strtype;
     StmtNode* stmttype;
     ExprNode* exprtype;
     Type* type;
     SymbolEntry* se;
 
-#line 113 "include/parser.h"
+#line 115 "include/parser.h"
 
 };
 typedef union YYSTYPE YYSTYPE;

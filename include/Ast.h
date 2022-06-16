@@ -34,6 +34,7 @@ class Node {
     static void setIRBuilder(IRBuilder* ib) { builder = ib; };
     virtual void output(int level) = 0;
     void setNext(Node* node);
+    void setAdjNext(Node* node) { next = node; }
     Node* getNext() { return next; }
     virtual bool typeCheck(Type* retType = nullptr) = 0;
     virtual void genCode() = 0;
@@ -48,7 +49,7 @@ class ExprNode : public Node {
     int kind;
 
    protected:
-    enum { EXPR, INITVALUELISTEXPR, IMPLICTCASTEXPR, UNARYEXPR };
+    enum { EXPR, INITVALUELISTEXPR, IMPLICITCASTEXPR, UNARYEXPR };
     Type* type;
     SymbolEntry* symbolEntry;
     Operand* dst;  // The result of the subtree is stored into dst.
@@ -57,10 +58,10 @@ class ExprNode : public Node {
         : kind(kind), symbolEntry(symbolEntry){};
     Operand* getOperand() { return dst; };
     void output(int level);
-    virtual int getValue() { return -1; };
+    virtual double getValue() { return -1; };
     bool isExpr() const { return kind == EXPR; };
     bool isInitValueListExpr() const { return kind == INITVALUELISTEXPR; };
-    bool isImplictCastExpr() const { return kind == IMPLICTCASTEXPR; };
+    bool isImplicitCastExpr() const { return kind == IMPLICITCASTEXPR; };
     bool isUnaryExpr() const { return kind == UNARYEXPR; };
     SymbolEntry* getSymbolEntry() { return symbolEntry; };
     virtual bool typeCheck(Type* retType = nullptr) { return false; };
@@ -92,7 +93,7 @@ class BinaryExpr : public ExprNode {
     };
     BinaryExpr(SymbolEntry* se, int op, ExprNode* expr1, ExprNode* expr2);
     void output(int level);
-    int getValue();
+    double getValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
 };
@@ -106,7 +107,7 @@ class UnaryExpr : public ExprNode {
     enum { NOT, SUB };
     UnaryExpr(SymbolEntry* se, int op, ExprNode* expr);
     void output(int level);
-    int getValue();
+    double getValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
     int getOp() const { return op; };
@@ -128,10 +129,10 @@ class Constant : public ExprNode {
    public:
     Constant(SymbolEntry* se) : ExprNode(se) {
         dst = new Operand(se);
-        type = TypeSystem::intType;
+        type = se->getType();
     };
     void output(int level);
-    int getValue();
+    double getValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
 };
@@ -150,6 +151,10 @@ class Id : public ExprNode {
                 SymbolEntry* temp = new TemporarySymbolEntry(
                     TypeSystem::intType, SymbolTable::getLabel());
                 dst = new Operand(temp);
+            } else if (type->isFloat()) {
+                SymbolEntry* temp = new TemporarySymbolEntry(
+                    TypeSystem::floatType, SymbolTable::getLabel());
+                dst = new Operand(temp);
             } else if (type->isArray()) {
                 SymbolEntry* temp = new TemporarySymbolEntry(
                     new PointerType(((ArrayType*)type)->getElementType()),
@@ -161,7 +166,7 @@ class Id : public ExprNode {
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
-    int getValue();
+    double getValue();
     ExprNode* getArrIdx() { return arrIdx; };
     Type* getType();
     bool isLeft() const { return left; };
@@ -195,23 +200,25 @@ class InitValueListExpr : public ExprNode {
     void fill();
 };
 
-// 仅用于int2bool
-class ImplictCastExpr : public ExprNode {
+// int2bool, int2float, float2int
+class ImplicitCastExpr : public ExprNode {
    private:
     ExprNode* expr;
 
    public:
-    ImplictCastExpr(ExprNode* expr)
-        : ExprNode(nullptr, IMPLICTCASTEXPR), expr(expr) {
-        type = TypeSystem::boolType;
-        dst = new Operand(
-            new TemporarySymbolEntry(type, SymbolTable::getLabel()));
+    ImplicitCastExpr(ExprNode* expr, Type* dstType = TypeSystem::boolType)
+        : ExprNode(nullptr, IMPLICITCASTEXPR), expr(expr) {
+        type = dstType;
+        symbolEntry = new TemporarySymbolEntry(type, SymbolTable::getLabel());
+        dst = new Operand(symbolEntry);
     };
     void output(int level);
     ExprNode* getExpr() const { return expr; };
     bool typeCheck(Type* retType = nullptr) { return false; };
     void genCode();
+    double getValue();
 };
+
 class StmtNode : public Node {
    private:
     int kind;
@@ -252,13 +259,7 @@ class DeclStmt : public StmtNode {
     ExprNode* expr;
 
    public:
-    DeclStmt(Id* id, ExprNode* expr = nullptr) : id(id) {
-        if (expr) {
-            this->expr = expr;
-            if (expr->isInitValueListExpr())
-                ((InitValueListExpr*)(this->expr))->fill();
-        }
-    };
+    DeclStmt(Id* id, ExprNode* expr = nullptr);
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
@@ -279,13 +280,7 @@ class IfStmt : public StmtNode {
     StmtNode* thenStmt;
 
    public:
-    IfStmt(ExprNode* cond, StmtNode* thenStmt)
-        : cond(cond), thenStmt(thenStmt) {
-        if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
-            ImplictCastExpr* temp = new ImplictCastExpr(cond);
-            this->cond = temp;
-        }
-    };
+    IfStmt(ExprNode* cond, StmtNode* thenStmt);
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
@@ -301,8 +296,13 @@ class IfElseStmt : public StmtNode {
     IfElseStmt(ExprNode* cond, StmtNode* thenStmt, StmtNode* elseStmt)
         : cond(cond), thenStmt(thenStmt), elseStmt(elseStmt) {
         if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
-            ImplictCastExpr* temp = new ImplictCastExpr(cond);
+            ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
+        } else if (cond->getType()->isFloat()) {
+            ImplicitCastExpr* temp =
+                new ImplicitCastExpr(cond, TypeSystem::intType);
+            ImplicitCastExpr* temp1 = new ImplicitCastExpr(temp);
+            this->cond = temp1;
         }
     };
     void output(int level);
@@ -321,8 +321,13 @@ class WhileStmt : public StmtNode {
     WhileStmt(ExprNode* cond, StmtNode* stmt = nullptr)
         : cond(cond), stmt(stmt) {
         if (cond->getType()->isInt() && cond->getType()->getSize() == 32) {
-            ImplictCastExpr* temp = new ImplictCastExpr(cond);
+            ImplicitCastExpr* temp = new ImplicitCastExpr(cond);
             this->cond = temp;
+        } else if (cond->getType()->isFloat()) {
+            ImplicitCastExpr* temp =
+                new ImplicitCastExpr(cond, TypeSystem::intType);
+            ImplicitCastExpr* temp1 = new ImplicitCastExpr(temp);
+            this->cond = temp1;
         }
     };
     void setStmt(StmtNode* stmt) { this->stmt = stmt; };

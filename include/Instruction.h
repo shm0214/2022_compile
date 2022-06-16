@@ -51,7 +51,9 @@ class Instruction {
         CALL,
         ZEXT,
         XOR,
-        GEP
+        GEP,
+        FPTOSI,  // floating point to signed int
+        SITOFP,  // signed int to floating point
     };
 };
 
@@ -216,6 +218,32 @@ class GepInstruction : public Instruction {
     void setLast() { last = true; };
     Operand* getInit() const { return init; };
     void setInit(Operand* init) { this->init = init; };
+};
+
+class FptosiInstruction : public Instruction {
+   private:
+    Operand* dst;
+    Operand* src;
+   public:
+    FptosiInstruction(Operand* dst,
+                      Operand* src,
+                      BasicBlock* insert_bb = nullptr);
+    ~FptosiInstruction();
+    void output() const;
+    void genMachineCode(AsmBuilder*);
+};
+
+class SitofpInstruction : public Instruction {
+   private:
+    Operand* dst;
+    Operand* src;
+   public:
+    SitofpInstruction(Operand* dst,
+                      Operand* src,
+                      BasicBlock* insert_bb = nullptr);
+    ~SitofpInstruction();
+    void output() const;
+    void genMachineCode(AsmBuilder*);
 };
 
 #endif

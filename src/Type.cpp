@@ -8,11 +8,15 @@ IntType TypeSystem::commonConstInt = IntType(32, true);
 IntType TypeSystem::commonInt = IntType(32);
 IntType TypeSystem::commonBool = IntType(1);
 VoidType TypeSystem::commonVoid = VoidType();
+FloatType TypeSystem::commonFloat = FloatType(32);
+FloatType TypeSystem::commonConstFloat = FloatType(32, true);
 
 Type* TypeSystem::constIntType = &commonConstInt;
 Type* TypeSystem::intType = &commonInt;
 Type* TypeSystem::voidType = &commonVoid;
 Type* TypeSystem::boolType = &commonBool;
+Type* TypeSystem::floatType = &commonFloat;
+Type* TypeSystem::constFloatType = &commonConstFloat;
 
 std::string IntType::toStr() {
     std::ostringstream buffer;
@@ -22,6 +26,10 @@ std::string IntType::toStr() {
         buffer << "i";
     buffer << size;
     return buffer.str();
+}
+
+std::string FloatType::toStr() {
+    return "float";
 }
 
 std::string VoidType::toStr() {
@@ -44,11 +52,16 @@ std::string ArrayType::toStr() {
         }
         temp = ((ArrayType*)temp)->getElementType();
     }
-    assert(temp->isInt());
     std::ostringstream buffer;
     for (auto it = vec.begin(); it != vec.end(); it++)
         buffer << *it;
-    buffer << "i32";
+    if (temp->isInt()) {
+        buffer << "i32";
+    } else if (temp->isFloat()) {
+        buffer << "float";
+    } else {
+        assert(false); // invalid type
+    }
     while (count--)
         buffer << ']';
     if (flag)

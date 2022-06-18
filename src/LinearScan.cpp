@@ -16,8 +16,7 @@ void LinearScan::allocateRegisters() {
         func = f;
         bool success;
         success = false;
-        while (!success)  // repeat until all vregs can be mapped
-        {
+        while (!success) {  // repeat until all vregs can be mapped
             computeLiveIntervals();
             success = linearScanRegisterAllocation();
             if (success)  // all vregs can be mapped to real regs
@@ -160,18 +159,20 @@ void LinearScan::genSpillCode() {
             if (interval->disp > 255 || interval->disp < -255) {
                 operand = new MachineOperand(MachineOperand::VREG,
                                              SymbolTable::getLabel());
-                auto inst1 = new LoadMInstruction(use->getParent()->getParent(),
-                                                  operand, off);
+                auto inst1 =
+                    new LoadMInstruction(use->getParent()->getParent(),
+                                         LoadMInstruction::LDR, operand, off);
                 use->getParent()->insertBefore(inst1);
             }
             if (operand) {
-                auto inst =
-                    new LoadMInstruction(use->getParent()->getParent(), temp,
-                                         fp, new MachineOperand(*operand));
+                auto inst = new LoadMInstruction(
+                    use->getParent()->getParent(), LoadMInstruction::LDR, temp,
+                    fp, new MachineOperand(*operand));
                 use->getParent()->insertBefore(inst);
             } else {
-                auto inst = new LoadMInstruction(use->getParent()->getParent(),
-                                                 temp, fp, off);
+                auto inst =
+                    new LoadMInstruction(use->getParent()->getParent(),
+                                         LoadMInstruction::LDR, temp, fp, off);
                 use->getParent()->insertBefore(inst);
             }
         }
@@ -182,17 +183,19 @@ void LinearScan::genSpillCode() {
             if (interval->disp > 255 || interval->disp < -255) {
                 operand = new MachineOperand(MachineOperand::VREG,
                                              SymbolTable::getLabel());
-                inst1 = new LoadMInstruction(def->getParent()->getParent(),
-                                             operand, off);
+                inst1 =
+                    new LoadMInstruction(def->getParent()->getParent(),
+                                         LoadMInstruction::LDR, operand, off);
                 def->getParent()->insertAfter(inst1);
             }
             if (operand)
-                inst =
-                    new StoreMInstruction(def->getParent()->getParent(), temp,
-                                          fp, new MachineOperand(*operand));
+                inst = new StoreMInstruction(def->getParent()->getParent(),
+                                             StoreMInstruction::STR, temp, fp,
+                                             new MachineOperand(*operand));
             else
                 inst = new StoreMInstruction(def->getParent()->getParent(),
-                                             temp, fp, off);
+                                             StoreMInstruction::STR, temp, fp,
+                                             off);
             if (inst1)
                 inst1->insertAfter(inst);
             else

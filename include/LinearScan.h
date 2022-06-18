@@ -13,6 +13,8 @@ class MachineUnit;
 class MachineOperand;
 class MachineFunction;
 
+// TODO: allocate floating point registers
+
 class LinearScan {
    private:
     struct Interval {

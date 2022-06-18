@@ -178,7 +178,7 @@ ContinueStmt
     ;
 ReturnStmt
     : RETURN SEMICOLON {
-        $$ = new ReturnStmt(); // TODO
+        $$ = new ReturnStmt();
     }
     | RETURN Exp SEMICOLON {
         if (($2->getType()->isFloat() && funcRetType->isInt()) ||
@@ -563,7 +563,7 @@ ConstDef
         arrayValue = new double[arrayType->getSize()];
     }
       ConstInitVal {
-        ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue); // TODO: type casting
+        ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
         if (!identifiers->install($1, $<se>4))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         identifiers->install($1, $<se>4);

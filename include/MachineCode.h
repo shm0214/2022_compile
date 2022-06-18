@@ -32,8 +32,9 @@ class MachineOperand {
     int val;            // value of immediate number
     int reg_no;         // register no
     std::string label;  // address label
-    bool is_float = false;
+    bool fp = false;    // floating point
     float fval;
+
    public:
     enum { IMM, VREG, REG, LABEL };
     MachineOperand(int tp, int val);
@@ -48,8 +49,12 @@ class MachineOperand {
     int getVal() { return this->val; };
     void setVal(int val) { this->val = val; };
     float getFVal() { return this->fval; }
-    void setFVal(float val) { this->fval = fval; is_float = true; }
-    bool isFloat() { return this->is_float; }
+    void setFVal(float val) {
+        this->fval = fval;
+        this->fp = true;
+    }
+    uint32_t getBinVal();
+    bool isFloat() { return this->fp; }
     int getReg() { return this->reg_no; };
     void setReg(int regno) {
         this->type = REG;
@@ -78,7 +83,15 @@ class MachineInstruction {
     void addUse(MachineOperand* ope) { use_list.push_back(ope); };
     // Print execution code after printing opcode
     void PrintCond();
-    enum instType { BINARY, LOAD, STORE, MOV, BRANCH, CMP, STACK };
+    enum instType {
+        BINARY,
+        LOAD,
+        STORE,
+        MOV,
+        BRANCH,
+        CMP,
+        STACK,
+    };
 
    public:
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
@@ -98,7 +111,7 @@ class MachineInstruction {
 
 class BinaryMInstruction : public MachineInstruction {
    public:
-    enum opType { ADD, SUB, MUL, DIV, AND, OR };
+    enum opType { ADD, SUB, MUL, DIV, AND, OR, VADD, VSUB, VMUL, VDIV };
     BinaryMInstruction(MachineBlock* p,
                        int op,
                        MachineOperand* dst,
@@ -110,7 +123,9 @@ class BinaryMInstruction : public MachineInstruction {
 
 class LoadMInstruction : public MachineInstruction {
    public:
+    enum opType { LDR, VLDR };
     LoadMInstruction(MachineBlock* p,
+                     int op,
                      MachineOperand* dst,
                      MachineOperand* src1,
                      MachineOperand* src2 = nullptr,
@@ -120,7 +135,9 @@ class LoadMInstruction : public MachineInstruction {
 
 class StoreMInstruction : public MachineInstruction {
    public:
+    enum opType { STR, VSTR };
     StoreMInstruction(MachineBlock* p,
+                      int op,
                       MachineOperand* src1,
                       MachineOperand* src2,
                       MachineOperand* src3 = nullptr,
@@ -130,7 +147,7 @@ class StoreMInstruction : public MachineInstruction {
 
 class MovMInstruction : public MachineInstruction {
    public:
-    enum opType { MOV, MVN };
+    enum opType { MOV, MVN, MOVW, MOVT, VMOV, VMOVF32 };
     MovMInstruction(MachineBlock* p,
                     int op,
                     MachineOperand* dst,
@@ -151,8 +168,9 @@ class BranchMInstruction : public MachineInstruction {
 
 class CmpMInstruction : public MachineInstruction {
    public:
-    enum opType { CMP };
+    enum opType { CMP, VCMP };
     CmpMInstruction(MachineBlock* p,
+                    int op,
                     MachineOperand* src1,
                     MachineOperand* src2,
                     int cond = MachineInstruction::NONE);

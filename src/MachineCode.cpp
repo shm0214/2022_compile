@@ -7,7 +7,7 @@ int MachineBlock::label = 0;
 
 MachineOperand::MachineOperand(int tp, int val) {
     this->type = tp;
-    this->is_float = false;
+    this->fpu = false;
     if (tp == MachineOperand::IMM)
         this->val = val;
     else
@@ -23,7 +23,7 @@ MachineOperand::MachineOperand(int tp, float fval) {
     this->type = tp;
     if (tp == MachineOperand::IMM) {
         this->fval = fval;
-        is_float = true;
+        fpu = true;
     } else {
         // error
     }
@@ -31,7 +31,7 @@ MachineOperand::MachineOperand(int tp, float fval) {
 
 uint32_t MachineOperand::getBinVal() {
     uint32_t bin_val;
-    if (is_float) {
+    if (fpu) {
         bin_val = reinterpret_cast<uint32_t&>(fval);
     } else {
         bin_val = reinterpret_cast<uint32_t&>(val);
@@ -42,11 +42,11 @@ uint32_t MachineOperand::getBinVal() {
 bool MachineOperand::operator==(const MachineOperand& a) const {
     if (this->type != a.type)
         return false;
-    if (this->is_float != a.is_float) {
+    if (this->fpu != a.fpu) {
         return false;
     }
     if (this->type == IMM) {
-        if (this->is_float) {
+        if (this->fpu) {
             return this->fval == a.fval;
         } else {
             return this->val == a.val;
@@ -58,13 +58,13 @@ bool MachineOperand::operator==(const MachineOperand& a) const {
 bool MachineOperand::operator<(const MachineOperand& a) const {
     if (this->type == a.type) {
         if (this->type == IMM) {
-            if (this->is_float && a.is_float) {
+            if (this->fpu && a.fpu) {
                 return this->fval < a.fval;
-            } else if (!this->is_float && !a.is_float) {
+            } else if (!this->fpu && !a.fpu) {
                 return this->val < a.val;
-            } else if (this->is_float && !a.is_float) {
+            } else if (this->fpu && !a.fpu) {
                 return this->fval < a.val;
-            } else if (!this->is_float && a.is_float) {
+            } else if (!this->fpu && a.fpu) {
                 return this->val < a.fval;
             }
         }
@@ -112,7 +112,7 @@ void MachineOperand::output() {
      * lable addr_a -> print addr_a; */
     switch (this->type) {
         case IMM:
-            if (!is_float) {
+            if (!fpu) {
                 fprintf(yyout, "#%d", this->val);
             } else {
                 uint32_t temp = reinterpret_cast<uint32_t&>(this->fval);
@@ -123,9 +123,6 @@ void MachineOperand::output() {
             fprintf(yyout, "v%d", this->reg_no);
             break;
         case REG:
-            PrintReg();
-            break;
-        case FREG:
             PrintReg();
             break;
         case LABEL:

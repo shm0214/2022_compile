@@ -32,7 +32,7 @@ class MachineOperand {
     int val;            // value of immediate number
     int reg_no;         // register no
     std::string label;  // address label
-    bool fp = false;    // floating point
+    bool fpu = false;    // floating point
     float fval;
 
    public:
@@ -51,10 +51,10 @@ class MachineOperand {
     float getFVal() { return this->fval; }
     void setFVal(float val) {
         this->fval = fval;
-        this->fp = true;
+        this->fpu = true;
     }
     uint32_t getBinVal();
-    bool isFloat() { return this->fp; }
+    bool isFloat() { return this->fpu; }
     int getReg() { return this->reg_no; };
     void setReg(int regno) {
         this->type = REG;

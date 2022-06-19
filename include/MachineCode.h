@@ -37,7 +37,7 @@ class MachineOperand {
 
    public:
     enum { IMM, VREG, REG, LABEL };
-    MachineOperand(int tp, int val);
+    MachineOperand(int tp, int val, bool fpu = false);
     MachineOperand(std::string label);
     MachineOperand(int tp, float fval);
     bool operator==(const MachineOperand&) const;
@@ -177,10 +177,10 @@ class CmpMInstruction : public MachineInstruction {
     void output();
 };
 
-class StackMInstrcuton : public MachineInstruction {
+class StackMInstruction : public MachineInstruction {
    public:
-    enum opType { PUSH, POP };
-    StackMInstrcuton(MachineBlock* p,
+    enum opType { PUSH, POP, VPUSH, VPOP };
+    StackMInstruction(MachineBlock* p,
                      int op,
                      std::vector<MachineOperand*> srcs,
                      MachineOperand* src,

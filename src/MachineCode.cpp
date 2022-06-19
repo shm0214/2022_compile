@@ -5,13 +5,14 @@ extern FILE* yyout;
 
 int MachineBlock::label = 0;
 
-MachineOperand::MachineOperand(int tp, int val) {
+MachineOperand::MachineOperand(int tp, int val, bool fpu) {
     this->type = tp;
-    this->fpu = false;
-    if (tp == MachineOperand::IMM)
+    this->fpu = fpu;
+    if (tp == MachineOperand::IMM) {
         this->val = val;
-    else
-        this->reg_no = val;  // reg_no can be float register if larger than 15
+    } else {
+        this->reg_no = val;  // reg_no can be float if larger than 15(pc)
+    }
 }
 
 MachineOperand::MachineOperand(std::string label) {
@@ -23,7 +24,7 @@ MachineOperand::MachineOperand(int tp, float fval) {
     this->type = tp;
     if (tp == MachineOperand::IMM) {
         this->fval = fval;
-        fpu = true;
+        this->fpu = true;
     } else {
         // error
     }
@@ -294,6 +295,33 @@ void LoadMInstruction::output() {
     } else if (op == LoadMInstruction::VLDR) {
         // TODO
         fprintf(yyout, "\tvldr.32 ");
+        this->def_list[0]->output();
+        fprintf(yyout, ", ");
+        // Load immediate num, eg: ldr r1, =8
+        if (this->use_list[0]->isImm()) {
+            if (this->use_list[0]->isFloat()) {
+                float fval = this->use_list[0]->getFVal();
+                uint32_t temp = reinterpret_cast<uint32_t&>(fval);
+                fprintf(yyout, "=%u\n", temp);
+            } else {
+                fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
+            }
+            return;
+        }
+
+        // Load address
+        if (this->use_list[0]->isReg() || this->use_list[0]->isVReg())
+            fprintf(yyout, "[");
+
+        this->use_list[0]->output();
+        if (this->use_list.size() > 1) {
+            fprintf(yyout, ", ");
+            this->use_list[1]->output();
+        }
+
+        if (this->use_list[0]->isReg() || this->use_list[0]->isVReg())
+            fprintf(yyout, "]");
+        fprintf(yyout, "\n");
     }
 }
 
@@ -336,6 +364,19 @@ void StoreMInstruction::output() {
     } else if (op == StoreMInstruction::VSTR) {
         // TODO
         fprintf(yyout, "\tvstr.32 ");
+        this->use_list[0]->output();
+        fprintf(yyout, ", ");
+        // store address
+        if (this->use_list[1]->isReg() || this->use_list[1]->isVReg())
+            fprintf(yyout, "[");
+        this->use_list[1]->output();
+        if (this->use_list.size() > 2) {
+            fprintf(yyout, ", ");
+            this->use_list[2]->output();
+        }
+        if (this->use_list[1]->isReg() || this->use_list[1]->isVReg())
+            fprintf(yyout, "]");
+        fprintf(yyout, "\n");
     }
 }
 
@@ -445,7 +486,7 @@ void CmpMInstruction::output() {
     }
 }
 
-StackMInstrcuton::StackMInstrcuton(MachineBlock* p,
+StackMInstruction::StackMInstruction(MachineBlock* p,
                                    int op,
                                    std::vector<MachineOperand*> srcs,
                                    MachineOperand* src,
@@ -455,9 +496,11 @@ StackMInstrcuton::StackMInstrcuton(MachineBlock* p,
     this->type = MachineInstruction::STACK;
     this->op = op;
     this->cond = cond;
-    if (srcs.size())
-        for (auto it = srcs.begin(); it != srcs.end(); it++)
+    if (srcs.size()) {
+        for (auto it = srcs.begin(); it != srcs.end(); it++) {
             this->use_list.push_back(*it);
+        }
+    }
     this->use_list.push_back(src);
     src->setParent(this);
     if (src1) {
@@ -466,7 +509,7 @@ StackMInstrcuton::StackMInstrcuton(MachineBlock* p,
     }
 }
 
-void StackMInstrcuton::output() {
+void StackMInstruction::output() {
     switch (op) {
         case PUSH:
             fprintf(yyout, "\tpush ");
@@ -504,7 +547,7 @@ void MachineBlock::output() {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto lr = new MachineOperand(MachineOperand::REG, 14);
                 auto cur_inst =
-                    new StackMInstrcuton(this, StackMInstrcuton::POP,
+                    new StackMInstruction(this, StackMInstruction::POP,
                                          parent->getSavedRegs(), fp, lr);
                 cur_inst->output();
             }
@@ -570,7 +613,7 @@ void MachineFunction::output() {
     auto fp = new MachineOperand(MachineOperand::REG, 11);
     auto sp = new MachineOperand(MachineOperand::REG, 13);
     auto lr = new MachineOperand(MachineOperand::REG, 14);
-    (new StackMInstrcuton(nullptr, StackMInstrcuton::PUSH, getSavedRegs(), fp,
+    (new StackMInstruction(nullptr, StackMInstruction::PUSH, getSavedRegs(), fp,
                           lr))
         ->output();
     (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();

@@ -24,6 +24,7 @@ class LinearScan {
         int disp;    // displacement in stack
         int rreg;  // the real register mapped from virtual register if the vreg
                    // is not spilled to memory
+        bool fpu;
         std::set<MachineOperand*> defs;
         std::set<MachineOperand*> uses;
     };
@@ -31,6 +32,7 @@ class LinearScan {
     MachineFunction* func;
     // 暂且先认为它是可用的寄存器吧
     std::vector<int> regs;
+    std::vector<int> fpregs; // floating-point registers.
     std::map<MachineOperand*, std::set<MachineOperand*>> du_chains;
     std::vector<Interval*> intervals;
     std::vector<Interval*> active;

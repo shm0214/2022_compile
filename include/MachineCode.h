@@ -83,16 +83,7 @@ class MachineInstruction {
     void addUse(MachineOperand* ope) { use_list.push_back(ope); };
     // Print execution code after printing opcode
     void PrintCond();
-    enum instType {
-        BINARY,
-        LOAD,
-        STORE,
-        MOV,
-        BRANCH,
-        CMP,
-        STACK,
-        VCVT
-    };
+    enum instType { BINARY, LOAD, STORE, MOV, BRANCH, CMP, STACK, VCVT };
 
    public:
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
@@ -184,7 +175,7 @@ class StackMInstruction : public MachineInstruction {
     StackMInstruction(MachineBlock* p,
                       int op,
                       std::vector<MachineOperand*> srcs,
-                      MachineOperand* src,
+                      MachineOperand* src = nullptr,
                       MachineOperand* src1 = nullptr,
                       int cond = MachineInstruction::NONE);
     void output();
@@ -246,6 +237,7 @@ class MachineFunction {
     std::vector<MachineBlock*> block_list;
     int stack_size;
     std::set<int> saved_regs;
+    std::set<int> saved_fpregs;
     SymbolEntry* sym_ptr;
     int paramsNum;
 
@@ -267,9 +259,10 @@ class MachineFunction {
     void InsertBlock(MachineBlock* block) {
         this->block_list.push_back(block);
     };
-    void addSavedRegs(int regno) { saved_regs.insert(regno); };
+    void addSavedRegs(int regno);
     void output();
     std::vector<MachineOperand*> getSavedRegs();
+    std::vector<MachineOperand*> getSavedFpRegs();
     int getParamsNum() const { return paramsNum; };
     MachineUnit* getParent() const { return parent; };
 };

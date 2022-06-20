@@ -429,7 +429,7 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder) {
             auto internal_reg1 = genMachineVReg();
             auto internal_reg2 = new MachineOperand(*internal_reg1);
             auto src = genMachineOperand(operands[1]);  // TODO
-            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::VLDR,
+            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
                                             internal_reg1, src);
             cur_block->InsertInst(cur_inst);
             cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::VLDR,
@@ -910,10 +910,21 @@ void RetInstruction::genMachineCode(AsmBuilder* builder) {
      * 3. Generate bx instruction */
     auto cur_block = builder->getBlock();
     if (!operands.empty()) {
-        auto dst = new MachineOperand(MachineOperand::REG, 0);
-        auto src = genMachineOperand(operands[0]);
-        auto cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
-                                            dst, src);  // TODO: movw movt
+        MachineOperand* dst;
+        MachineOperand* src;
+        MachineInstruction* cur_inst;
+
+        if (operands[0]->getType()->isFloat()) {
+            dst = new MachineOperand(MachineOperand::REG, 16, true);
+            src = genMachineFloatOperand(operands[0]);
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
+                                           dst, src);  // TODO: movw movt
+        } else {
+            dst = new MachineOperand(MachineOperand::REG, 0);
+            src = genMachineOperand(operands[0]);
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
+                                           src);  // TODO: movw movt
+        }
         cur_block->InsertInst(cur_inst);
     }
     auto cur_func = builder->getFunction();

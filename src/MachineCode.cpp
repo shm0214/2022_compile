@@ -501,8 +501,10 @@ StackMInstruction::StackMInstruction(MachineBlock* p,
             this->use_list.push_back(*it);
         }
     }
-    this->use_list.push_back(src);
-    src->setParent(this);
+    if (src) {
+        this->use_list.push_back(src);
+        src->setParent(this);
+    }
     if (src1) {
         this->use_list.push_back(src1);
         src1->setParent(this);
@@ -544,21 +546,29 @@ void VcvtMInstruction::output() {
 }
 
 void StackMInstruction::output() {
-    switch (op) {
-        case PUSH:
-            fprintf(yyout, "\tpush ");
-            break;
-        case POP:
-            fprintf(yyout, "\tpop ");
-            break;
+    if (!this->use_list.empty()) {
+        switch (op) {
+            case PUSH:
+                fprintf(yyout, "\tpush ");
+                break;
+            case POP:
+                fprintf(yyout, "\tpop ");
+                break;
+            case VPUSH:
+                fprintf(yyout, "\tvpush ");
+                break;
+            case VPOP:
+                fprintf(yyout, "\tvpop ");
+                break;
+        }
+        fprintf(yyout, "{");
+        this->use_list[0]->output();
+        for (long unsigned int i = 1; i < use_list.size(); i++) {
+            fprintf(yyout, ", ");
+            this->use_list[i]->output();
+        }
+        fprintf(yyout, "}\n");
     }
-    fprintf(yyout, "{");
-    this->use_list[0]->output();
-    for (long unsigned int i = 1; i < use_list.size(); i++) {
-        fprintf(yyout, ", ");
-        this->use_list[i]->output();
-    }
-    fprintf(yyout, "}\n");
 }
 
 MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
@@ -580,7 +590,10 @@ void MachineBlock::output() {
             if ((*it)->isBX()) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto lr = new MachineOperand(MachineOperand::REG, 14);
-                auto cur_inst =
+                auto cur_inst = new StackMInstruction(
+                    this, StackMInstruction::VPOP, parent->getSavedFpRegs());
+                cur_inst->output();
+                cur_inst =
                     new StackMInstruction(this, StackMInstruction::POP,
                                           parent->getSavedRegs(), fp, lr);
                 cur_inst->output();
@@ -650,6 +663,8 @@ void MachineFunction::output() {
     (new StackMInstruction(nullptr, StackMInstruction::PUSH, getSavedRegs(), fp,
                            lr))
         ->output();
+    (new StackMInstruction(nullptr, StackMInstruction::VPUSH, getSavedFpRegs()))
+        ->output();
     (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();
     int off = AllocSpace(0);
     auto size = new MachineOperand(MachineOperand::IMM, off);
@@ -678,10 +693,37 @@ void MachineFunction::output() {
     fprintf(yyout, "\n");
 }
 
+void MachineFunction::addSavedRegs(int regno) {
+    if (regno < 16) {
+        saved_regs.insert(regno);
+    } else {
+        saved_fpregs.insert(regno);
+    }
+};
+
 std::vector<MachineOperand*> MachineFunction::getSavedRegs() {
     std::vector<MachineOperand*> regs;
     for (auto it = saved_regs.begin(); it != saved_regs.end(); it++) {
         auto reg = new MachineOperand(MachineOperand::REG, *it);
+        regs.push_back(reg);
+    }
+    return regs;
+}
+
+std::vector<MachineOperand*> MachineFunction::getSavedFpRegs() {
+    int min_regno = 31;
+    int max_regno = 0;
+    for (auto it = saved_fpregs.begin(); it != saved_fpregs.end(); it++) {
+        if (*it > max_regno) {
+            max_regno = *it;
+        }
+        if (*it < min_regno) {
+            min_regno = *it;
+        }
+    }
+    std::vector<MachineOperand*> regs;
+    for (int i = min_regno; i <= max_regno; ++i) {
+                auto reg = new MachineOperand(MachineOperand::REG, i, true);
         regs.push_back(reg);
     }
     return regs;

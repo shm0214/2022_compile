@@ -1361,6 +1361,10 @@ void FptosiInstruction::genMachineCode(AsmBuilder* builder) {
 
     // } // TODO
 
+    cur_inst = new VcvtMInstruction(cur_block, VcvtMInstruction::F2S,
+                                    src_operand, src_operand);
+    cur_block->InsertInst(cur_inst);
+
     cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
                                    dst_operand, src_operand);
 
@@ -1382,6 +1386,9 @@ void SitofpInstruction::genMachineCode(AsmBuilder* builder) {
 
     cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
                                    dst_operand, src_operand);
+    cur_block->InsertInst(cur_inst);
 
+    cur_inst = new VcvtMInstruction(cur_block, VcvtMInstruction::S2F,
+                                    dst_operand, dst_operand);
     cur_block->InsertInst(cur_inst);
 }

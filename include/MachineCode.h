@@ -32,7 +32,7 @@ class MachineOperand {
     int val;            // value of immediate number
     int reg_no;         // register no
     std::string label;  // address label
-    bool fpu = false;    // floating point
+    bool fpu = false;   // floating point
     float fval;
 
    public:
@@ -91,6 +91,7 @@ class MachineInstruction {
         BRANCH,
         CMP,
         STACK,
+        VCVT
     };
 
    public:
@@ -181,10 +182,21 @@ class StackMInstruction : public MachineInstruction {
    public:
     enum opType { PUSH, POP, VPUSH, VPOP };
     StackMInstruction(MachineBlock* p,
+                      int op,
+                      std::vector<MachineOperand*> srcs,
+                      MachineOperand* src,
+                      MachineOperand* src1 = nullptr,
+                      int cond = MachineInstruction::NONE);
+    void output();
+};
+
+class VcvtMInstruction : public MachineInstruction {
+   public:
+    enum opType { S2F, F2S };
+    VcvtMInstruction(MachineBlock* p,
                      int op,
-                     std::vector<MachineOperand*> srcs,
+                     MachineOperand* dst,
                      MachineOperand* src,
-                     MachineOperand* src1 = nullptr,
                      int cond = MachineInstruction::NONE);
     void output();
 };

@@ -487,11 +487,11 @@ void CmpMInstruction::output() {
 }
 
 StackMInstruction::StackMInstruction(MachineBlock* p,
-                                   int op,
-                                   std::vector<MachineOperand*> srcs,
-                                   MachineOperand* src,
-                                   MachineOperand* src1,
-                                   int cond) {
+                                     int op,
+                                     std::vector<MachineOperand*> srcs,
+                                     MachineOperand* src,
+                                     MachineOperand* src1,
+                                     int cond) {
     this->parent = p;
     this->type = MachineInstruction::STACK;
     this->op = op;
@@ -507,6 +507,40 @@ StackMInstruction::StackMInstruction(MachineBlock* p,
         this->use_list.push_back(src1);
         src1->setParent(this);
     }
+}
+
+VcvtMInstruction::VcvtMInstruction(MachineBlock* p,
+                                   int op,
+                                   MachineOperand* dst,
+                                   MachineOperand* src,
+                                   int cond) {
+    this->parent = p;
+    this->type = MachineInstruction::VCVT;
+    this->op = op;
+    this->cond = cond;
+    this->def_list.push_back(dst);
+    this->use_list.push_back(src);
+    dst->setParent(this);
+    src->setParent(this);
+}
+
+void VcvtMInstruction::output() {
+    switch (this->op) {
+        case VcvtMInstruction::F2S:
+            fprintf(yyout, "\tvcvt.s32.f32 ");
+            break;
+        case VcvtMInstruction::S2F:
+            fprintf(yyout, "\tvcvt.f32.s32 ");
+            break;
+        default:
+            break;
+    }
+    PrintCond();
+    fprintf(yyout, " ");
+    this->def_list[0]->output();
+    fprintf(yyout, ", ");
+    this->use_list[0]->output();
+    fprintf(yyout, "\n");
 }
 
 void StackMInstruction::output() {
@@ -548,7 +582,7 @@ void MachineBlock::output() {
                 auto lr = new MachineOperand(MachineOperand::REG, 14);
                 auto cur_inst =
                     new StackMInstruction(this, StackMInstruction::POP,
-                                         parent->getSavedRegs(), fp, lr);
+                                          parent->getSavedRegs(), fp, lr);
                 cur_inst->output();
             }
             if (num > 4 && (*it)->isStore()) {
@@ -614,7 +648,7 @@ void MachineFunction::output() {
     auto sp = new MachineOperand(MachineOperand::REG, 13);
     auto lr = new MachineOperand(MachineOperand::REG, 14);
     (new StackMInstruction(nullptr, StackMInstruction::PUSH, getSavedRegs(), fp,
-                          lr))
+                           lr))
         ->output();
     (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();
     int off = AllocSpace(0);

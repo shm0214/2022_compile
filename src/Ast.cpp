@@ -1450,6 +1450,7 @@ ExprNode* ExprNode::copy() {
     }
     ExprNode* temp = this;
     if (temp->getNext()) {
+        ret->cleanNext();
         temp = (ExprNode*)(temp->getNext());
         ret->setNext(temp->copy());
     }

@@ -35,6 +35,7 @@ class Node {
     virtual void output(int level) = 0;
     void setNext(Node* node);
     Node* getNext() { return next; }
+    void cleanNext() { next = nullptr; }
     virtual bool typeCheck(Type* retType = nullptr) = 0;
     virtual void genCode() = 0;
     std::vector<Instruction*>& trueList() { return true_list; }

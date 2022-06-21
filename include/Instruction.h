@@ -6,6 +6,7 @@
 #include <vector>
 #include "AsmBuilder.h"
 #include "Operand.h"
+#include "Type.h"
 
 class BasicBlock;
 
@@ -18,6 +19,8 @@ class Instruction {
     bool isCond() const { return instType == COND; };
     bool isAlloc() const { return instType == ALLOCA; };
     bool isRet() const { return instType == RET; };
+    bool isStore() const { return instType == STORE; };
+    bool isPhi() const { return instType == PHI; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
@@ -31,6 +34,10 @@ class Instruction {
     MachineOperand* genMachineLabel(int block_no);
     virtual void genMachineCode(AsmBuilder*) = 0;
     int getInstType() { return instType; }
+    virtual std::vector<Operand*> getUse() { return std::vector<Operand*>(); }
+    virtual Operand* getDef() { return nullptr; }
+    virtual void replaceUse(Operand* old, Operand* new_) {}
+    virtual void replaceDef(Operand* new_) {}
 
    protected:
     unsigned instType;
@@ -51,7 +58,8 @@ class Instruction {
         CALL,
         ZEXT,
         XOR,
-        GEP
+        GEP,
+        PHI
     };
 };
 
@@ -71,6 +79,9 @@ class AllocaInstruction : public Instruction {
     ~AllocaInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    Operand* getDef() { return operands[0]; }
+    void replaceDef(Operand* new_);
+    bool isArray() { return se->getType()->isArray(); }
 
    private:
     SymbolEntry* se;
@@ -84,6 +95,12 @@ class LoadInstruction : public Instruction {
     ~LoadInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
 };
 
 class StoreInstruction : public Instruction {
@@ -94,6 +111,12 @@ class StoreInstruction : public Instruction {
     ~StoreInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    void replaceUse(Operand* old, Operand* new_);
+    Operand* getDstAddr() { return operands[0]; }
+    Operand* getSrc() { return operands[1]; }
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[0], operands[1]});
+    }
 };
 
 class BinaryInstruction : public Instruction {
@@ -107,6 +130,12 @@ class BinaryInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1], operands[2]});
+    }
 };
 
 class CmpInstruction : public Instruction {
@@ -120,6 +149,11 @@ class CmpInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     enum { E, NE, L, LE, G, GE };
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1], operands[2]});
+    }
 };
 
 // unconditional branch
@@ -149,6 +183,10 @@ class CondBrInstruction : public Instruction {
     void setFalseBranch(BasicBlock*);
     BasicBlock* getFalseBranch();
     void genMachineCode(AsmBuilder*);
+    void replaceUse(Operand* old, Operand* new_);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[0]});
+    }
 
    protected:
     BasicBlock* true_branch;
@@ -161,6 +199,13 @@ class RetInstruction : public Instruction {
     ~RetInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+    std::vector<Operand*> getUse() {
+        if (operands.size())
+            return std::vector<Operand*>({operands[0]});
+        return std::vector<Operand*>();
+    }
 };
 
 class CallInstruction : public Instruction {
@@ -176,6 +221,15 @@ class CallInstruction : public Instruction {
     ~CallInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+    std::vector<Operand*> getUse() {
+        std::vector<Operand*> vec;
+        for (auto it = operands.begin() + 1; it != operands.end(); it++)
+            vec.push_back(*it);
+        return vec;
+    }
 };
 
 class ZextInstruction : public Instruction {
@@ -186,6 +240,12 @@ class ZextInstruction : public Instruction {
     ~ZextInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
 };
 
 class XorInstruction : public Instruction {
@@ -194,6 +254,12 @@ class XorInstruction : public Instruction {
     ~XorInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
 };
 
 class GepInstruction : public Instruction {
@@ -216,6 +282,30 @@ class GepInstruction : public Instruction {
     void setLast() { last = true; };
     Operand* getInit() const { return init; };
     void setInit(Operand* init) { this->init = init; };
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1], operands[2]});
+    }
+};
+
+class PhiInstruction : public Instruction {
+   private:
+    Operand* originDef;
+    Operand* dst;
+    std::map<BasicBlock*, Operand*> srcs;
+
+   public:
+    PhiInstruction(Operand* dst, BasicBlock* insert_bb = nullptr);
+    void output() const;
+    void addSrc(BasicBlock* block, Operand* src);
+    Operand* getDef() { return dst; }
+    void genMachineCode(AsmBuilder*) {}
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+    Operand* getOriginDef() { return originDef; }
+    void replaceOriginDef(Operand* new_);
 };
 
 #endif

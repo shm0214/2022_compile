@@ -17,6 +17,8 @@ class BasicBlock {
     int no;
 
    public:
+    int order;
+    std::set<BasicBlock*> domFrontier;
     BasicBlock(Function*);
     ~BasicBlock();
     void insertFront(Instruction*);
@@ -45,6 +47,7 @@ class BasicBlock {
     int getNumOfSucc() const { return succ.size(); };
     void genMachineCode(AsmBuilder*);
     void cleanSucc();
+    void insertPhiInstruction(Operand* operand);
 };
 
 #endif

@@ -1,7 +1,7 @@
 #include "BasicBlock.h"
 #include <algorithm>
-#include "Function.h"
 #include <vector>
+#include "Function.h"
 
 using namespace std;
 extern FILE* yyout;
@@ -102,4 +102,9 @@ void BasicBlock::cleanSucc() {
     for (auto i : succ)
         i->removePred(this);
     vector<BasicBlock*>().swap(succ);
+}
+
+void BasicBlock::insertPhiInstruction(Operand* dst) {
+    Instruction* i = new PhiInstruction(dst);
+    insertFront(i);
 }

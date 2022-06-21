@@ -83,7 +83,7 @@ class MachineInstruction {
     void addUse(MachineOperand* ope) { use_list.push_back(ope); };
     // Print execution code after printing opcode
     void PrintCond();
-    enum instType { BINARY, LOAD, STORE, MOV, BRANCH, CMP, STACK, VCVT };
+    enum instType { BINARY, LOAD, STORE, MOV, BRANCH, CMP, STACK, VCVT, VMRS };
 
    public:
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
@@ -139,7 +139,7 @@ class StoreMInstruction : public MachineInstruction {
 
 class MovMInstruction : public MachineInstruction {
    public:
-    enum opType { MOV, MVN, MOVW, MOVT, VMOV, VMOVF32 };
+    enum opType { MOV, MVN, MOVT, VMOV, VMOVF32 };
     MovMInstruction(MachineBlock* p,
                     int op,
                     MachineOperand* dst,
@@ -190,6 +190,12 @@ class VcvtMInstruction : public MachineInstruction {
                      MachineOperand* src,
                      int cond = MachineInstruction::NONE);
     void output();
+};
+
+class VmrsMInstruction : public MachineInstruction {
+    public:
+        VmrsMInstruction(MachineBlock* p);
+        void output();
 };
 
 class MachineBlock {

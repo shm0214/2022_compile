@@ -271,7 +271,7 @@ void LoadMInstruction::output() {
             if (this->use_list[0]->isFloat()) {
                 float fval = this->use_list[0]->getFVal();
                 uint32_t temp = reinterpret_cast<uint32_t&>(fval);
-                fprintf(yyout, "=%u\n", temp);
+                fprintf(yyout, "=%u\n", temp); // shall be deprecated.
             } else {
                 fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
             }
@@ -302,7 +302,7 @@ void LoadMInstruction::output() {
             if (this->use_list[0]->isFloat()) {
                 float fval = this->use_list[0]->getFVal();
                 uint32_t temp = reinterpret_cast<uint32_t&>(fval);
-                fprintf(yyout, "=%u\n", temp);
+                fprintf(yyout, "=%u\n", temp); // shall be deprecated
             } else {
                 fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
             }
@@ -400,6 +400,9 @@ void MovMInstruction::output() {
         case MovMInstruction::MOV:
             fprintf(yyout, "\tmov");
             break;
+        case MovMInstruction::MOVT:
+            fprintf(yyout, "\tmovt");
+            break;
         case MovMInstruction::VMOV:
             fprintf(yyout, "\tvmov");
             break;
@@ -434,26 +437,18 @@ void BranchMInstruction::output() {
     switch (op) {
         case B:
             fprintf(yyout, "\tb");
-            PrintCond();
-            fprintf(yyout, " ");
-            this->use_list[0]->output();
-            fprintf(yyout, "\n");
             break;
         case BX:
             fprintf(yyout, "\tbx");
-            PrintCond();
-            fprintf(yyout, " ");
-            this->use_list[0]->output();
-            fprintf(yyout, "\n");
             break;
         case BL:
             fprintf(yyout, "\tbl");
-            PrintCond();
-            fprintf(yyout, " ");
-            this->use_list[0]->output();
-            fprintf(yyout, "\n");
             break;
     }
+    PrintCond();
+    fprintf(yyout, " ");
+    this->use_list[0]->output();
+    fprintf(yyout, "\n");
 }
 
 CmpMInstruction::CmpMInstruction(MachineBlock* p,
@@ -473,17 +468,20 @@ CmpMInstruction::CmpMInstruction(MachineBlock* p,
 }
 
 void CmpMInstruction::output() {
-    if (op == CmpMInstruction::CMP) {
-        fprintf(yyout, "\tcmp ");
-        this->use_list[0]->output();
-        fprintf(yyout, ", ");
-        this->use_list[1]->output();
-        fprintf(yyout, "\n");
-
-    } else if (op == CmpMInstruction::VCMP) {
-        // TODO
-        fprintf(yyout, "\tvcmp.f32 ");
+    switch (this->op) {
+        case CmpMInstruction::CMP:
+            fprintf(yyout, "\tcmp ");
+            break;
+        case CmpMInstruction::VCMP:
+            fprintf(yyout, "\tvcmp.f32 ");
+            break;
+        default:
+            break;
     }
+    this->use_list[0]->output();
+    fprintf(yyout, ", ");
+    this->use_list[1]->output();
+    fprintf(yyout, "\n");
 }
 
 StackMInstruction::StackMInstruction(MachineBlock* p,
@@ -524,6 +522,16 @@ VcvtMInstruction::VcvtMInstruction(MachineBlock* p,
     this->use_list.push_back(src);
     dst->setParent(this);
     src->setParent(this);
+}
+
+VmrsMInstruction::VmrsMInstruction(MachineBlock* p) {
+    this->parent = p;
+    this->type = MachineInstruction::VMRS;
+}
+
+
+void VmrsMInstruction::output() {
+    fprintf(yyout, "\tvmrs APSR_nzcv, FPSCR\n");
 }
 
 void VcvtMInstruction::output() {
@@ -723,7 +731,7 @@ std::vector<MachineOperand*> MachineFunction::getSavedFpRegs() {
     }
     std::vector<MachineOperand*> regs;
     for (int i = min_regno; i <= max_regno; ++i) {
-                auto reg = new MachineOperand(MachineOperand::REG, i, true);
+        auto reg = new MachineOperand(MachineOperand::REG, i, true);
         regs.push_back(reg);
     }
     return regs;

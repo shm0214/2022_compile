@@ -745,7 +745,8 @@ void UnaryExpr::genCode() {
     if (op == NOT) {
         BasicBlock* bb = builder->getInsertBB();
         Operand* src = expr->getOperand();
-        if (expr->getType()->getSize() == 32) {
+        if (expr->getType()->isFloat() ||
+            expr->getType()->isInt()) {  // FIXME: not i1
             Operand* temp = new Operand(new TemporarySymbolEntry(
                 TypeSystem::boolType, SymbolTable::getLabel()));
             new CmpInstruction(

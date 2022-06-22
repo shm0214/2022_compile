@@ -271,7 +271,7 @@ void LoadMInstruction::output() {
             if (this->use_list[0]->isFloat()) {
                 float fval = this->use_list[0]->getFVal();
                 uint32_t temp = reinterpret_cast<uint32_t&>(fval);
-                fprintf(yyout, "=%u\n", temp); // shall be deprecated.
+                fprintf(yyout, "=%u\n", temp);  // shall be deprecated.
             } else {
                 fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
             }
@@ -302,7 +302,7 @@ void LoadMInstruction::output() {
             if (this->use_list[0]->isFloat()) {
                 float fval = this->use_list[0]->getFVal();
                 uint32_t temp = reinterpret_cast<uint32_t&>(fval);
-                fprintf(yyout, "=%u\n", temp); // shall be deprecated
+                fprintf(yyout, "=%u\n", temp);  // shall be deprecated
             } else {
                 fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
             }
@@ -529,7 +529,6 @@ VmrsMInstruction::VmrsMInstruction(MachineBlock* p) {
     this->type = MachineInstruction::VMRS;
 }
 
-
 void VmrsMInstruction::output() {
     fprintf(yyout, "\tvmrs APSR_nzcv, FPSCR\n");
 }
@@ -589,7 +588,9 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
 
 void MachineBlock::output() {
     bool first = true;
-    int offset = (parent->getSavedRegs().size() + 2) * 4;
+    int offset =
+        (parent->getSavedRegs().size() + parent->getSavedFpRegs().size() + 2) *
+        4;
     int num = parent->getParamsNum();
     int count = 0;
     if (!inst_list.empty()) {

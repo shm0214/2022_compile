@@ -629,7 +629,7 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
         if (src1->isImm()) {
             auto internal_reg = genMachineVReg();
             cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
-                                           internal_reg, src1);
+                                            internal_reg, src1);
             cur_block->InsertInst(cur_inst);
             auto tmp_reg = genMachineVReg(true);
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
@@ -640,7 +640,7 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
         if (src2->isImm()) {
             auto internal_reg = genMachineVReg();
             cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
-                                           internal_reg, src2);
+                                            internal_reg, src2);
             cur_block->InsertInst(cur_inst);
             auto tmp_reg = genMachineVReg(true);
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
@@ -767,7 +767,7 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder) {
         if (src1->isImm()) {
             auto internal_reg = genMachineVReg();
             cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
-                                           internal_reg, src1);
+                                            internal_reg, src1);
             cur_block->InsertInst(cur_inst);
             auto tmp_reg = genMachineVReg(true);
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
@@ -775,10 +775,10 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder) {
             cur_block->InsertInst(cur_inst);
             src1 = new MachineOperand(*tmp_reg);
         }
-        if (src2->isImm()) {  // TODO
+        if (src2->isImm()) {
             auto internal_reg = genMachineVReg();
             cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
-                                           internal_reg, src2);
+                                            internal_reg, src2);
             cur_block->InsertInst(cur_inst);
             auto tmp_reg = genMachineVReg(true);
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
@@ -802,6 +802,28 @@ void CmpInstruction::genMachineCode(AsmBuilder* builder) {
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
                                            falseOperand, 7 - opcode);
             cur_block->InsertInst(cur_inst);
+        } else if (opcode == CmpInstruction::E) {
+            auto dst = genMachineOperand(operands[0]);
+            auto trueOperand = genMachineImm(1);
+            auto falseOperand = genMachineImm(0);
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
+                                           trueOperand, E);
+            cur_block->InsertInst(cur_inst);
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
+                                           falseOperand, NE);
+            cur_block->InsertInst(cur_inst);
+
+        } else if (opcode == CmpInstruction::NE) {
+            auto dst = genMachineOperand(operands[0]);
+            auto trueOperand = genMachineImm(1);
+            auto falseOperand = genMachineImm(0);
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
+                                           trueOperand, NE);
+            cur_block->InsertInst(cur_inst);
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
+                                           falseOperand, E);
+            cur_block->InsertInst(cur_inst);
+
         }
 
     } else {
@@ -1104,12 +1126,13 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         }
         operand = genMachineReg(gpreg_cnt - 1);
         auto src = genMachineOperand(operands[idx]);
-        if (src->isImm()) {
+        if (src->isImm() && src->getVal() > 255) {
             cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
                                             operand, src);
-        } else
+        } else {
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
-                                           operand, src);  // TODO
+                                           operand, src);
+        }
         cur_block->InsertInst(cur_inst);
         gpreg_cnt++;
     }
@@ -1120,12 +1143,13 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         operand = genMachineOperand(operands[i]);
         if (operand->isImm()) {
             auto dst = genMachineVReg();
-            if (operand->getVal() < 256)
+            if (operand->getVal() < 256) {
                 cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
                                                dst, operand);
-            else
+            } else {
                 cur_inst = new LoadMInstruction(
-                    cur_block, LoadMInstruction::LDR, dst, operand);  // TODO
+                    cur_block, LoadMInstruction::LDR, dst, operand);
+            }
             cur_block->InsertInst(cur_inst);
             operand = dst;
         }
@@ -1144,9 +1168,13 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         }
         operand = genMachineFReg(fpreg_cnt - 1);
         auto src = genMachineFloatOperand(operands[idx]);
-
-        cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
-                                       operand, src);  // TODO
+        if (src->isImm()) {
+            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::VLDR,
+                                            operand, src);
+        } else {
+            cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
+                                           operand, src);
+        }
         cur_block->InsertInst(cur_inst);
         fpreg_cnt++;
     }
@@ -1157,8 +1185,8 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         operand = genMachineFloatOperand(operands[i]);
         if (operand->isImm()) {
             auto dst = genMachineVReg(true);
-            cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
-                                           dst, operand);
+            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::VLDR,
+                                            dst, operand);  // TODO
             cur_block->InsertInst(cur_inst);
             operand = dst;
         }
@@ -1273,9 +1301,7 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
             }
             cur_block->InsertInst(cur_inst);
         }
-        // printf("[type1]\t%s\n", operands[1]->getType()->toStr().c_str());
-        // printf("[type2]\t%s\n",
-        // ((PointerType*)(operands[1]->getType()))->getType()->toStr().c_str());
+
         ArrayType* type =
             (ArrayType*)(((PointerType*)(operands[1]->getType()))->getType());
         Type* elementType = type->getElementType();
@@ -1330,11 +1356,13 @@ void FptosiInstruction::genMachineCode(AsmBuilder* builder) {
     auto src_operand = genMachineFloatOperand(src);
     auto dst_operand = genMachineOperand(dst);
 
-    // if (src_operand->isImm()) {
-
-    // } else {
-
-    // } // TODO
+    if (src_operand->isImm()) {
+        auto tmp = genMachineVReg(true);
+        cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::VLDR, tmp,
+                                        src_operand);
+        cur_block->InsertInst(cur_inst);
+        src_operand = tmp;
+    }
 
     cur_inst = new VcvtMInstruction(cur_block, VcvtMInstruction::F2S,
                                     src_operand, src_operand);
@@ -1354,18 +1382,12 @@ void SitofpInstruction::genMachineCode(AsmBuilder* builder) {
 
     if (src_operand->isImm()) {
         auto tmp = genMachineVReg();
-        cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, tmp,
-                                       src_operand);  // TODO
+        cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR, tmp,
+                                        src_operand);
         cur_block->InsertInst(cur_inst);
         src_operand = tmp;
     }
     auto dst_operand = genMachineFloatOperand(dst);
-
-    // if (src_operand->isImm()) {
-
-    // } else {
-
-    // } // TODO
 
     cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
                                    dst_operand, src_operand);

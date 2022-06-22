@@ -76,10 +76,10 @@ int main(int argc, char* argv[]) {
     if (optimize) {
         ElimUnreachCode e(&unit);
         Starighten s(&unit);
-        s.pass();
-        e.pass();
         Mem2reg m(&unit);
         m.pass();
+        e.pass();
+        s.pass();
     }
     if (dump_ir)
         unit.output();

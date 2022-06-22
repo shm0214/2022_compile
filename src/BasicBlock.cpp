@@ -56,6 +56,10 @@ void BasicBlock::removeSucc(BasicBlock* bb) {
     succ.erase(std::find(succ.begin(), succ.end(), bb));
 }
 
+void BasicBlock::removeSuccFromEnd(BasicBlock* bb) {
+    succ.erase((std::find(succ.rbegin(), succ.rend(), bb) + 1).base());
+}
+
 void BasicBlock::addPred(BasicBlock* bb) {
     pred.push_back(bb);
 }
@@ -64,6 +68,11 @@ void BasicBlock::addPred(BasicBlock* bb) {
 void BasicBlock::removePred(BasicBlock* bb) {
     pred.erase(std::find(pred.begin(), pred.end(), bb));
 }
+
+void BasicBlock::removePredFromEnd(BasicBlock* bb) {
+    pred.erase((std::find(pred.rbegin(), pred.rend(), bb) + 1).base());
+}
+
 void BasicBlock::genMachineCode(AsmBuilder* builder) {
     auto cur_func = builder->getFunction();
     auto cur_block = new MachineBlock(cur_func, no);

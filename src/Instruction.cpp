@@ -1,4 +1,5 @@
 #include "Instruction.h"
+#include <assert.h>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -1153,4 +1154,48 @@ void PhiInstruction::replaceDef(Operand* new_) {
 
 void PhiInstruction::replaceOriginDef(Operand* new_) {
     this->originDef = new_;
+}
+
+void PhiInstruction::changeSrcBlock(
+    std::map<BasicBlock*, std::vector<BasicBlock*>> changes) {
+    bool flag;
+    while (true) {
+        flag = false;
+        for (auto& it : srcs) {
+            if (changes.find(it.first) != changes.end()) {
+                auto vec = changes[it.first];
+                auto src = srcs[it.first];
+                for (auto b : vec) {
+                    if (srcs.find(b) != srcs.end()) {
+                        auto& phiBlocks = parent->getPhiBlocks();
+                        auto iter = phiBlocks.find(b);
+                        BasicBlock* b1;
+                        if (iter != phiBlocks.end()) {
+                            b1 = iter->second;
+                        } else {
+                            // 需要添加一个block
+                            b1 = new BasicBlock(b->getParent());
+                            phiBlocks.insert(std::make_pair(b, b1));
+                            b->addSucc(b1);
+                            b->removeSuccFromEnd(this->getParent());
+                            auto i = (CondBrInstruction*)(b->rbegin());
+                            i->setFalseBranch(b1);
+                            b1->addPred(b);
+                            new UncondBrInstruction(this->getParent(), b1);
+                            this->getParent()->removePredFromEnd(b);
+                            this->getParent()->addPred(b1);
+                            b1->addSucc(this->getParent());
+                        }
+                        addSrc(b1, src);
+                    } else
+                        addSrc(b, src);
+                }
+                srcs.erase(it.first);
+                flag = true;
+                break;
+            }
+        }
+        if (!flag)
+            break;
+    }
 }

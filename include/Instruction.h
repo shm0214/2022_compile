@@ -306,6 +306,7 @@ class PhiInstruction : public Instruction {
     void replaceDef(Operand* new_);
     Operand* getOriginDef() { return originDef; }
     void replaceOriginDef(Operand* new_);
+    void changeSrcBlock(std::map<BasicBlock*, std::vector<BasicBlock*>> changes);
 };
 
 #endif

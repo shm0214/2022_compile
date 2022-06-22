@@ -15,6 +15,8 @@ class BasicBlock {
     Instruction* head;
     Function* parent;
     int no;
+    // for phi::changeSrcBlock
+    std::map<BasicBlock*, BasicBlock*> phiBlocks;
 
    public:
     int order;
@@ -31,8 +33,10 @@ class BasicBlock {
     bool predEmpty() const { return pred.empty(); };
     void addSucc(BasicBlock*);
     void removeSucc(BasicBlock*);
+    void removeSuccFromEnd(BasicBlock*);
     void addPred(BasicBlock*);
     void removePred(BasicBlock*);
+    void removePredFromEnd(BasicBlock*);
     int getNo() { return no; };
     Function* getParent() { return parent; };
     Instruction* begin() { return head->getNext(); };
@@ -48,6 +52,8 @@ class BasicBlock {
     void genMachineCode(AsmBuilder*);
     void cleanSucc();
     void insertPhiInstruction(Operand* operand);
+    void cleanPhiBlocks() { phiBlocks.clear(); }
+    std::map<BasicBlock*, BasicBlock*>& getPhiBlocks() { return phiBlocks; }
 };
 
 #endif

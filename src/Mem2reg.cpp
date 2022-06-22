@@ -142,7 +142,8 @@ void Mem2reg::rename(BasicBlock* block) {
                 else
                     phi->addSrc(block, new Operand(new ConstantSymbolEntry(
                                            TypeSystem::intType, 0)));
-            }
+            }else
+                break;
         }
     }
     auto func = block->getParent();

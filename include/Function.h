@@ -68,8 +68,9 @@ class Function {
     ~Function();
     void insertBlock(BasicBlock* bb) { block_list.push_back(bb); };
     BasicBlock* getEntry() { return entry; };
+    void setEntry(BasicBlock* entry) { this->entry = entry; };
     void remove(BasicBlock* bb);
-    void output() const;
+    void output();
     std::vector<BasicBlock*>& getBlockList() { return block_list; };
     iterator begin() { return block_list.begin(); };
     iterator end() { return block_list.end(); };
@@ -91,6 +92,11 @@ class Function {
     void domTest();
     void computeDomFrontier();
     TreeNode* getDomNode(BasicBlock* b) { return preOrder2dom[b->order]; }
+    void dfs(AsmBuilder* builder,
+             BasicBlock* block,
+             std::set<BasicBlock*>& v,
+             std::map<BasicBlock*, MachineBlock*>& map);
+    void dfs1(BasicBlock* block, std::set<BasicBlock*>& v);
 };
 
 #endif

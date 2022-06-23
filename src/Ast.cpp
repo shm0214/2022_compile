@@ -641,34 +641,6 @@ void BreakStmt::genCode() {
     builder->setInsertBB(break_next_bb);
 }
 void WhileStmt::genCode() {
-    // Function* func;
-    // BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
-    // bb = builder->getInsertBB();
-    // func = builder->getInsertBB()->getParent();
-    // cond_bb = new BasicBlock(func);
-    // while_bb = new BasicBlock(func);
-    // end_bb = new BasicBlock(func);
-
-    // this->cond_bb = cond_bb;
-    // this->end_bb = end_bb;
-
-    // new UncondBrInstruction(cond_bb, bb);
-
-    // builder->setInsertBB(cond_bb);
-    // cond->genCode();
-    // backPatch(cond->trueList(), while_bb);
-    // backPatch(cond->falseList(), end_bb);
-    // // Operand* condoperand= cond->getOperand();
-    // // new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
-
-    // builder->setInsertBB(while_bb);
-    // stmt->genCode();
-
-    // while_bb = builder->getInsertBB();
-    // new UncondBrInstruction(cond_bb, while_bb);
-
-    // builder->setInsertBB(end_bb);
-
     Function* func;
     BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
     bb = builder->getInsertBB();
@@ -686,14 +658,42 @@ void WhileStmt::genCode() {
     cond->genCode();
     backPatch(cond->trueList(), while_bb);
     backPatch(cond->falseList(), end_bb);
+    // Operand* condoperand= cond->getOperand();
+    // new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
 
     builder->setInsertBB(while_bb);
     stmt->genCode();
-    ExprNode* cond1 = cond->copy();
-    // ExprNode* cond1 = cond;
-    cond1->genCode();
-    backPatch(cond1->trueList(), while_bb);
-    backPatch(cond1->falseList(), end_bb);
+
+    while_bb = builder->getInsertBB();
+    new UncondBrInstruction(cond_bb, while_bb);
+
+    // builder->setInsertBB(end_bb);
+
+    // Function* func;
+    // BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
+    // bb = builder->getInsertBB();
+    // func = builder->getInsertBB()->getParent();
+    // cond_bb = new BasicBlock(func);
+    // while_bb = new BasicBlock(func);
+    // end_bb = new BasicBlock(func);
+
+    // this->cond_bb = cond_bb;
+    // this->end_bb = end_bb;
+
+    // new UncondBrInstruction(cond_bb, bb);
+
+    // builder->setInsertBB(cond_bb);
+    // cond->genCode();
+    // backPatch(cond->trueList(), while_bb);
+    // backPatch(cond->falseList(), end_bb);
+
+    // builder->setInsertBB(while_bb);
+    // stmt->genCode();
+    // ExprNode* cond1 = cond->copy();
+    // // ExprNode* cond1 = cond;
+    // cond1->genCode();
+    // backPatch(cond1->trueList(), while_bb);
+    // backPatch(cond1->falseList(), end_bb);
 
     // Operand* condoperand = cond->getOperand();
     // auto end = ((CondBrInstruction*)(cond_bb->rbegin()))->getFalseBranch();

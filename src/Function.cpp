@@ -29,7 +29,17 @@ void Function::remove(BasicBlock* bb) {
     block_list.erase(std::find(block_list.begin(), block_list.end(), bb));
 }
 
-void Function::output() const {
+void Function::dfs1(BasicBlock* block, std::set<BasicBlock*>& v) {
+    v.insert(block);
+    for (auto it = block->succ_begin(); it != block->succ_end(); it++) {
+        if (v.find(*it) == v.end()) {
+            (*it)->output();
+            dfs1(*it, v);
+        }
+    }
+}
+
+void Function::output() {
     FunctionType* funcType = dynamic_cast<FunctionType*>(sym_ptr->getType());
     Type* retType = funcType->getRetType();
     std::vector<SymbolEntry*> paramsSe = funcType->getParamsSe();
@@ -48,22 +58,23 @@ void Function::output() const {
         fprintf(yyout, ") {\n");
     }
     std::set<BasicBlock*> v;
-    std::list<BasicBlock*> q;
-    q.push_back(entry);
-    v.insert(entry);
+    entry->output();
+    dfs1(entry, v);
+    fprintf(yyout, "}\n");
+}
 
-    while (!q.empty()) {
-        auto bb = q.front();
-        q.pop_front();
-        bb->output();
-        for (auto succ = bb->succ_begin(); succ != bb->succ_end(); succ++) {
-            if (v.find(*succ) == v.end()) {
-                v.insert(*succ);
-                q.push_back(*succ);
-            }
+void Function::dfs(AsmBuilder* builder,
+                   BasicBlock* block,
+                   std::set<BasicBlock*>& v,
+                   std::map<BasicBlock*, MachineBlock*>& map) {
+    v.insert(block);
+    for (auto it = block->succ_begin(); it != block->succ_end(); it++) {
+        if (v.find(*it) == v.end()) {
+            (*it)->genMachineCode(builder);
+            map[*it] = builder->getBlock();
+            dfs(builder, *it, v, map);
         }
     }
-    fprintf(yyout, "}\n");
 }
 
 void Function::genMachineCode(AsmBuilder* builder) {
@@ -71,10 +82,28 @@ void Function::genMachineCode(AsmBuilder* builder) {
     auto cur_func = new MachineFunction(cur_unit, this->sym_ptr);
     builder->setFunction(cur_func);
     std::map<BasicBlock*, MachineBlock*> map;
-    for (auto block : block_list) {
-        block->genMachineCode(builder);
-        map[block] = builder->getBlock();
-    }
+    // for (auto block : block_list) {
+    //     block->genMachineCode(builder);
+    //     map[block] = builder->getBlock();
+    // }
+    std::set<BasicBlock*> v;
+    entry->genMachineCode(builder);
+    map[entry] = builder->getBlock();
+    dfs(builder, entry, v, map);
+
+    // while (!q.empty()) {
+    //     auto bb = q.top();
+    //     bb->genMachineCode(builder);
+    //     map[bb] = builder->getBlock();
+    //     for (auto succ = bb->succ_begin(); succ != bb->succ_end(); succ++) {
+    //         if (v.find(*succ) == v.end()) {
+    //             v.insert(*succ);
+    //             q.push(*succ);
+    //         }
+    //     }
+    //     q.pop();
+    // }
+
     // Add pred and succ for every block
     for (auto block : block_list) {
         auto mblock = map[block];

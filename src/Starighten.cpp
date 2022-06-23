@@ -50,6 +50,10 @@ void Starighten::pass3(Function* func) {
     auto& blocklist = func->getBlockList();
     for (auto it = blocklist.begin(); it != blocklist.end();) {
         if ((*it)->begin() == (*it)->rbegin() && (*it)->begin()->isUncond()) {
+            if ((*it) == (*it)->getParent()->getEntry()) {
+                it++;
+                continue;
+            }
             auto block = ((UncondBrInstruction*)((*it)->begin()))->getBranch();
             block->removePred(*it);
             if ((*it)->getNumOfPred())

@@ -8,6 +8,7 @@
 #include "Mem2reg.h"
 #include "Starighten.h"
 #include "Unit.h"
+#include "SSADestruction.h"
 using namespace std;
 
 Ast ast;
@@ -77,9 +78,11 @@ int main(int argc, char* argv[]) {
         ElimUnreachCode e(&unit);
         Starighten s(&unit);
         Mem2reg m(&unit);
+        SSADestruction s1(&unit);
         m.pass();
         e.pass();
         s.pass();
+        s1.pass();
     }
     if (dump_ir)
         unit.output();

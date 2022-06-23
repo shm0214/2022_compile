@@ -1116,6 +1116,14 @@ PhiInstruction::PhiInstruction(Operand* dst, BasicBlock* insert_bb)
     dst->setDef(this);
 }
 
+PhiInstruction::~PhiInstruction() {
+    dst->setDef(nullptr);
+    if (dst->usersNum() == 0)
+        delete dst;
+    for (auto it : srcs)
+        it.second->removeUse(this);
+}
+
 void PhiInstruction::output() const {
     fprintf(yyout, "  %s = phi %s", dst->toStr().c_str(),
             dst->getType()->toStr().c_str());
@@ -1132,6 +1140,7 @@ void PhiInstruction::output() const {
 }
 
 void PhiInstruction::addSrc(BasicBlock* block, Operand* src) {
+    operands.push_back(src);
     srcs.insert(std::make_pair(block, src));
     src->addUse(this);
 }
@@ -1198,4 +1207,10 @@ void PhiInstruction::changeSrcBlock(
         if (!flag)
             break;
     }
+}
+
+Operand* PhiInstruction::getSrc(BasicBlock* block) {
+    if (srcs.find(block) != srcs.end())
+        return srcs[block];
+    return nullptr;
 }

@@ -298,8 +298,10 @@ class PhiInstruction : public Instruction {
 
    public:
     PhiInstruction(Operand* dst, BasicBlock* insert_bb = nullptr);
+    ~PhiInstruction();
     void output() const;
     void addSrc(BasicBlock* block, Operand* src);
+    Operand* getSrc(BasicBlock* block);
     Operand* getDef() { return dst; }
     void genMachineCode(AsmBuilder*) {}
     void replaceUse(Operand* old, Operand* new_);

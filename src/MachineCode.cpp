@@ -847,7 +847,7 @@ void MachineUnit::output() {
      * 3. Don't forget print bridge label at the end of assembly code!! */
     fprintf(yyout, "\t.cpu cortex-a72\n");
     fprintf(yyout, "\t.arch armv8-a\n");
-    fprintf(yyout, "\t.fpu neon-fp-armv8\n");
+    fprintf(yyout, "\t.fpu vfpv3-d16\n");
     fprintf(yyout, "\t.arch_extension crc\n");
     // fprintf(yyout, "\t.arm\n");
     PrintGlobalDecl();

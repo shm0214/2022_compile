@@ -49,7 +49,7 @@ class MachineOperand {
     int getVal() { return this->val; };
     void setVal(int val) { this->val = val; };
     float getFVal() { return this->fval; }
-    void setFVal(float val) {
+    void setFVal(float fval) {
         this->fval = fval;
         this->fpu = true;
     }

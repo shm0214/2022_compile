@@ -704,9 +704,16 @@ void MachineFunction::output() {
 
 void MachineFunction::addSavedRegs(int regno) {
     if (regno < 16) {
+        // Q&A about this alignment:
+        // https://forums.raspberrypi.com/viewtopic.php?t=169192
         saved_regs.insert(regno);
+        if (regno <= 11 && regno % 2 != 0) {
+            saved_regs.insert(regno + 1);
+        } else if (regno <= 11 && regno > 0 && regno % 2 == 0) {
+            saved_regs.insert(regno - 1);
+        }
     } else {
-        saved_fpregs.insert(regno);
+        saved_fpregs.insert(regno);  // TODO
     }
 };
 

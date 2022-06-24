@@ -70,7 +70,7 @@ void LoopOptimization::calculateFinalDomBBSet(){
 void LoopOptimization::calculateLoopList(){
     std::vector<std::pair<BasicBlock*,BasicBlock*>> BackEdges;
     std::unordered_map<BasicBlock*,std::vector<BasicBlock*>> DomSet=getDomBBSet();
-
+    //search for backedges
     for (auto block:func->getBlockList()){
         for (auto domBB:DomSet[block]){
             for(auto succ_block=block->succ_begin();succ_block<block->succ_end();succ_block++){
@@ -79,36 +79,55 @@ void LoopOptimization::calculateLoopList(){
             }
         }
     }
-
+    //search for natural loop
     for (auto edge:BackEdges){
+        std::vector<BasicBlock*> Lastadd;
         std::vector<BasicBlock*> Loop;
         if(edge.first!=edge.second){
             Loop.push_back(edge.first);
             Loop.push_back(edge.second);
+            Lastadd.push_back(edge.first);
+            // Lastadd.push_back(edge.second);
         }
         else{
             Loop.push_back(edge.first);
             continue;
         }
-
-        while(true){
-
-            int size=Loop.size();
-
-            for(auto fartherBB=(edge.first)->pred_begin();fartherBB!=(edge.first)->pred_end();fartherBB++){
-                if(!count(Loop.begin(),Loop.end(),*fartherBB)){
-                    Loop.push_back(*fartherBB);
-                    break;
-                }
-            }
-
-        }
         
-
+        while(true){
+            std::vector<BasicBlock*> tempadd;
+            bool ifAddNewBB=false;
+            for(auto block:Lastadd){
+                for(auto fartherBB=block->pred_begin();fartherBB!=block->pred_end();fartherBB++){
+                    if(!count(Loop.begin(),Loop.end(),*fartherBB)){
+                        ifAddNewBB=true;
+                        Loop.push_back(*fartherBB);
+                        tempadd.push_back(*fartherBB);
+                    }
+                }         
+            }
+            if(!ifAddNewBB)
+                break;
+            Lastadd.assign(tempadd.begin(),tempadd.end());
+        }
+        LoopList.push_back(Loop);
     }
+}
+
+std::vector<Instruction*> calculateLoopConstant(std::vector<BasicBlock*> Loop){
+    std::vector<Instruction*> pullOutInstructions;
+    for(auto block:Loop){
+        
+    }
+}
+
+
+void LoopOptimization::CodePullUp(){
 
 
 }
+
+
 
 
 

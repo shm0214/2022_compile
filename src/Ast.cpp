@@ -691,12 +691,11 @@ void ExprNode::genCode() {
 ExprNode* ExprNode::const_fold(){
     ExprNode* res;
     bool flag = true;
-    int fconst = this->fold_const(flag);
+    // int fconst = this->fold_const(flag);
     if(flag){
-        SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
+        //SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
         //res = new Constant(se);
-        // test
-        res = this;
+        res = this; // test
     } else{
         res = this;
     }

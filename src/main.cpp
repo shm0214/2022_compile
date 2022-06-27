@@ -74,8 +74,8 @@ int main(int argc, char* argv[]) {
     Starighten s(&unit);
     s.pass();
     e.pass();
-    // CopyProp c(&unit);
-    // c.copy_prop();
+    CopyProp c(&unit);
+    c.copy_prop();
     if (dump_ir)
         unit.output();
     unit.genMachineCode(&mUnit);

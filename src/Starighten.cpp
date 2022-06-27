@@ -72,8 +72,10 @@ void Starighten::pass3(Function* func) {
                     if (unCondIns->getBranch() == *it)
                         unCondIns->setBranch(block);
                 }
+                auto succs = (*it1)->getSucc();
+                bool first = succs[0] == *it;
                 (*it1)->removeSucc(*it);
-                (*it1)->addSucc(block);
+                (*it1)->addSucc(block, first);
                 block->addPred(*it1);
                 changes[*it].push_back(*it1);
             }

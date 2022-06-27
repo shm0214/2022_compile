@@ -39,8 +39,10 @@ void SSADestruction::pass(Function* function) {
                     branch->setTrueBranch(newBlock);
                 else
                     branch->setFalseBranch(newBlock);
+                auto succs = pred->getSucc();
+                bool first = succs[0] == *it;
                 pred->removeSucc(*it);
-                pred->addSucc(newBlock);
+                pred->addSucc(newBlock, first);
                 newBlock->addPred(pred);
                 for (auto i = (*it)->begin(); i != (*it)->end(); i=i->getNext()) {
                     if (!i->isPhi())

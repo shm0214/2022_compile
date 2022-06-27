@@ -202,6 +202,7 @@ class MachineBlock {
     void setCmpCond(int cond) { cmpCond = cond; };
     int getSize() const { return inst_list.size(); };
     MachineFunction* getParent() const { return parent; };
+    bool isBefore(MachineInstruction* a, MachineInstruction* b);
 };
 
 class MachineFunction {

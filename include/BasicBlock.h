@@ -31,7 +31,7 @@ class BasicBlock {
     void output() const;
     bool succEmpty() const { return succ.empty(); };
     bool predEmpty() const { return pred.empty(); };
-    void addSucc(BasicBlock*);
+    void addSucc(BasicBlock*, bool first = false);
     void removeSucc(BasicBlock*);
     void removeSuccFromEnd(BasicBlock*);
     void addPred(BasicBlock*);
@@ -54,6 +54,7 @@ class BasicBlock {
     void insertPhiInstruction(Operand* operand);
     void cleanPhiBlocks() { phiBlocks.clear(); }
     std::map<BasicBlock*, BasicBlock*>& getPhiBlocks() { return phiBlocks; }
+    std::vector<BasicBlock*> getSucc() { return succ; }
 };
 
 #endif

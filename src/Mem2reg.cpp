@@ -19,7 +19,8 @@ void Mem2reg::pass(Function* function) {
     function->computeDomFrontier();
     insertPhiInstruction(function);
     rename(function);
-    cleanAddZeroIns(function);
+    // 这个会导致r0-r3被覆盖
+    //cleanAddZeroIns(function);
 }
 
 void Mem2reg::insertPhiInstruction(Function* function) {

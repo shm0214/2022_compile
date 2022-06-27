@@ -692,18 +692,18 @@ void WhileStmt::genCode() {
     // ExprNode* cond1 = cond->copy();
     // // ExprNode* cond1 = cond;
     // cond1->genCode();
-    // backPatch(cond1->trueList(), while_bb);
-    // backPatch(cond1->falseList(), end_bb);
+    // // backPatch(cond1->trueList(), while_bb);
+    // // backPatch(cond1->falseList(), end_bb);
 
-    // Operand* condoperand = cond->getOperand();
-    // auto end = ((CondBrInstruction*)(cond_bb->rbegin()))->getFalseBranch();
-    // new CondBrInstruction(while_bb, end, condoperand,
-    //                       builder->getInsertBB());
-    // std::vector<Instruction*>().swap(cond->trueList());
-    // cond-
+    // // Operand* condoperand = cond->getOperand();
+    // // auto end = ((CondBrInstruction*)(cond_bb->rbegin()))->getFalseBranch();
+    // // new CondBrInstruction(while_bb, end, condoperand,
+    // //                       builder->getInsertBB());
+    // // std::vector<Instruction*>().swap(cond->trueList());
+    // // cond-
 
-    // while_bb = builder->getInsertBB();
-    // new UncondBrInstruction(cond_bb, while_bb);
+    // // while_bb = builder->getInsertBB();
+    // // new UncondBrInstruction(cond_bb, while_bb);
 
     builder->setInsertBB(end_bb);
 }

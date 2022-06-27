@@ -47,8 +47,11 @@ void BasicBlock::output() const {
         i->output();
 }
 
-void BasicBlock::addSucc(BasicBlock* bb) {
-    succ.push_back(bb);
+void BasicBlock::addSucc(BasicBlock* bb, bool first) {
+    if (first)
+        succ.insert(succ.begin(), bb);
+    else
+        succ.push_back(bb);
 }
 
 // remove the successor basicclock bb.

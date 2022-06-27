@@ -630,3 +630,9 @@ void MachineUnit::printGlobal() {
     }
     n++;
 }
+
+bool MachineBlock::isBefore(MachineInstruction* a, MachineInstruction* b) {
+    auto ait = find(inst_list.begin(), inst_list.end(), a);
+    auto bit = find(inst_list.begin(), inst_list.end(), b);
+    return ait < bit;
+}

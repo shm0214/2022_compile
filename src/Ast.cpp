@@ -694,7 +694,9 @@ ExprNode* ExprNode::const_fold(){
     int fconst = this->fold_const(flag);
     if(flag){
         SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
-        res = new Constant(se);
+        //res = new Constant(se);
+        // test
+        res = this;
     } else{
         res = this;
     }

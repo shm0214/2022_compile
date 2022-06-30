@@ -697,6 +697,7 @@ ExprNode* ExprNode::const_fold(){
         res = new Constant(se);
     } 
     res = this;
+    //fprintf(stderr, "end\n");
     return res;
 }
 
@@ -719,7 +720,7 @@ int ExprNode::fold_const(bool &flag){
         }
         else return 0;
     }
-    else if(this->getSymbolEntry()->isConstant()){
+    else if(this->isExpr() && this->getSymbolEntry()->isConstant()){
         return ((ConstantSymbolEntry*)(this->getSymbolEntry()))->getValue();
     }
     flag = 0;

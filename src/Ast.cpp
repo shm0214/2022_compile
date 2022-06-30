@@ -691,10 +691,10 @@ void ExprNode::genCode() {
 ExprNode* ExprNode::const_fold(){
     ExprNode* res;
     bool flag = true;
-    // int fconst = this->fold_const(flag);
+    int fconst = this->fold_const(flag);
     if(flag){
-        // SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
-        // res = new Constant(se);
+        SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
+        res = new Constant(se);
     } 
     res = this;
     return res;
@@ -704,7 +704,8 @@ int ExprNode::fold_const(bool &flag){
     if(this->isBinaryExpr()){
         ExprNode *lhs = ((BinaryExpr*)this)->getLeft(), *rhs = ((BinaryExpr*)this)->getRight();
         lhs->fold_const(flag);
-        rhs->fold_const(flag);
+        if(flag)
+            rhs->fold_const(flag);
         if(flag){
             return ((BinaryExpr*)this)->getValue();
         }

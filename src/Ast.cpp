@@ -720,9 +720,6 @@ int ExprNode::fold_const(bool &flag){
         }
         else return 0;
     }
-    else if(this->getSymbolEntry()->isConstant()){
-        return 0;
-    }
     flag = 0;
     return 0;
 }

@@ -697,7 +697,6 @@ ExprNode* ExprNode::const_fold(){
         res = new Constant(se);
     } 
     res = this;
-    //fprintf(stderr, "end\n");
     return res;
 }
 

@@ -3,7 +3,7 @@
 #include <set>
 #include <queue>
 using namespace std;
-const int N = 10010;
+const int N = 100010;
 typedef vector<BasicBlock*>::iterator bb_iterator;
 bool st[N]; // 标记基本块是否已遍历过
 
@@ -134,6 +134,7 @@ void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP){
         vector<Operand*> operands(iter->getOperands());
         if (iter->isBin())
         {
+            // cout<<"bin"<<endl;
             if(!operands[1]->getEntry()->isConstant()){
                 auto iter_def = operands[1]->getDef();
                 if(iter_def){

@@ -9,7 +9,8 @@ bool st[N]; // 标记基本块是否已遍历过
 
 unordered_map<int, USS> COPY, KILL, CPin, CPout, load_sym;
 unordered_map<int, USO> opds;
-void remove_ACP(USS ACP, SymbolEntry* sym){
+
+void remove_ACP(USS &ACP, SymbolEntry* sym){
     for(auto iter = ACP.begin();iter!=ACP.end();){
         if(iter->first==sym || iter->second==sym){
             ACP.erase(iter++);
@@ -189,8 +190,9 @@ void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP){
         }
         operands.clear();
     }
+
     CPout[no] = map_union(ACP, CPin[no]);
-    // cout<<"cpout[no]:"<<CPout[no].size()<<endl;
+    // cout<<"acp:"<<ACP.size()<<", cpin:"<<CPin[no].size()<<", cpout[no]:"<<CPout[no].size()<<endl;
     ACP.clear();
 }
 

@@ -159,7 +159,7 @@ void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP){
             if(!operands[1]->getEntry()->isConstant())
             {
                 auto iter_def = operands[1]->getDef();
-                if(iter_def->isLoad()){
+                if(iter_def && iter_def->isLoad()){
                     SymbolEntry* sym1 = operands[0]->getEntry();
                     remove_ACP(ACP, sym1);
                     remove_ACP(CPin[no], sym1); // cpin[i]-kill[i]
@@ -181,7 +181,6 @@ void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP){
         }
         operands.clear();
     }
-    // cout<<"here acp:"<<ACP.size()<<endl;
     CPout[no] = map_union(ACP, CPin[no]);
     // cout<<"cpout[no]:"<<CPout[no].size()<<endl;
     ACP.clear();

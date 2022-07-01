@@ -428,7 +428,7 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder) {
             auto dst = genMachineFloatOperand(operands[0]);
             auto internal_reg1 = genMachineVReg();
             auto internal_reg2 = new MachineOperand(*internal_reg1);
-            auto src = genMachineOperand(operands[1]);  // TODO
+            auto src = genMachineOperand(operands[1]);
             cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
                                             internal_reg1, src);
             cur_block->InsertInst(cur_inst);

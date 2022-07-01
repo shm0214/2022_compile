@@ -271,7 +271,7 @@ void LoadMInstruction::output() {
             if (this->use_list[0]->isFloat()) {
                 float fval = this->use_list[0]->getFVal();
                 uint32_t temp = reinterpret_cast<uint32_t&>(fval);
-                fprintf(yyout, "=%u\n", temp);  // shall be deprecated.
+                fprintf(yyout, "=%u\n", temp);
             } else {
                 fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
             }
@@ -293,7 +293,6 @@ void LoadMInstruction::output() {
         fprintf(yyout, "\n");
 
     } else if (op == LoadMInstruction::VLDR) {
-        // TODO
         fprintf(yyout, "\tvldr.32 ");
         this->def_list[0]->output();
         fprintf(yyout, ", ");
@@ -302,7 +301,7 @@ void LoadMInstruction::output() {
             if (this->use_list[0]->isFloat()) {
                 float fval = this->use_list[0]->getFVal();
                 uint32_t temp = reinterpret_cast<uint32_t&>(fval);
-                fprintf(yyout, "=%u\n", temp);  // shall be deprecated
+                fprintf(yyout, "=%u\n", temp);
             } else {
                 fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
             }
@@ -623,6 +622,21 @@ void MachineBlock::output() {
                             this, LoadMInstruction::LDR, r3, fp, off);
                         cur_inst->output();
                     }
+                } else if (operand->isReg() && operand->getReg() == 19) {
+                    // floating point
+                    if (first) {
+                        first = false;
+                    } else {
+                        auto fp = new MachineOperand(MachineOperand::REG, 11);
+                        auto s3 =
+                            new MachineOperand(MachineOperand::REG, 19, true);
+                        auto off =
+                            new MachineOperand(MachineOperand::IMM, offset);
+                        offset += 4;
+                        auto cur_inst = new LoadMInstruction(
+                            this, LoadMInstruction::VLDR, s3, fp, off);
+                        cur_inst->output();
+                    }
                 }
             }
             if ((*it)->isAdd()) {
@@ -779,8 +793,7 @@ void MachineUnit::PrintGlobalDecl() {
                 }
             } else {
                 int n = se->getType()->getSize() / 32;
-                Type* arrTy =
-                    ((ArrayType*)(se->getType()))->getElementType();
+                Type* arrTy = ((ArrayType*)(se->getType()))->getElementType();
 
                 while (!arrTy->isFloat() && !arrTy->isInt()) {
                     arrTy = ((ArrayType*)(arrTy))->getElementType();
@@ -821,8 +834,7 @@ void MachineUnit::PrintGlobalDecl() {
                 }
             } else {
                 int n = se->getType()->getSize() / 32;
-                Type* arrTy =
-                    ((ArrayType*)(se->getType()))->getElementType();
+                Type* arrTy = ((ArrayType*)(se->getType()))->getElementType();
 
                 while (!arrTy->isFloat() && !arrTy->isInt()) {
                     arrTy = ((ArrayType*)(arrTy))->getElementType();

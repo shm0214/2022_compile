@@ -917,17 +917,17 @@ bool ReturnStmt::typeCheck(Type* retType) {
             "return-statement with a value, in function returning \'void\'\n");
         return true;
     }
-    if (!retValue || !retValue->getSymbolEntry()) {
-        fprintf(stderr, "retValue or its symbol entry error\n");
-        return true;
-    }
-    Type* type = retValue->getType();
-    if (type != retType) {
-        fprintf(stderr,
+
+    if (!retType->isVoid()) {
+        Type* type = retValue->getType();
+        if (type != retType) {
+            fprintf(
+                stderr,
                 "cannot initialize return object of type \'%s\' with an rvalue "
                 "of type \'%s\'\n",
                 retType->toStr().c_str(), type->toStr().c_str());
-        return true;
+            return true;
+        }
     }
     return false;
 }

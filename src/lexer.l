@@ -46,7 +46,6 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     return INT;
 }
 "float" {
-    // TODO: getfloat putfloat getfarray putfarray
     if(dump_tokens)
         DUMP_TOKEN("FLOAT\tfloat");
     chars += strlen("float");

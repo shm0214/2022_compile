@@ -158,7 +158,6 @@ void LinearScan::genSpillCode() {
     for (auto& interval : intervals) {
         if (!interval->spill)
             continue;
-        // TODO: Verify for floating-point
         /* HINT:
          * The vreg should be spilled to memory.
          * 1. insert ldr inst before the use of vreg

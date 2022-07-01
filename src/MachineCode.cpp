@@ -582,6 +582,7 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
     this->parent = p;
     this->sym_ptr = sym_ptr;
     this->stack_size = 0;
+    this->align_size = 0;
     this->paramsNum =
         ((FunctionType*)(sym_ptr->getType()))->getParamsSe().size();
 };
@@ -713,7 +714,7 @@ void MachineFunction::addSavedRegs(int regno) {
             saved_regs.insert(regno - 1);
         }
     } else {
-        saved_fpregs.insert(regno);  // TODO
+        saved_fpregs.insert(regno);
     }
 };
 
@@ -727,8 +728,8 @@ std::vector<MachineOperand*> MachineFunction::getSavedRegs() {
 }
 
 std::vector<MachineOperand*> MachineFunction::getSavedFpRegs() {
-    int min_regno = 31;
-    int max_regno = 0;
+    int min_regno = 31 + 16;
+    int max_regno = 0 + 16;
     for (auto it = saved_fpregs.begin(); it != saved_fpregs.end(); it++) {
         if (*it > max_regno) {
             max_regno = *it;
@@ -737,6 +738,12 @@ std::vector<MachineOperand*> MachineFunction::getSavedFpRegs() {
             min_regno = *it;
         }
     }
+
+    int cnt = max_regno - min_regno + 1;
+    if (cnt % 2 != 0) {
+        max_regno += 1;
+    }
+
     std::vector<MachineOperand*> regs;
     for (int i = min_regno; i <= max_regno; ++i) {
         auto reg = new MachineOperand(MachineOperand::REG, i, true);
@@ -773,10 +780,10 @@ void MachineUnit::PrintGlobalDecl() {
             } else {
                 int n = se->getType()->getSize() / 32;
                 Type* arrTy =
-                    dynamic_cast<ArrayType*>(se->getType())->getElementType();
+                    ((ArrayType*)(se->getType()))->getElementType();
 
                 while (!arrTy->isFloat() && !arrTy->isInt()) {
-                    arrTy = dynamic_cast<ArrayType*>(arrTy)->getElementType();
+                    arrTy = ((ArrayType*)(arrTy))->getElementType();
                 }  // TODO: fix problems of arrays;
 
                 double* p = se->getArrayValue();
@@ -815,10 +822,10 @@ void MachineUnit::PrintGlobalDecl() {
             } else {
                 int n = se->getType()->getSize() / 32;
                 Type* arrTy =
-                    dynamic_cast<ArrayType*>(se->getType())->getElementType();
+                    ((ArrayType*)(se->getType()))->getElementType();
 
                 while (!arrTy->isFloat() && !arrTy->isInt()) {
-                    arrTy = dynamic_cast<ArrayType*>(arrTy)->getElementType();
+                    arrTy = ((ArrayType*)(arrTy))->getElementType();
                 }  // TODO: fix problems of arrays;
 
                 double* p = se->getArrayValue();

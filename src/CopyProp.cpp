@@ -21,15 +21,18 @@ void remove_ACP(USS ACP, SymbolEntry* sym){
 }
 
 SymbolEntry* copy_value(Operand* opd, USS ACP, bool &flag){
-    SymbolEntry* sym = opd->getEntry();
-    bool nconst = !sym->isConstant();
-    if(nconst){
-        for(auto iter = ACP.begin(); iter!=ACP.end();iter++){
-            SymbolEntry* key = iter->first;
-            SymbolEntry* value = iter->second;
-            if(sym == key){
-                flag = true;
-                return value;
+    SymbolEntry* sym = NULL;
+    if(opd){
+        sym = opd->getEntry();
+        bool nconst = !sym->isConstant();    
+        if(nconst){
+            for(auto iter = ACP.begin(); iter!=ACP.end();iter++){
+                SymbolEntry* key = iter->first;
+                SymbolEntry* value = iter->second;
+                if(sym == key){
+                    flag = true;
+                    return value;
+                }
             }
         }
     }
@@ -133,25 +136,29 @@ void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP){
         {
             if(!operands[1]->getEntry()->isConstant()){
                 auto iter_def = operands[1]->getDef();
-                vector<Operand*> def_operands(iter_def->getOperands());
-                SymbolEntry* sym1 = copy_value(def_operands[1], ACP, flag);
-                // 多余load指令删除
-                if(flag){
-                    operands[1]->setEntry(load_sym[no][sym1]);
-                    iter_def->remove();
-                    opds[no][sym1]->addUse(iter);
-                    operands[1]->setDef(opds[no][sym1]->getDef());
+                if(iter_def){
+                    vector<Operand*> def_operands(iter_def->getOperands());
+                    SymbolEntry* sym1 = copy_value(def_operands[1], ACP, flag);
+                    // 多余load指令删除
+                    if(flag){
+                        operands[1]->setEntry(load_sym[no][sym1]);
+                        iter_def->remove();
+                        opds[no][sym1]->addUse(iter);
+                        operands[1]->setDef(opds[no][sym1]->getDef());
+                    }
                 }
             }
             if(!operands[2]->getEntry()->isConstant()){
                 auto iter_def = operands[2]->getDef();
-                vector<Operand*> def_operands(iter_def->getOperands());
-                SymbolEntry* sym2 = copy_value(def_operands[1], ACP, flag);
-                if(flag){
-                    operands[2]->setEntry(load_sym[no][sym2]);
-                    iter_def->remove();
-                    opds[no][sym2]->addUse(iter);
-                    operands[2]->setDef(opds[no][sym2]->getDef());
+                if(iter_def){
+                    vector<Operand*> def_operands(iter_def->getOperands());
+                    SymbolEntry* sym2 = copy_value(def_operands[1], ACP, flag);
+                    if(flag){
+                        operands[2]->setEntry(load_sym[no][sym2]);
+                        iter_def->remove();
+                        opds[no][sym2]->addUse(iter);
+                        operands[2]->setDef(opds[no][sym2]->getDef());
+                    }
                 }
             }
         }

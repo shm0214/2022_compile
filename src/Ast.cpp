@@ -688,15 +688,149 @@ void UnaryExpr::genCode() {
 void ExprNode::genCode() {
     // Todo
 }
+
+ExprNode* ExprNode::alge_simple(){
+    /* simplification rules:
+    a*1=a, a*0=0, a/1=a, a+0=a, a-0=a, b||false=b, b&&true=b
+    */
+    int op;
+    ExprNode* res = this;
+    if(this->isBinaryExpr()){
+        enum {
+        ADD,
+        SUB,
+        MUL,
+        DIV,
+        MOD,
+        AND,
+        OR,
+        LESS,
+        LESSEQUAL,
+        GREATER,
+        GREATEREQUAL,
+        EQUAL,
+        NOTEQUAL
+        };
+        op = ((BinaryExpr*)this)->getOp();
+        ExprNode *lhs = ((BinaryExpr*)this)->getLeft(), *rhs = ((BinaryExpr*)this)->getRight();
+        if(lhs->isBinaryExpr()){
+            lhs = lhs->alge_simple();
+        }
+        if(rhs->isBinaryExpr()){
+            rhs = rhs->alge_simple();
+        }
+        switch (op)
+        {
+        case ADD:
+            if(lhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==0){
+                res = rhs;
+            }   
+            else if(rhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==0){
+                res = lhs;
+            }
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, ADD, lhs, rhs);
+            }
+            break;
+        case SUB:
+            if(rhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==0){
+                res = lhs;
+            }
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, SUB, lhs, rhs);
+            }
+            break;
+        case MUL:
+            if(lhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==0){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 0);
+                    res = new Constant(se);
+                }else if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==1){
+                    res = rhs;
+                }
+            }   
+            else if(rhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==0){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 0);
+                    res = new Constant(se);
+                }else if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==1){
+                    res = lhs;
+                }
+            }   
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, MUL, lhs, rhs);
+            }
+            break;
+        case DIV:
+            if(rhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==1){
+                res = lhs;
+            } 
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, DIV, lhs, rhs);
+            }
+            break;
+        case AND:
+            if(lhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==true){
+                    res = rhs;
+                }else if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==false){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 0);
+                    res = new Constant(se);
+                }
+            }   
+            else if(rhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==true){
+                    res = lhs;
+                }else if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==false){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 0);
+                    res = new Constant(se);
+                }
+            }   
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, AND, lhs, rhs);
+            }
+            break;
+        case OR:
+            if(lhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==true){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 1);
+                    res = new Constant(se);
+                }else if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==false){
+                    res = rhs;
+                }
+            }   
+            else if(rhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==true){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 1);
+                    res = new Constant(se);
+                }else if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==false){
+                    res = lhs;
+                }
+            }   
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, OR, lhs, rhs);
+            }
+            break;
+        }
+    }
+    return res;
+}
+
 ExprNode* ExprNode::const_fold(){
-    ExprNode* res;
+    ExprNode* res = this;
+    res = this->alge_simple(); // 代数化简
     bool flag = true;
-    int fconst = this->fold_const(flag);
+    int fconst = res->fold_const(flag);
     if(flag){
         SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
         res = new Constant(se);
     } 
-    res = this;
     return res;
 }
 

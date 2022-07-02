@@ -135,7 +135,6 @@ void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP){
         vector<Operand*> operands(iter->getOperands());
         if (iter->isBin())
         {
-            // cout<<"bin"<<endl;
             if(!operands[1]->getEntry()->isConstant()){
                 auto iter_def = operands[1]->getDef();
                 if(iter_def){
@@ -184,7 +183,6 @@ void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP){
                         load_sym[no][sym2] = prev_operands[0]->getEntry();
                     }
                     ACP[sym1] = sym2;
-                    // cout<<"<"<<sym1->toStr()<<", "<<sym2->toStr()<<">"<<endl;
                 }
             }
         }
@@ -192,7 +190,6 @@ void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP){
     }
 
     CPout[no] = map_union(ACP, CPin[no]);
-    // cout<<"acp:"<<ACP.size()<<", cpin:"<<CPin[no].size()<<", cpout[no]:"<<CPout[no].size()<<endl;
     ACP.clear();
 }
 

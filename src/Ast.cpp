@@ -689,7 +689,7 @@ void ExprNode::genCode() {
     // Todo
 }
 
-ExprNode* ExprNode::alge_simple(){
+ExprNode* ExprNode::alge_simple(int depth){
     /* simplification rules:
     a*1=a, a*0=0, a/1=a, a+0=a, a-0=a, b||false=b, b&&true=b
     */
@@ -713,11 +713,11 @@ ExprNode* ExprNode::alge_simple(){
         };
         op = ((BinaryExpr*)this)->getOp();
         ExprNode *lhs = ((BinaryExpr*)this)->getLeft(), *rhs = ((BinaryExpr*)this)->getRight();
-        if(lhs->isBinaryExpr()){
-            lhs = lhs->alge_simple();
+        if(depth && lhs->isBinaryExpr()){
+            lhs = lhs->alge_simple(depth-1);
         }
-        if(rhs->isBinaryExpr()){
-            rhs = rhs->alge_simple();
+        if(depth &&rhs->isBinaryExpr()){
+            rhs = rhs->alge_simple(depth-1);
         }
         switch (op)
         {
@@ -825,7 +825,7 @@ ExprNode* ExprNode::alge_simple(){
 
 ExprNode* ExprNode::const_fold(){
     ExprNode* res = this;
-    res = this->alge_simple(); // 代数化简
+    res = this->alge_simple(5); // 代数化简
     bool flag = true;
     int fconst = res->fold_const(flag);
     if(flag){

@@ -70,7 +70,7 @@ class ExprNode : public Node {
     Type* getOriginType() { return type; };
     ExprNode* const_fold();
     int fold_const(bool &flag);
-    ExprNode* alge_simple();
+    ExprNode* alge_simple(int depth);
 };
 
 class BinaryExpr : public ExprNode {

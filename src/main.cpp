@@ -70,10 +70,10 @@ int main(int argc, char* argv[]) {
         ast.output();
     ast.typeCheck();
     ast.genCode(&unit);
-    ElimUnreachCode e(&unit);
-    Starighten s(&unit);
-    s.pass();
-    e.pass();
+    // ElimUnreachCode e(&unit);
+    // Starighten s(&unit);
+    // s.pass();
+    // e.pass();
     CopyProp c(&unit);
     c.copy_prop();
     if (dump_ir)

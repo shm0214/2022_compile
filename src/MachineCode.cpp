@@ -18,18 +18,45 @@ MachineOperand::MachineOperand(std::string label) {
     this->label = label;
 }
 
+MachineOperand::MachineOperand(int tp, float fval) {
+    this->type = tp;
+    if (tp == MachineOperand::IMM) {
+        this->fval = fval;
+        is_float = true;
+    } else {
+        // error
+    }
+}
+
 bool MachineOperand::operator==(const MachineOperand& a) const {
     if (this->type != a.type)
         return false;
-    if (this->type == IMM)
-        return this->val == a.val;
+    if (this->is_float != a.is_float) {
+        return false;
+    }
+    if (this->type == IMM) {
+        if (this->is_float) {
+            return this->fval == a.fval;
+        } else {
+            return this->val == a.val;
+        }
+    }
     return this->reg_no == a.reg_no;
 }
 
 bool MachineOperand::operator<(const MachineOperand& a) const {
     if (this->type == a.type) {
-        if (this->type == IMM)
-            return this->val < a.val;
+        if (this->type == IMM) {
+            if (this->is_float && a.is_float) {
+                return this->fval < a.fval;
+            } else if (!this->is_float && !a.is_float) {
+                return this->val < a.val;
+            } else if (this->is_float && !a.is_float) {
+                return this->fval < a.val;
+            } else if (!this->is_float && a.is_float) {
+                return this->val < a.fval;
+            }
+        }
         return this->reg_no < a.reg_no;
     }
     return this->type < a.type;
@@ -69,7 +96,12 @@ void MachineOperand::output() {
      * lable addr_a -> print addr_a; */
     switch (this->type) {
         case IMM:
-            fprintf(yyout, "#%d", this->val);
+            if (!is_float) {
+                fprintf(yyout, "#%d", this->val);
+            } else {
+                uint32_t temp = reinterpret_cast<uint32_t&>(this->fval);
+                fprintf(yyout, "#%u", temp);
+            }
             break;
         case VREG:
             fprintf(yyout, "v%d", this->reg_no);
@@ -239,7 +271,13 @@ void LoadMInstruction::output() {
 
     // Load immediate num, eg: ldr r1, =8
     if (this->use_list[0]->isImm()) {
-        fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
+        if (this->use_list[0]->isFloat()) {
+            float fval = this->use_list[0]->getFVal();
+            uint32_t temp = reinterpret_cast<uint32_t&>(fval);
+            fprintf(yyout, "=%u\n", temp);
+        } else {
+            fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
+        }
         return;
     }
 
@@ -561,12 +599,33 @@ void MachineUnit::PrintGlobalDecl() {
                     se->getType()->getSize() / 8);
             fprintf(yyout, "%s:\n", se->toStr().c_str());
             if (!se->getType()->isArray()) {
-                fprintf(yyout, "\t.word %d\n", se->getValue());
+                if (se->getType()->isFloat()) {
+                    float temp = (float)(se->getValue());
+                    uint32_t val = reinterpret_cast<uint32_t&>(temp);
+                    fprintf(yyout, "\t.word %u\n", val);
+                } else {
+                    fprintf(yyout, "\t.word %d\n", (int)se->getValue());
+                }
             } else {
                 int n = se->getType()->getSize() / 32;
-                int* p = se->getArrayValue();
-                for (int i = 0; i < n; i++) {
-                    fprintf(yyout, "\t.word %d\n", p[i]);
+                Type* arrTy =
+                    dynamic_cast<ArrayType*>(se->getType())->getElementType();
+
+                while (!arrTy->isFloat() && !arrTy->isInt()) {
+                    arrTy = dynamic_cast<ArrayType*>(arrTy)->getElementType();
+                }  // TODO: fix problems of arrays;
+
+                double* p = se->getArrayValue();
+                if (arrTy->isFloat()) {
+                    for (int i = 0; i < n; i++) {
+                        float temp = (float)p[i];
+                        uint32_t val = reinterpret_cast<uint32_t&>(temp);
+                        fprintf(yyout, "\t.word %u\n", val);
+                    }
+                } else {
+                    for (int i = 0; i < n; i++) {
+                        fprintf(yyout, "\t.word %d\n", (int)p[i]);
+                    }
                 }
             }
         }
@@ -581,12 +640,34 @@ void MachineUnit::PrintGlobalDecl() {
                     se->getType()->getSize() / 8);
             fprintf(yyout, "%s:\n", se->toStr().c_str());
             if (!se->getType()->isArray()) {
-                fprintf(yyout, "\t.word %d\n", se->getValue());
+                if (se->getType()->isFloat()) {
+                    float temp = (float)(se->getValue());
+                    // printf("[%s]\t%f\n", se->toStr().c_str(), temp);
+                    uint32_t val = reinterpret_cast<uint32_t&>(temp);
+                    fprintf(yyout, "\t.word %u\n", val);
+                } else {
+                    fprintf(yyout, "\t.word %d\n", (int)se->getValue());
+                }
             } else {
                 int n = se->getType()->getSize() / 32;
-                int* p = se->getArrayValue();
-                for (int i = 0; i < n; i++) {
-                    fprintf(yyout, "\t.word %d\n", p[i]);
+                Type* arrTy =
+                    dynamic_cast<ArrayType*>(se->getType())->getElementType();
+
+                while (!arrTy->isFloat() && !arrTy->isInt()) {
+                    arrTy = dynamic_cast<ArrayType*>(arrTy)->getElementType();
+                }  // TODO: fix problems of arrays;
+
+                double* p = se->getArrayValue();
+                if (arrTy->isFloat()) {
+                    for (int i = 0; i < n; i++) {
+                        float temp = (float)p[i];
+                        uint32_t val = reinterpret_cast<uint32_t&>(temp);
+                        fprintf(yyout, "\t.word %u\n", val);
+                    }
+                } else {
+                    for (int i = 0; i < n; i++) {
+                        fprintf(yyout, "\t.word %d\n", (int)p[i]);
+                    }
                 }
             }
         }

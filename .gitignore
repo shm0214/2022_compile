@@ -7,11 +7,12 @@ build
 *.log
 *.res
 example.*
+!example.sy
 example
 *.ast
 *.toks
 *.s
-performance/
+# performance/
 test1
 test
 .VSCodeCounter/

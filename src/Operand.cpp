@@ -4,7 +4,13 @@
 #include <sstream>
 
 std::string Operand::toStr() const {
-    return se->toStr();
+    std::string res = se->toStr(); // llvm ir global variable with `@0`
+    if (typeid(*se) == typeid(IdentifierSymbolEntry)) {
+        if (((IdentifierSymbolEntry*)se)->isGlobal()) {
+            res = "@" + res;
+        }
+    }
+    return res;
 }
 
 void Operand::removeUse(Instruction* inst) {

@@ -4,11 +4,15 @@ using namespace std;
 
 void Starighten::pass() {
     auto iter = unit->begin();
-    while (iter != unit->end())
-        pass(*iter++);
+    while (iter != unit->end()) {
+        pass1(*iter);
+        //pass2(*iter);
+        pass3(*iter);
+        iter++;
+    }
 }
 
-void Starighten::pass(Function* func) {
+void Starighten::pass1(Function* func) {
     auto& blocklist = func->getBlockList();
     for (auto i : blocklist) {
         if (i->getNumOfSucc() == 1 &&
@@ -16,11 +20,57 @@ void Starighten::pass(Function* func) {
             assert(*((*(i->succ_begin()))->pred_begin()) == i);
             auto j = *(i->succ_begin());
             fuseBlock(func, i, j);
-            //pass(func);
+            pass1(func);
         }
     }
 }
-
+void Starighten::pass2(Function* func) {
+    // 这里同时删除了顺序连接的基本块之间的无条件跳转
+    // 目前找不到打印时的下一个基本块
+    auto blocklist = func->getBlockList();
+    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
+        auto i = *it;
+        if (i->getNumOfSucc() == 1 && i->rbegin()->isUncond()) {
+            if (it + 1 == blocklist.end())
+                continue;
+            auto nextBB = *(it + 1);
+            auto jumpBB = ((UncondBrInstruction*)(i->rbegin()))->getBranch();
+            if (nextBB == jumpBB)
+                i->remove(i->rbegin());
+        }
+    }
+}
+void Starighten::pass3(Function* func) {
+    // 删除只有一句无条件跳转的基本块
+    auto& blocklist = func->getBlockList();
+    for (auto it = blocklist.begin(); it != blocklist.end();) {
+        if ((*it)->begin() == (*it)->rbegin() && (*it)->begin()->isUncond()) {
+            auto block = ((UncondBrInstruction*)((*it)->begin()))->getBranch();
+            block->removePred(*it);
+            for (auto it1 = (*it)->pred_begin(); it1 != (*it)->pred_end();
+                 it1++) {
+                auto ins = (*it1)->rbegin();
+                if (ins->isCond()) {
+                    auto condIns = (CondBrInstruction*)ins;
+                    if (condIns->getTrueBranch() == *it)
+                        condIns->setTrueBranch(block);
+                    if (condIns->getFalseBranch() == *it)
+                        condIns->setFalseBranch(block);
+                } else if (ins->isUncond()) {
+                    auto unCondIns = (UncondBrInstruction*)ins;
+                    if (unCondIns->getBranch() == *it)
+                        unCondIns->setBranch(block);
+                }
+                (*it1)->removeSucc(*it);
+                (*it1)->addSucc(block);
+                block->addPred(*it1);
+            }
+            it = blocklist.erase(it);
+        } else {
+            it++;
+        }
+    }
+}
 void Starighten::fuseBlock(Function* func, BasicBlock* i, BasicBlock* j) {
     Instruction* tail = i->rbegin();
     if (tail->isUncond()) {

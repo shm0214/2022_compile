@@ -19,6 +19,7 @@
     int leftCnt = 0;
     int whileCnt = 0;
     int paramNo = 0;
+    int fpParamNo = 0;
     extern int yylineno;
     #include <iostream>
 }
@@ -840,6 +841,7 @@ FuncDef
         // SymbolTable::resetLabel();
         identifiers = new SymbolTable(identifiers);
         paramNo = 0;
+        fpParamNo = 0;
         funcRetType = $1;
     }
       LPAREN MaybeFuncFParams RPAREN {
@@ -883,7 +885,11 @@ FuncFParams
 FuncFParam
     : Type ID {
         SymbolEntry* se;
-        se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), paramNo++);
+        if ($1->isFloat()) {
+            se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), fpParamNo++);
+        } else {
+            se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), paramNo++);
+        }
         identifiers->install($2, se);
         ((IdentifierSymbolEntry*)se)->setLabel();
         ((IdentifierSymbolEntry*)se)->setAddr(new Operand(se));

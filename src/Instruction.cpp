@@ -1,4 +1,5 @@
 #include "Instruction.h"
+#include <assert.h>
 #include <iostream>
 #include <map>
 #include <sstream>
@@ -386,13 +387,13 @@ StoreInstruction::StoreInstruction(Operand* dst_addr,
 }
 
 void StoreInstruction::replaceUse(Operand* old, Operand* new_) {
-    if (operands[2] == old) {
-        operands[2]->removeUse(this);
-        operands[2] = new_;
+    if (operands[0] == old) {
+        operands[0]->removeUse(this);
+        operands[0] = new_;
         new_->addUse(this);
-    } else if (operands[3] == old) {
-        operands[3]->removeUse(this);
-        operands[3] = new_;
+    } else if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
         new_->addUse(this);
     }
 }
@@ -1115,6 +1116,14 @@ PhiInstruction::PhiInstruction(Operand* dst, BasicBlock* insert_bb)
     dst->setDef(this);
 }
 
+PhiInstruction::~PhiInstruction() {
+    dst->setDef(nullptr);
+    if (dst->usersNum() == 0)
+        delete dst;
+    for (auto it : srcs)
+        it.second->removeUse(this);
+}
+
 void PhiInstruction::output() const {
     fprintf(yyout, "  %s = phi %s", dst->toStr().c_str(),
             dst->getType()->toStr().c_str());
@@ -1131,8 +1140,29 @@ void PhiInstruction::output() const {
 }
 
 void PhiInstruction::addSrc(BasicBlock* block, Operand* src) {
+    operands.push_back(src);
     srcs.insert(std::make_pair(block, src));
     src->addUse(this);
+}
+//有问题？
+void PhiInstruction::removeSrc(BasicBlock* block){
+    for (auto it = srcs.begin(); it != srcs.end(); it++) {
+        if(it->first==block){
+            //使用erase时容器失效
+            srcs.erase(block);
+            return;
+        }
+    }
+    return;
+}
+
+bool PhiInstruction::findSrc(BasicBlock* block){
+    for (auto it = srcs.begin(); it != srcs.end(); it++) {
+        if(it->first==block){
+            return true;
+        }
+    }
+    return false;
 }
 
 void PhiInstruction::replaceUse(Operand* old, Operand* new_) {
@@ -1153,4 +1183,54 @@ void PhiInstruction::replaceDef(Operand* new_) {
 
 void PhiInstruction::replaceOriginDef(Operand* new_) {
     this->originDef = new_;
+}
+
+void PhiInstruction::changeSrcBlock(
+    std::map<BasicBlock*, std::vector<BasicBlock*>> changes) {
+    bool flag;
+    while (true) {
+        flag = false;
+        for (auto& it : srcs) {
+            if (changes.find(it.first) != changes.end()) {
+                auto vec = changes[it.first];
+                auto src = srcs[it.first];
+                for (auto b : vec) {
+                    if (srcs.find(b) != srcs.end()) {
+                        auto& phiBlocks = parent->getPhiBlocks();
+                        auto iter = phiBlocks.find(b);
+                        BasicBlock* b1;
+                        if (iter != phiBlocks.end()) {
+                            b1 = iter->second;
+                        } else {
+                            // 需要添加一个block
+                            b1 = new BasicBlock(b->getParent());
+                            phiBlocks.insert(std::make_pair(b, b1));
+                            b->addSucc(b1);
+                            b->removeSuccFromEnd(this->getParent());
+                            auto i = (CondBrInstruction*)(b->rbegin());
+                            i->setFalseBranch(b1);
+                            b1->addPred(b);
+                            new UncondBrInstruction(this->getParent(), b1);
+                            this->getParent()->removePredFromEnd(b);
+                            this->getParent()->addPred(b1);
+                            b1->addSucc(this->getParent());
+                        }
+                        addSrc(b1, src);
+                    } else
+                        addSrc(b, src);
+                }
+                srcs.erase(it.first);
+                flag = true;
+                break;
+            }
+        }
+        if (!flag)
+            break;
+    }
+}
+
+Operand* PhiInstruction::getSrc(BasicBlock* block) {
+    if (srcs.find(block) != srcs.end())
+        return srcs[block];
+    return nullptr;
 }

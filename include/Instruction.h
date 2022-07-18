@@ -20,8 +20,8 @@ class Instruction {
     bool isAlloc() const { return instType == ALLOCA; };
     bool isRet() const { return instType == RET; };
     bool isStore() const { return instType == STORE; };
+    bool isBin() const {return instType == BINARY; };
     bool isPhi() const { return instType == PHI; };
-    bool isBin() const { return instType == BINARY};
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
@@ -299,14 +299,19 @@ class PhiInstruction : public Instruction {
 
    public:
     PhiInstruction(Operand* dst, BasicBlock* insert_bb = nullptr);
+    ~PhiInstruction();
     void output() const;
     void addSrc(BasicBlock* block, Operand* src);
+    void removeSrc(BasicBlock* block);
+    Operand* getSrc(BasicBlock* block);
+    bool findSrc(BasicBlock* block);
     Operand* getDef() { return dst; }
     void genMachineCode(AsmBuilder*) {}
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
     Operand* getOriginDef() { return originDef; }
     void replaceOriginDef(Operand* new_);
+    void changeSrcBlock(std::map<BasicBlock*, std::vector<BasicBlock*>> changes);
 };
 
 #endif

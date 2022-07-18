@@ -212,6 +212,7 @@ class MachineFunction {
     std::set<int> saved_regs;
     SymbolEntry* sym_ptr;
     int paramsNum;
+    MachineBlock* entry;
 
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };
@@ -236,6 +237,9 @@ class MachineFunction {
     std::vector<MachineOperand*> getSavedRegs();
     int getParamsNum() const { return paramsNum; };
     MachineUnit* getParent() const { return parent; };
+    void setEntry(MachineBlock* entry) { this->entry = entry; }
+    MachineBlock* getEntry() { return entry; };
+    SymbolEntry* getSymbolEntry() { return sym_ptr; };
 };
 
 class MachineUnit {

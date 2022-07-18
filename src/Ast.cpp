@@ -126,6 +126,42 @@ void FunctionDef::genCode() {
             }
         }
     }
+    // 如果已经有ret了，删除后面的指令
+    for (auto it = func->begin(); it != func->end(); it++) {
+        auto block = *it;
+        bool flag = false;
+        for (auto i = block->begin(); i != block->end(); i = i->getNext()) {
+            if (flag) {
+                block->remove(i);
+                delete i;
+                continue;
+            }
+            if (i->isRet())
+                flag = true;
+        }
+        if (flag) {
+            while (block->succ_begin() != block->succ_end()) {
+                auto b = *(block->succ_begin());
+                block->removeSucc(b);
+                b->removePred(block);
+            }
+        }
+    }
+    while (true) {
+        bool flag = false;
+        for (auto it = func->begin(); it != func->end(); it++) {
+            auto block = *it;
+            if (block == func->getEntry())
+                continue;
+            if (block->getNumOfPred() == 0) {
+                delete block;
+                flag = true;
+                break;
+            }
+        }
+        if (!flag)
+            break;
+    }
 }
 
 BinaryExpr::BinaryExpr(SymbolEntry* se,

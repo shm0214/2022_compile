@@ -1,7 +1,7 @@
 #include "BasicBlock.h"
 #include <algorithm>
-#include "Function.h"
 #include <vector>
+#include "Function.h"
 
 using namespace std;
 extern FILE* yyout;
@@ -47,13 +47,20 @@ void BasicBlock::output() const {
         i->output();
 }
 
-void BasicBlock::addSucc(BasicBlock* bb) {
-    succ.push_back(bb);
+void BasicBlock::addSucc(BasicBlock* bb, bool first) {
+    if (first)
+        succ.insert(succ.begin(), bb);
+    else
+        succ.push_back(bb);
 }
 
 // remove the successor basicclock bb.
 void BasicBlock::removeSucc(BasicBlock* bb) {
     succ.erase(std::find(succ.begin(), succ.end(), bb));
+}
+
+void BasicBlock::removeSuccFromEnd(BasicBlock* bb) {
+    succ.erase((std::find(succ.rbegin(), succ.rend(), bb) + 1).base());
 }
 
 void BasicBlock::addPred(BasicBlock* bb) {
@@ -64,6 +71,11 @@ void BasicBlock::addPred(BasicBlock* bb) {
 void BasicBlock::removePred(BasicBlock* bb) {
     pred.erase(std::find(pred.begin(), pred.end(), bb));
 }
+
+void BasicBlock::removePredFromEnd(BasicBlock* bb) {
+    pred.erase((std::find(pred.rbegin(), pred.rend(), bb) + 1).base());
+}
+
 void BasicBlock::genMachineCode(AsmBuilder* builder) {
     auto cur_func = builder->getFunction();
     auto cur_block = new MachineBlock(cur_func, no);
@@ -102,4 +114,9 @@ void BasicBlock::cleanSucc() {
     for (auto i : succ)
         i->removePred(this);
     vector<BasicBlock*>().swap(succ);
+}
+
+void BasicBlock::insertPhiInstruction(Operand* dst) {
+    Instruction* i = new PhiInstruction(dst);
+    insertFront(i);
 }

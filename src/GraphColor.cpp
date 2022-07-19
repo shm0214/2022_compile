@@ -266,6 +266,9 @@ bool GraphColor::coalesceRegs() {
             if (ins->isMov())
                 flag1 = true;
             else if (ins->isAdd()) {
+                auto def = ins->getDef()[0];
+                if (def->isReg() && def->getReg() == 13)
+                    continue;
                 auto uses = ins->getUse();
                 for (auto use : uses)
                     if (use->isImm() && use->getVal() == 0)
@@ -325,6 +328,9 @@ void GraphColor::computeSpillCost() {
             if (ins->isMov())
                 flag = true;
             else if (ins->isAdd()) {
+                auto def = ins->getDef()[0];
+                if (def->isReg() && def->getReg() == 13)
+                    continue;
                 auto uses = ins->getUse();
                 for (auto& use : uses)
                     if (use->isImm() && use->getVal() == 0)
@@ -369,7 +375,7 @@ void GraphColor::pruneGraph() {
     }
     while (stk.size() < list.size()) {
         double spillCost = MAX;
-        int spillNode;
+        int spillNode = -1;
         for (int i = 0; i < (int)list.size(); i++) {
             int nInts = list[i].size();
             if (nInts > 0 && webs[i]->spillCost / nInts < spillCost) {
@@ -412,8 +418,7 @@ bool GraphColor::assignRegs() {
 
 int GraphColor::minColor(int r) {
     // 返回与r相邻的节点中还未使用的颜色中编号最小的颜色编号
-    vector<bool> use;
-    use.resize(regNum);
+    vector<bool> use(regNum, false);
     for (auto& i : removeList[r])
         if (webs[i]->rreg != -1)
             use[webs[i]->rreg] = true;
@@ -441,6 +446,9 @@ void GraphColor::modifyCode() {
             if (ins->isMov())
                 flag = true;
             else if (ins->isAdd()) {
+                auto def = ins->getDef()[0];
+                if (def->isReg() && def->getReg() == 13)
+                    continue;
                 auto uses = ins->getUse();
                 for (auto use : uses)
                     if (use->isImm() && use->getVal() == 0)
@@ -490,7 +498,7 @@ void GraphColor::genSpillCode() {
             }
         }
         for (auto def : web->defs) {
-            if(!def->getParent())
+            if (!def->getParent())
                 continue;
             auto temp = new MachineOperand(*def);
             MachineOperand* operand = nullptr;

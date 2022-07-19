@@ -654,8 +654,19 @@ void MachineUnit::output() {
     fprintf(yyout, "\t.arm\n");
     PrintGlobalDecl();
     fprintf(yyout, "\t.text\n");
-    for (auto iter : func_list)
+    int count = 0;
+    for (auto iter : func_list) {
         iter->output();
+        count += iter->getSize();
+        if (count > 600) {
+            fprintf(yyout, "\tb .F%d\n", n);
+            fprintf(yyout, ".LTORG\n");
+            printGlobal();
+            fprintf(yyout, ".F%d:\n", n - 1);
+            count = 0;
+        }
+    }
+    // if (n == 0)
     printGlobal();
 }
 

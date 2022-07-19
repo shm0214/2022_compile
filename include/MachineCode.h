@@ -254,6 +254,12 @@ class MachineFunction {
     void setEntry(MachineBlock* entry) { this->entry = entry; }
     MachineBlock* getEntry() { return entry; };
     SymbolEntry* getSymbolEntry() { return sym_ptr; };
+    int getSize() const {
+        int res = 0;
+        for (auto block : block_list)
+            res += block->getSize();
+        return res;
+    };
 };
 
 class MachineUnit {

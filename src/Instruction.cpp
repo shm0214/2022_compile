@@ -967,7 +967,7 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
             else
                 cur_inst = new LoadMInstruction(cur_block, dst, operand);
             cur_block->InsertInst(cur_inst);
-            operand = dst;
+            operand = new MachineOperand(*dst);
         }
         std::vector<MachineOperand*> vec;
         cur_inst = new StackMInstrcuton(cur_block, StackMInstrcuton::PUSH, vec,
@@ -1080,6 +1080,7 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
         cur_inst = new LoadMInstruction(cur_block, size1, genMachineImm(size));
     }
     cur_block->InsertInst(cur_inst);
+    size1 = new MachineOperand(*size1);
     auto off = genMachineVReg();
     cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::MUL, off,
                                       idx, size1);

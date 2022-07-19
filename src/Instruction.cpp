@@ -434,9 +434,11 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
             if (id_se->getParamNo() < 4)
                 mope = new MachineOperand(MachineOperand::REG,
                                           id_se->getParamNo());
-            else
+            else{
                 // 用r3代表一下
                 mope = new MachineOperand(MachineOperand::REG, 3);
+                mope->setParam();
+            }
         } else
             exit(0);
     }

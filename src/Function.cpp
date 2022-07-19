@@ -112,6 +112,7 @@ void Function::genMachineCode(AsmBuilder* builder) {
         for (auto succ = block->succ_begin(); succ != block->succ_end(); succ++)
             mblock->addSucc(map[*succ]);
     }
+    cur_func->setEntry(map[entry]);
     cur_unit->InsertFunc(cur_func);
 }
 

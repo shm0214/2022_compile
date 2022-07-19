@@ -127,6 +127,24 @@ void MachineInstruction::insertAfter(MachineInstruction* inst) {
     instructions.insert(++it, inst);
 }
 
+void MachineInstruction::replaceDef(MachineOperand* old, MachineOperand* new_) {
+    for (auto i = 0; i < (int)def_list.size(); i++)
+        if (def_list[i] == old) {
+            def_list[i] = new_;
+            new_->setParent(this);
+            break;
+        }
+}
+
+void MachineInstruction::replaceUse(MachineOperand* old, MachineOperand* new_) {
+    for (auto i = 0; i < (int)use_list.size(); i++)
+        if (use_list[i] == old) {
+            use_list[i] = new_;
+            new_->setParent(this);
+            break;
+        }
+}
+
 BinaryMInstruction::BinaryMInstruction(MachineBlock* p,
                                        int op,
                                        MachineOperand* dst,
@@ -328,8 +346,36 @@ BranchMInstruction::BranchMInstruction(MachineBlock* p,
     this->op = op;
     this->cond = cond;
     // label有必要存吗
+    // if (op != BL) {
     this->use_list.push_back(dst);
     dst->setParent(this);
+    // }else{
+    if (op == BL) {
+        auto r0d = new MachineOperand(MachineOperand::REG, 0);
+        auto r0u = new MachineOperand(MachineOperand::REG, 0);
+        auto r1d = new MachineOperand(MachineOperand::REG, 1);
+        auto r1u = new MachineOperand(MachineOperand::REG, 1);
+        auto r2d = new MachineOperand(MachineOperand::REG, 2);
+        auto r2u = new MachineOperand(MachineOperand::REG, 2);
+        auto r3d = new MachineOperand(MachineOperand::REG, 3);
+        auto r3u = new MachineOperand(MachineOperand::REG, 3);
+        r0d->setParent(this);
+        r0u->setParent(this);
+        r1d->setParent(this);
+        r1u->setParent(this);
+        r2d->setParent(this);
+        r2u->setParent(this);
+        r3d->setParent(this);
+        r3u->setParent(this);
+        this->def_list.push_back(r0d);
+        this->def_list.push_back(r1d);
+        this->def_list.push_back(r2d);
+        this->def_list.push_back(r3d);
+        this->use_list.push_back(r0u);
+        this->use_list.push_back(r1u);
+        this->use_list.push_back(r2u);
+        this->use_list.push_back(r3u);
+    }
 }
 
 void BranchMInstruction::output() {
@@ -429,7 +475,6 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
 };
 
 void MachineBlock::output() {
-    bool first = true;
     int offset = (parent->getSavedRegs().size() + 2) * 4;
     int num = parent->getParamsNum();
     int count = 0;
@@ -446,18 +491,14 @@ void MachineBlock::output() {
             }
             if (num > 4 && (*it)->isStore()) {
                 MachineOperand* operand = (*it)->getUse()[0];
-                if (operand->isReg() && operand->getReg() == 3) {
-                    if (first) {
-                        first = false;
-                    } else {
-                        auto fp = new MachineOperand(MachineOperand::REG, 11);
-                        auto r3 = new MachineOperand(MachineOperand::REG, 3);
-                        auto off =
-                            new MachineOperand(MachineOperand::IMM, offset);
-                        offset += 4;
-                        auto cur_inst = new LoadMInstruction(this, r3, fp, off);
-                        cur_inst->output();
-                    }
+                if (operand->isReg() && operand->getReg() == 3 &&
+                    operand->isParam()) {
+                    auto fp = new MachineOperand(MachineOperand::REG, 11);
+                    auto r3 = new MachineOperand(MachineOperand::REG, 3);
+                    auto off = new MachineOperand(MachineOperand::IMM, offset);
+                    offset += 4;
+                    auto cur_inst = new LoadMInstruction(this, r3, fp, off);
+                    cur_inst->output();
                 }
             }
             if ((*it)->isAdd()) {
@@ -635,4 +676,10 @@ bool MachineBlock::isBefore(MachineInstruction* a, MachineInstruction* b) {
     auto ait = find(inst_list.begin(), inst_list.end(), a);
     auto bit = find(inst_list.begin(), inst_list.end(), b);
     return ait < bit;
+}
+
+void MachineBlock::remove(MachineInstruction* ins) {
+    auto it = find(inst_list.begin(), inst_list.end(), ins);
+    if (it != inst_list.end())
+        inst_list.erase(it);
 }

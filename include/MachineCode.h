@@ -32,6 +32,8 @@ class MachineOperand {
     int val;            // value of immediate number
     int reg_no;         // register no
     std::string label;  // address label
+    bool param = false;
+
    public:
     enum { IMM, VREG, REG, LABEL };
     MachineOperand(int tp, int val);
@@ -54,6 +56,9 @@ class MachineOperand {
     MachineInstruction* getParent() { return this->parent; };
     void PrintReg();
     void output();
+    bool needColor() { return type == VREG || (type == REG && reg_no < 11); }
+    void setParam() { param = true; }
+    bool isParam() { return param; }
 };
 
 class MachineInstruction {
@@ -88,6 +93,9 @@ class MachineInstruction {
     bool isBX() const { return type == BRANCH && op == 2; };
     bool isStore() const { return type == STORE; };
     bool isAdd() const { return type == BINARY && op == 0; };
+    bool isMov() const { return type == MOV && op == 0; };
+    void replaceUse(MachineOperand* old, MachineOperand* new_);
+    void replaceDef(MachineOperand* old, MachineOperand* new_);
 };
 
 class BinaryMInstruction : public MachineInstruction {
@@ -173,6 +181,8 @@ class MachineBlock {
     std::vector<MachineInstruction*> inst_list;
     std::set<MachineOperand*> live_in;
     std::set<MachineOperand*> live_out;
+    std::set<MachineOperand*> def_in;
+    std::set<MachineOperand*> def_out;
     int cmpCond;
     static int label;
 
@@ -195,6 +205,8 @@ class MachineBlock {
     void addSucc(MachineBlock* s) { this->succ.push_back(s); };
     std::set<MachineOperand*>& getLiveIn() { return live_in; };
     std::set<MachineOperand*>& getLiveOut() { return live_out; };
+    std::set<MachineOperand*>& getDefIn() { return def_in; };
+    std::set<MachineOperand*>& getDefOut() { return def_out; };
     std::vector<MachineBlock*>& getPreds() { return pred; };
     std::vector<MachineBlock*>& getSuccs() { return succ; };
     void output();
@@ -203,6 +215,7 @@ class MachineBlock {
     int getSize() const { return inst_list.size(); };
     MachineFunction* getParent() const { return parent; };
     bool isBefore(MachineInstruction* a, MachineInstruction* b);
+    void remove(MachineInstruction* ins);
 };
 
 class MachineFunction {
@@ -213,6 +226,7 @@ class MachineFunction {
     std::set<int> saved_regs;
     SymbolEntry* sym_ptr;
     int paramsNum;
+    MachineBlock* entry;
 
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };
@@ -237,6 +251,9 @@ class MachineFunction {
     std::vector<MachineOperand*> getSavedRegs();
     int getParamsNum() const { return paramsNum; };
     MachineUnit* getParent() const { return parent; };
+    void setEntry(MachineBlock* entry) { this->entry = entry; }
+    MachineBlock* getEntry() { return entry; };
+    SymbolEntry* getSymbolEntry() { return sym_ptr; };
 };
 
 class MachineUnit {

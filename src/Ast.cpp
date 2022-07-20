@@ -137,7 +137,7 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
                        int op,
                        ExprNode* expr1,
                        ExprNode* expr2)
-    : ExprNode(se), op(op), expr1(expr1), expr2(expr2) {
+    : ExprNode(se, BINARYEXPR), op(op), expr1(expr1), expr2(expr2) {
     dst = new Operand(se);
     std::string op_str;
     switch (op) {
@@ -356,6 +356,17 @@ void BinaryExpr::genCode() {
     }
 }
 
+ExprNode* BinaryExpr::getLeft(){
+    return this->expr1;
+}
+
+ExprNode* BinaryExpr::getRight(){
+    return this->expr2;
+}
+
+ExprNode* UnaryExpr::getSubExpr(){
+    return this->expr;
+}
 void Constant::genCode() {
     // we don't need to generate code.
 }
@@ -364,8 +375,9 @@ void Id::genCode() {
     BasicBlock* bb = builder->getInsertBB();
     Operand* addr =
         dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getAddr();
-    if (type->isInt() || type->isFloat())
+    if (type->isInt() || type->isFloat()){
         new LoadInstruction(dst, addr, bb);
+    }
     else if (type->isArray()) {
         if (arrIdx) {
             Type* type = ((ArrayType*)(this->type))->getElementType();
@@ -531,8 +543,9 @@ void DeclStmt::genCode() {
         // if (se->isParam() && se->getType()->isArray())
         //     type = new PointerType(TypeSystem::intType);
         // else
-        type = new PointerType(se->getType());
-        addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel());
+        type = new PointerType(se->getType()); //yr
+        addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel()); //yr
+        // addr_se = se; //yr
         addr = new Operand(addr_se);
         alloca = new AllocaInstruction(addr, se);
         // allocate space for local id in function stack.
@@ -772,6 +785,179 @@ void UnaryExpr::genCode() {
 void ExprNode::genCode() {
     // Todo
 }
+
+ExprNode* ExprNode::alge_simple(int depth){
+    /* simplification rules:
+    a*1=a, a*0=0, a/1=a, a+0=a, a-0=a, b||false=b, b&&true=b
+    */
+    int op;
+    ExprNode* res = this;
+    if(this->isBinaryExpr()){
+        enum {
+        ADD,
+        SUB,
+        MUL,
+        DIV,
+        MOD,
+        AND,
+        OR,
+        LESS,
+        LESSEQUAL,
+        GREATER,
+        GREATEREQUAL,
+        EQUAL,
+        NOTEQUAL
+        };
+        op = ((BinaryExpr*)this)->getOp();
+        ExprNode *lhs = ((BinaryExpr*)this)->getLeft(), *rhs = ((BinaryExpr*)this)->getRight();
+        if(depth && lhs->isBinaryExpr()){
+            lhs = lhs->alge_simple(depth-1);
+        }
+        if(depth &&rhs->isBinaryExpr()){
+            rhs = rhs->alge_simple(depth-1);
+        }
+        switch (op)
+        {
+        case ADD:
+            if(lhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==0){
+                res = rhs;
+            }   
+            else if(rhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==0){
+                res = lhs;
+            }
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, ADD, lhs, rhs);
+            }
+            break;
+        case SUB:
+            if(rhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==0){
+                res = lhs;
+            }
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, SUB, lhs, rhs);
+            }
+            break;
+        case MUL:
+            if(lhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==0){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 0);
+                    res = new Constant(se);
+                }else if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==1){
+                    res = rhs;
+                }
+            }   
+            else if(rhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==0){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 0);
+                    res = new Constant(se);
+                }else if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==1){
+                    res = lhs;
+                }
+            }   
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, MUL, lhs, rhs);
+            }
+            break;
+        case DIV:
+            if(rhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==1){
+                res = lhs;
+            } 
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, DIV, lhs, rhs);
+            }
+            break;
+        /*
+        case AND:
+            if(lhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==true){
+                    res = rhs;
+                }else if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==false){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::boolType, 0);
+                    res = new Constant(se);
+                }
+            }   
+            else if(rhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==true){
+                    res = lhs;
+                }else if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==false){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::boolType, 0);
+                    res = new Constant(se);
+                }
+            }   
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, AND, lhs, rhs);
+            }
+            break;
+        case OR:
+            if(lhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==true){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::boolType, 1);
+                    res = new Constant(se);
+                }else if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==false){
+                    res = rhs;
+                }
+            }   
+            else if(rhs->getSymbolEntry()->isConstant()){
+                if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==true){
+                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::boolType, 1);
+                    res = new Constant(se);
+                }else if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==false){
+                    res = lhs;
+                }
+            }   
+            else{
+                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
+                res = new BinaryExpr(se, OR, lhs, rhs);
+            }
+            break;*/
+        }
+    }
+    return res;
+}
+
+ExprNode* ExprNode::const_fold(){
+    ExprNode* res = this;
+    res = this->alge_simple(5); // 代数化简
+    bool flag = true;
+    int fconst = res->fold_const(flag);
+    if(flag){
+        SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
+        res = new Constant(se);
+    } 
+    return res;
+}
+
+int ExprNode::fold_const(bool &flag){
+    if(this->isBinaryExpr()){
+        ExprNode *lhs = ((BinaryExpr*)this)->getLeft(), *rhs = ((BinaryExpr*)this)->getRight();
+        lhs->fold_const(flag);
+        if(flag)
+            rhs->fold_const(flag);
+        if(flag){
+            return ((BinaryExpr*)this)->getValue();
+        }
+        else return 0;
+    }
+    else if(this->isUnaryExpr()){
+        ExprNode *hs = ((UnaryExpr*)this)->getSubExpr();
+        hs->fold_const(flag);
+        if(flag){
+            return ((UnaryExpr*)this)->getValue();
+        }
+        else return 0;
+    }
+    else if(this->isExpr() && this->getSymbolEntry()->isConstant()){
+        return ((ConstantSymbolEntry*)(this->getSymbolEntry()))->getValue();
+    }
+    flag = 0;
+    return 0;
+}
+
 
 bool ContinueStmt::typeCheck(Type* retType) {
     return false;

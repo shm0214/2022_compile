@@ -44,6 +44,18 @@ Instruction* Instruction::getPrev() {
     return prev;
 }
 
+void Instruction::remove() {
+    this->getNext()->setPrev(this->getPrev());
+    this->getPrev()->setNext(this->getNext());
+    operands[0]->setDef(nullptr);
+    if (operands[0]->usersNum() == 0)
+        delete operands[0];
+    int opdcnt = operands.size();
+    for(int i=1;i < opdcnt;i++){
+        operands[i]->removeUse(this);
+    }
+}
+
 BinaryInstruction::BinaryInstruction(unsigned opcode,
                                      Operand* dst,
                                      Operand* src1,

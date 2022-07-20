@@ -250,10 +250,12 @@ UnaryExp
     | SUB UnaryExp {
         Type* exprType = $2->getType();
         SymbolEntry* se = new TemporarySymbolEntry(exprType, SymbolTable::getLabel());
-        $$ = new UnaryExpr(se, UnaryExpr::SUB, $2);
+        ExprNode* tmpExpr = new UnaryExpr(se, UnaryExpr::SUB, $2);
+        $$ = tmpExpr->const_fold();
     }
     | NOT UnaryExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
+        ExprNode* tmpExpr;
         if ($2->getType()->isFloat()) {
 
             SymbolEntry* zero =
@@ -263,10 +265,11 @@ UnaryExp
             BinaryExpr* cmpZero = new BinaryExpr(temp, BinaryExpr::NOTEQUAL,
                                                     $2, new Constant(zero));
 
-            $$ = new UnaryExpr(se, UnaryExpr::NOT, cmpZero);
+            tmpExpr = new UnaryExpr(se, UnaryExpr::NOT, cmpZero);
         } else {
-            $$ = new UnaryExpr(se, UnaryExpr::NOT, $2);
+            tmpExpr = new UnaryExpr(se, UnaryExpr::NOT, $2);
         }
+        $$ = tmpExpr->const_fold();
     }
     ;
 MulExp
@@ -278,7 +281,8 @@ MulExp
         } else {
             se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
         }
-        $$ = new BinaryExpr(se, BinaryExpr::MUL, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::MUL, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     | MulExp DIV UnaryExp {
         SymbolEntry* se;
@@ -287,7 +291,8 @@ MulExp
         } else {
             se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
         }
-        $$ = new BinaryExpr(se, BinaryExpr::DIV, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::DIV, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     | MulExp MOD UnaryExp {
 
@@ -298,7 +303,8 @@ MulExp
         }
 
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::MOD, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::MOD, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     ;
 AddExp
@@ -310,7 +316,8 @@ AddExp
         } else {
             se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
         }
-        $$ = new BinaryExpr(se, BinaryExpr::ADD, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::ADD, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     | AddExp SUB MulExp {
         SymbolEntry* se;
@@ -319,7 +326,8 @@ AddExp
         } else {
             se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
         }
-        $$ = new BinaryExpr(se, BinaryExpr::SUB, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::SUB, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     ;
 RelExp
@@ -328,44 +336,52 @@ RelExp
     }
     | RelExp LESS AddExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::LESS, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::LESS, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     | RelExp LESSEQUAL AddExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::LESSEQUAL, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::LESSEQUAL, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     | RelExp GREATER AddExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::GREATER, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::GREATER, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     | RelExp GREATEREQUAL AddExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::GREATEREQUAL, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::GREATEREQUAL, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     ;
 EqExp
     : RelExp { $$ = $1; }
     | EqExp EQUAL RelExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::EQUAL, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::EQUAL, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     | EqExp NOTEQUAL RelExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::NOTEQUAL, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::NOTEQUAL, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     ;
 LAndExp
     : EqExp { $$ = $1; }
     | LAndExp AND EqExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::AND, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::AND, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     ;
 LOrExp
     : LAndExp { $$ = $1; }
     | LOrExp OR LAndExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
-        $$ = new BinaryExpr(se, BinaryExpr::OR, $1, $3);
+        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::OR, $1, $3);
+        $$ = tmpExpr->const_fold();
     }
     ;
 ConstExp

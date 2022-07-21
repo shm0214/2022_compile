@@ -88,7 +88,7 @@ int main(int argc, char* argv[]) {
     if (dump_ir)
         unit.output();
     unit.genMachineCode(&mUnit);
-    if (optimize) {
+    if (!optimize) {
         LinearScan linearScan(&mUnit);
         linearScan.allocateRegisters();
     } else {

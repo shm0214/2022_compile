@@ -126,13 +126,49 @@ void FunctionDef::genCode() {
             }
         }
     }
+    // 如果已经有ret了，删除后面的指令
+    for (auto it = func->begin(); it != func->end(); it++) {
+        auto block = *it;
+        bool flag = false;
+        for (auto i = block->begin(); i != block->end(); i = i->getNext()) {
+            if (flag) {
+                block->remove(i);
+                delete i;
+                continue;
+            }
+            if (i->isRet())
+                flag = true;
+        }
+        if (flag) {
+            while (block->succ_begin() != block->succ_end()) {
+                auto b = *(block->succ_begin());
+                block->removeSucc(b);
+                b->removePred(block);
+            }
+        }
+    }
+    while (true) {
+        bool flag = false;
+        for (auto it = func->begin(); it != func->end(); it++) {
+            auto block = *it;
+            if (block == func->getEntry())
+                continue;
+            if (block->getNumOfPred() == 0) {
+                delete block;
+                flag = true;
+                break;
+            }
+        }
+        if (!flag)
+            break;
+    }
 }
 
 BinaryExpr::BinaryExpr(SymbolEntry* se,
                        int op,
                        ExprNode* expr1,
                        ExprNode* expr2)
-    : ExprNode(se), op(op), expr1(expr1), expr2(expr2) {
+    : ExprNode(se, BINARYEXPR), op(op), expr1(expr1), expr2(expr2) {
     dst = new Operand(se);
     std::string op_str;
     switch (op) {
@@ -198,6 +234,15 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
     } else
         type = TypeSystem::intType;
 };
+
+BinaryExpr::BinaryExpr(const BinaryExpr& b) : ExprNode(b) {
+    op = b.op;
+    expr1 = b.expr1->copy();
+    expr2 = b.expr2->copy();
+    symbolEntry = new TemporarySymbolEntry(b.symbolEntry->getType(),
+                                           SymbolTable::getLabel());
+    dst = new Operand(symbolEntry);
+}
 
 void BinaryExpr::genCode() {
     BasicBlock* bb = builder->getInsertBB();
@@ -596,34 +641,6 @@ void BreakStmt::genCode() {
     builder->setInsertBB(break_next_bb);
 }
 void WhileStmt::genCode() {
-    // Function* func;
-    // BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
-    // bb = builder->getInsertBB();
-    // func = builder->getInsertBB()->getParent();
-    // cond_bb = new BasicBlock(func);
-    // while_bb = new BasicBlock(func);
-    // end_bb = new BasicBlock(func);
-
-    // this->cond_bb = cond_bb;
-    // this->end_bb = end_bb;
-
-    // new UncondBrInstruction(cond_bb, bb);
-
-    // builder->setInsertBB(cond_bb);
-    // cond->genCode();
-    // backPatch(cond->trueList(), while_bb);
-    // backPatch(cond->falseList(), end_bb);
-    // // Operand* condoperand= cond->getOperand();
-    // // new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
-
-    // builder->setInsertBB(while_bb);
-    // stmt->genCode();
-
-    // while_bb = builder->getInsertBB();
-    // new UncondBrInstruction(cond_bb, while_bb);
-
-    // builder->setInsertBB(end_bb);
-
     Function* func;
     BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
     bb = builder->getInsertBB();
@@ -641,22 +658,52 @@ void WhileStmt::genCode() {
     cond->genCode();
     backPatch(cond->trueList(), while_bb);
     backPatch(cond->falseList(), end_bb);
+    // Operand* condoperand= cond->getOperand();
+    // new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
 
     builder->setInsertBB(while_bb);
     stmt->genCode();
-    cond->genCode();
-    backPatch(cond->trueList(), while_bb);
-    backPatch(cond->falseList(), end_bb);
 
-    // Operand* condoperand = cond->getOperand();
-    // auto end = ((CondBrInstruction*)(cond_bb->rbegin()))->getFalseBranch();
-    // new CondBrInstruction(while_bb, end, condoperand,
-    //                       builder->getInsertBB());
-    // std::vector<Instruction*>().swap(cond->trueList());
-    // cond-
+    while_bb = builder->getInsertBB();
+    new UncondBrInstruction(cond_bb, while_bb);
 
-    // while_bb = builder->getInsertBB();
-    // new UncondBrInstruction(cond_bb, while_bb);
+    // builder->setInsertBB(end_bb);
+
+    // Function* func;
+    // BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
+    // bb = builder->getInsertBB();
+    // func = builder->getInsertBB()->getParent();
+    // cond_bb = new BasicBlock(func);
+    // while_bb = new BasicBlock(func);
+    // end_bb = new BasicBlock(func);
+
+    // this->cond_bb = cond_bb;
+    // this->end_bb = end_bb;
+
+    // new UncondBrInstruction(cond_bb, bb);
+
+    // builder->setInsertBB(cond_bb);
+    // cond->genCode();
+    // backPatch(cond->trueList(), while_bb);
+    // backPatch(cond->falseList(), end_bb);
+
+    // builder->setInsertBB(while_bb);
+    // stmt->genCode();
+    // ExprNode* cond1 = cond->copy();
+    // // ExprNode* cond1 = cond;
+    // cond1->genCode();
+    // // backPatch(cond1->trueList(), while_bb);
+    // // backPatch(cond1->falseList(), end_bb);
+
+    // // Operand* condoperand = cond->getOperand();
+    // // auto end = ((CondBrInstruction*)(cond_bb->rbegin()))->getFalseBranch();
+    // // new CondBrInstruction(while_bb, end, condoperand,
+    // //                       builder->getInsertBB());
+    // // std::vector<Instruction*>().swap(cond->trueList());
+    // // cond-
+
+    // // while_bb = builder->getInsertBB();
+    // // new UncondBrInstruction(cond_bb, while_bb);
 
     builder->setInsertBB(end_bb);
 }
@@ -870,7 +917,7 @@ bool AssignStmt::typeCheck(Type* retType) {
 }
 
 CallExpr::CallExpr(SymbolEntry* se, ExprNode* param)
-    : ExprNode(se), param(param) {
+    : ExprNode(se, CALLEXPR), param(param) {
     // 做参数的检查
     dst = nullptr;
     SymbolEntry* s = se;
@@ -917,6 +964,21 @@ CallExpr::CallExpr(SymbolEntry* se, ExprNode* param)
     }
     if (((IdentifierSymbolEntry*)se)->isSysy()) {
         unit.insertDeclare(se);
+    }
+}
+
+CallExpr::CallExpr(const CallExpr& c) : ExprNode(c) {
+    if (c.param)
+        param = c.param->copy();
+    symbolEntry = c.symbolEntry;
+    if (symbolEntry) {
+        Type* type = symbolEntry->getType();
+        this->type = ((FunctionType*)type)->getRetType();
+        if (this->type != TypeSystem::voidType) {
+            SymbolEntry* se =
+                new TemporarySymbolEntry(this->type, SymbolTable::getLabel());
+            dst = new Operand(se);
+        }
     }
 }
 
@@ -1122,6 +1184,14 @@ UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
         }
     }
 };
+
+UnaryExpr::UnaryExpr(const UnaryExpr& u) : ExprNode(u) {
+    op = u.op;
+    expr = u.expr->copy();
+    symbolEntry = new TemporarySymbolEntry(u.symbolEntry->getType(),
+                                           SymbolTable::getLabel());
+    dst = new Operand(symbolEntry);
+}
 
 void UnaryExpr::output(int level) {
     std::string op_str;
@@ -1354,4 +1424,35 @@ void ImplictCastExpr::genCode() {
     this->trueList().push_back(
         new CondBrInstruction(trueBB, tempbb, this->dst, bb));
     this->falseList().push_back(new UncondBrInstruction(falseBB, tempbb));
+}
+
+ExprNode* ExprNode::copy() {
+    ExprNode* ret;
+    switch (kind) {
+        case BINARYEXPR:
+            ret = new BinaryExpr(*(BinaryExpr*)this);
+            break;
+        case UNARYEXPR:
+            ret = new UnaryExpr(*(UnaryExpr*)this);
+            break;
+        case CALLEXPR:
+            ret = new CallExpr(*(CallExpr*)this);
+            break;
+        case CONSTANT:
+            ret = new Constant(*(Constant*)this);
+            break;
+        case ID:
+            ret = new Id(*(Id*)this);
+            break;
+        case IMPLICTCASTEXPR:
+            ret = new ImplictCastExpr(*(ImplictCastExpr*)this);
+            break;
+    }
+    ExprNode* temp = this;
+    if (temp->getNext()) {
+        ret->cleanNext();
+        temp = (ExprNode*)(temp->getNext());
+        ret->setNext(temp->copy());
+    }
+    return ret;
 }

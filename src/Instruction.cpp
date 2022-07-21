@@ -1,6 +1,9 @@
 #include "Instruction.h"
+#include <assert.h>
 #include <iostream>
+#include <map>
 #include <sstream>
+#include <utility>
 #include "BasicBlock.h"
 #include "Function.h"
 #include "Type.h"
@@ -76,6 +79,24 @@ BinaryInstruction::BinaryInstruction(unsigned opcode,
     src2->addUse(this);
 }
 
+void BinaryInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+    } else if (operands[2] == old) {
+        operands[2]->removeUse(this);
+        operands[2] = new_;
+        new_->addUse(this);
+    }
+}
+
+void BinaryInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
+}
+
 BinaryInstruction::~BinaryInstruction() {
     operands[0]->setDef(nullptr);
     if (operands[0]->usersNum() == 0)
@@ -126,6 +147,24 @@ CmpInstruction::CmpInstruction(unsigned opcode,
     dst->setDef(this);
     src1->addUse(this);
     src2->addUse(this);
+}
+
+void CmpInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+    } else if (operands[2] == old) {
+        operands[2]->removeUse(this);
+        operands[2] = new_;
+        new_->addUse(this);
+    }
+}
+
+void CmpInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
 }
 
 CmpInstruction::~CmpInstruction() {
@@ -198,6 +237,14 @@ CondBrInstruction::CondBrInstruction(BasicBlock* true_branch,
     operands.push_back(cond);
 }
 
+void CondBrInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[0] == old) {
+        operands[0]->removeUse(this);
+        operands[0] = new_;
+        new_->addUse(this);
+    }
+}
+
 CondBrInstruction::~CondBrInstruction() {
     operands[0]->removeUse(this);
 }
@@ -236,6 +283,22 @@ RetInstruction::RetInstruction(Operand* src, BasicBlock* insert_bb)
     }
 }
 
+void RetInstruction::replaceDef(Operand* new_) {
+    if (operands.size()) {
+        operands[0]->removeDef(this);
+        operands[0] = new_;
+        new_->setDef(this);
+    }
+}
+
+void RetInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands.size() && operands[0] == old) {
+        operands[0]->removeUse(this);
+        operands[0] = new_;
+        new_->addUse(this);
+    }
+}
+
 RetInstruction::~RetInstruction() {
     if (!operands.empty())
         operands[0]->removeUse(this);
@@ -259,6 +322,12 @@ AllocaInstruction::AllocaInstruction(Operand* dst,
     operands.push_back(dst);
     dst->setDef(this);
     this->se = se;
+}
+
+void AllocaInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
 }
 
 AllocaInstruction::~AllocaInstruction() {
@@ -292,6 +361,20 @@ LoadInstruction::LoadInstruction(Operand* dst,
     src_addr->addUse(this);
 }
 
+void LoadInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
+}
+
+void LoadInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[2] == old) {
+        operands[2]->removeUse(this);
+        operands[2] = new_;
+        new_->addUse(this);
+    }
+}
+
 LoadInstruction::~LoadInstruction() {
     operands[0]->setDef(nullptr);
     if (operands[0]->usersNum() == 0)
@@ -318,6 +401,18 @@ StoreInstruction::StoreInstruction(Operand* dst_addr,
     operands.push_back(src);
     dst_addr->addUse(this);
     src->addUse(this);
+}
+
+void StoreInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[0] == old) {
+        operands[0]->removeUse(this);
+        operands[0] = new_;
+        new_->addUse(this);
+    } else if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+    }
 }
 
 StoreInstruction::~StoreInstruction() {
@@ -356,9 +451,11 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
             if (id_se->getParamNo() < 4)
                 mope = new MachineOperand(MachineOperand::REG,
                                           id_se->getParamNo());
-            else
+            else {
                 // 用r3代表一下
                 mope = new MachineOperand(MachineOperand::REG, 3);
+                mope->setParam();
+            }
         } else
             exit(0);
     }
@@ -504,6 +601,19 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
      * instructions, such as MUL, CMP, you need to deal with this situation,
      * too.*/
     MachineInstruction* cur_inst = nullptr;
+    if (src1->isImm() && src2->isImm() && src2->getVal() == 0 &&
+        opcode == ADD) {
+        if (!(src1->getVal() < 256 && src1->getVal() > -255)) {
+            auto internal_reg = genMachineVReg();
+            cur_inst = new LoadMInstruction(cur_block, internal_reg, src1);
+            cur_block->InsertInst(cur_inst);
+            src1 = new MachineOperand(*internal_reg);
+        }
+        cur_inst =
+            new MovMInstruction(cur_block, MovMInstruction::MOV, dst, src1);
+        cur_block->InsertInst(cur_inst);
+        return;
+    }
     if (src1->isImm()) {
         auto internal_reg = genMachineVReg();
         cur_inst = new LoadMInstruction(cur_block, internal_reg, src1);
@@ -676,6 +786,24 @@ CallInstruction::CallInstruction(Operand* dst,
     }
 }
 
+void CallInstruction::replaceDef(Operand* new_) {
+    if (dst) {
+        operands[0]->removeDef(this);
+        operands[0] = new_;
+        new_->setDef(this);
+        dst = new_;
+    }
+}
+
+void CallInstruction::replaceUse(Operand* old, Operand* new_) {
+    for (int i = 1; i < (int)operands.size(); i++)
+        if (operands[i] == old) {
+            operands[i]->removeUse(this);
+            operands[i] = new_;
+            new_->addUse(this);
+        }
+}
+
 void CallInstruction::output() const {
     fprintf(yyout, "  ");
     if (operands[0])
@@ -710,6 +838,20 @@ ZextInstruction::ZextInstruction(Operand* dst,
     src->addUse(this);
 }
 
+void ZextInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
+}
+
+void ZextInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+    }
+}
+
 void ZextInstruction::output() const {
     Operand* dst = operands[0];
     Operand* src = operands[1];
@@ -732,6 +874,20 @@ XorInstruction::XorInstruction(Operand* dst,
     operands.push_back(src);
     dst->setDef(this);
     src->addUse(this);
+}
+
+void XorInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
+}
+
+void XorInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+    }
 }
 
 void XorInstruction::output() const {
@@ -763,6 +919,24 @@ GepInstruction::GepInstruction(Operand* dst,
     first = false;
     init = nullptr;
     last = false;
+}
+
+void GepInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
+}
+
+void GepInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+    } else if (operands[2] == old) {
+        operands[2]->removeUse(this);
+        operands[2] = new_;
+        new_->addUse(this);
+    }
 }
 
 void GepInstruction::output() const {
@@ -823,7 +997,7 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
             else
                 cur_inst = new LoadMInstruction(cur_block, dst, operand);
             cur_block->InsertInst(cur_inst);
-            operand = dst;
+            operand = new MachineOperand(*dst);
         }
         std::vector<MachineOperand*> vec;
         cur_inst = new StackMInstrcuton(cur_block, StackMInstrcuton::PUSH, vec,
@@ -936,6 +1110,7 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
         cur_inst = new LoadMInstruction(cur_block, size1, genMachineImm(size));
     }
     cur_block->InsertInst(cur_inst);
+    size1 = new MachineOperand(*size1);
     auto off = genMachineVReg();
     cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::MUL, off,
                                       idx, size1);
@@ -964,4 +1139,111 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
         }
         cur_block->InsertInst(cur_inst);
     }
+}
+
+PhiInstruction::PhiInstruction(Operand* dst, BasicBlock* insert_bb)
+    : Instruction(PHI, insert_bb) {
+    operands.push_back(dst);
+    this->dst = dst;
+    this->originDef = dst;
+    dst->setDef(this);
+}
+
+PhiInstruction::~PhiInstruction() {
+    dst->setDef(nullptr);
+    if (dst->usersNum() == 0)
+        delete dst;
+    for (auto it : srcs)
+        it.second->removeUse(this);
+}
+
+void PhiInstruction::output() const {
+    fprintf(yyout, "  %s = phi %s", dst->toStr().c_str(),
+            dst->getType()->toStr().c_str());
+    bool first = true;
+    for (auto it = srcs.begin(); it != srcs.end(); it++) {
+        if (!first)
+            fprintf(yyout, ", ");
+        else
+            first = false;
+        fprintf(yyout, "[ %s , %%B%d ]", it->second->toStr().c_str(),
+                it->first->getNo());
+    }
+    fprintf(yyout, "\n");
+}
+
+void PhiInstruction::addSrc(BasicBlock* block, Operand* src) {
+    operands.push_back(src);
+    srcs.insert(std::make_pair(block, src));
+    src->addUse(this);
+}
+
+void PhiInstruction::replaceUse(Operand* old, Operand* new_) {
+    for (auto& it : srcs) {
+        if (it.second == old) {
+            it.second->removeUse(this);
+            it.second = new_;
+            new_->addUse(this);
+        }
+    }
+}
+
+void PhiInstruction::replaceDef(Operand* new_) {
+    dst->removeDef(this);
+    dst = new_;
+    new_->setDef(this);
+}
+
+void PhiInstruction::replaceOriginDef(Operand* new_) {
+    this->originDef = new_;
+}
+
+void PhiInstruction::changeSrcBlock(
+    std::map<BasicBlock*, std::vector<BasicBlock*>> changes) {
+    bool flag;
+    while (true) {
+        flag = false;
+        for (auto& it : srcs) {
+            if (changes.find(it.first) != changes.end()) {
+                auto vec = changes[it.first];
+                auto src = srcs[it.first];
+                for (auto b : vec) {
+                    if (srcs.find(b) != srcs.end()) {
+                        auto& phiBlocks = parent->getPhiBlocks();
+                        auto iter = phiBlocks.find(b);
+                        BasicBlock* b1;
+                        if (iter != phiBlocks.end()) {
+                            b1 = iter->second;
+                        } else {
+                            // 需要添加一个block
+                            b1 = new BasicBlock(b->getParent());
+                            phiBlocks.insert(std::make_pair(b, b1));
+                            b->addSucc(b1);
+                            b->removeSuccFromEnd(this->getParent());
+                            auto i = (CondBrInstruction*)(b->rbegin());
+                            i->setFalseBranch(b1);
+                            b1->addPred(b);
+                            new UncondBrInstruction(this->getParent(), b1);
+                            this->getParent()->removePredFromEnd(b);
+                            this->getParent()->addPred(b1);
+                            b1->addSucc(this->getParent());
+                        }
+                        addSrc(b1, src);
+                    } else
+                        addSrc(b, src);
+                }
+                srcs.erase(it.first);
+                flag = true;
+                break;
+            }
+        }
+        if (!flag)
+            break;
+    }
+}
+
+Operand* PhiInstruction::getSrc(BasicBlock* block) {
+    if (srcs.find(block) != srcs.end())
+        return srcs[block];
+    return nullptr;
 }

@@ -27,7 +27,7 @@ OUTPUT_RES = $(addsuffix .res, $(basename $(TESTCASE)))
 OUTPUT_BIN = $(addsuffix .bin, $(basename $(TESTCASE)))
 OUTPUT_LOG = $(addsuffix .log, $(basename $(TESTCASE)))
 
-.phony:all app run gdb test clean clean-all clean-test clean-app llvmir gccasm run1
+.phony:all app run gdb test clean clean-all clean-test clean-app llvmir gccasm run1 ll run2
 
 all:app
 
@@ -53,6 +53,21 @@ run1:app
 	@$(BINARY) -o example.s -S example.sy -O2
 	arm-linux-gnueabihf-gcc example.s $(SYSLIB_PATH)/sylib.a -o example
 	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
+	echo $$?
+
+run2:app
+	@$(BINARY) -o example.s -S example.sy
+	arm-linux-gnueabihf-gcc example.s $(SYSLIB_PATH)/sylib.a -o example
+	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
+	echo $$?
+
+ll:app
+	@$(BINARY) -o example.ll -i example.sy -O2
+
+llrun:app
+	@$(BINARY) -o example.ll -i example.sy -O2
+	clang -o example example.ll sysyruntimelibrary/sylib.a
+	./example 
 	echo $$?
 
 gdb:app
@@ -98,7 +113,7 @@ test:app
 		OUT=$${file%.*}.out
 		FILE=$${file##*/}
 		FILE=$${FILE%.*}
-		timeout 500s $(BINARY) $${file} -o $${ASM} -S 2>$${LOG}
+		timeout 500s $(BINARY) $${file} -o $${ASM} -S -O2 2>$${LOG}
 		RETURN_VALUE=$$?
 		if [ $$RETURN_VALUE = 124 ]; then
 			echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mCompile Timeout\033[0m"

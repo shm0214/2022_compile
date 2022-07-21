@@ -3,8 +3,11 @@
 #include <iostream>
 #include "Ast.h"
 #include "ElimUnreachCode.h"
+#include "GraphColor.h"
 #include "LinearScan.h"
 #include "MachineCode.h"
+#include "Mem2reg.h"
+#include "SSADestruction.h"
 #include "Starighten.h"
 #include "Unit.h"
 using namespace std;
@@ -22,6 +25,7 @@ bool dump_tokens;
 bool dump_ast;
 bool dump_ir;
 bool dump_asm;
+bool optimize;
 
 int main(int argc, char* argv[]) {
     int opt;
@@ -40,13 +44,15 @@ int main(int argc, char* argv[]) {
                 dump_ir = true;
                 break;
             case 'O':
+                optimize = true;
+                break;
             case 'S':
                 dump_asm = true;
                 break;
             default:
                 // fprintf(stderr, "Usage: %s [-o outfile] infile\n", argv[0]);
                 // exit(EXIT_FAILURE);
-                dump_asm = true;
+                dump_asm = false;
 
                 break;
         }
@@ -69,15 +75,26 @@ int main(int argc, char* argv[]) {
         ast.output();
     ast.typeCheck();
     ast.genCode(&unit);
-    ElimUnreachCode e(&unit);
-    Starighten s(&unit);
-    s.pass();
-    e.pass();
+    if (optimize) {
+        ElimUnreachCode e(&unit);
+        Starighten s(&unit);
+        Mem2reg m(&unit);
+        SSADestruction s1(&unit);
+        m.pass();
+        e.pass();
+        s.pass();
+        s1.pass();
+    }
     if (dump_ir)
         unit.output();
     unit.genMachineCode(&mUnit);
-    LinearScan linearScan(&mUnit);
-    linearScan.allocateRegisters();
+    if (!optimize) {
+        LinearScan linearScan(&mUnit);
+        linearScan.allocateRegisters();
+    } else {
+        GraphColor GraphColor(&mUnit);
+        GraphColor.allocateRegisters();
+    }
     if (dump_asm)
         mUnit.output();
     return 0;

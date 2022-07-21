@@ -18,3 +18,13 @@ void Operand::removeUse(Instruction* inst) {
     if (i != uses.end())
         uses.erase(i);
 }
+
+void Operand::removeDef(Instruction* inst) {
+    def = nullptr;
+}
+
+Operand::Operand(const Operand& o) {
+    if (o.se->isTemporary()) {
+        se = new TemporarySymbolEntry(o.se->getType(), SymbolTable::getLabel());
+    }
+}

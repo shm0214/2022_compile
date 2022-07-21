@@ -70,8 +70,37 @@ void LinearScan::computeLiveIntervals() {
     intervals.clear();
     for (auto& du_chain : du_chains) {
         int t = -1;
-        for (auto& use : du_chain.second)
+        int min = 1000000;
+        for (auto& use : du_chain.second) {
             t = std::max(t, use->getParent()->getNo());
+            min = std::min(min, use->getParent()->getNo());
+        }
+        // int s = du_chain.first->getParent()->getNo();
+        // if (min != -1 && s > min) {
+        //     // 一个很粗的估计
+        //     // 找到最大的有回边的块
+        //     auto sBlock = du_chain.first->getParent()->getParent();
+        //     auto func = sBlock->getParent();
+        //     auto blocks = func->getBlocks();
+        //     for (auto it = blocks.rbegin();; it++) {
+        //         auto succs = (*it)->getSuccs();
+        //         bool flag = false;
+        //         for (auto succ : succs)
+        //             if (find(blocks.begin(), blocks.end(), succ) <
+        //                 (it + 1).base()) {
+        //                 flag = true;
+        //                 break;
+        //             }
+        //         if (flag) {
+        //             t = (*((*it)->getInsts().rbegin()))->getNo();
+        //             break;
+        //         }
+        //         if (*it == sBlock)
+        //             break;
+        //     }
+        // }
+        // Interval* interval = new Interval(
+        //     {s, t, false, 0, 0, {du_chain.first}, du_chain.second});
         Interval* interval = new Interval({du_chain.first->getParent()->getNo(),
                                            t,
                                            false,
@@ -80,6 +109,7 @@ void LinearScan::computeLiveIntervals() {
                                            du_chain.first->isFloat(),
                                            {du_chain.first},
                                            du_chain.second});
+
         intervals.push_back(interval);
     }
     bool change;

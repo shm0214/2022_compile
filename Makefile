@@ -1,9 +1,7 @@
 SRC_PATH ?= src
 INC_PATH += include
 BUILD_PATH ?= build
-TEST_PATH ?= test/functional
-# TEST_PATH ?= test
-
+TEST_PATH ?= test
 OBJ_PATH ?= $(BUILD_PATH)/obj
 BINARY ?= $(BUILD_PATH)/compiler
 SYSLIB_PATH ?= sysyruntimelibrary
@@ -28,11 +26,8 @@ OUTPUT_ASM = $(addsuffix .s, $(basename $(TESTCASE)))
 OUTPUT_RES = $(addsuffix .res, $(basename $(TESTCASE)))
 OUTPUT_BIN = $(addsuffix .bin, $(basename $(TESTCASE)))
 OUTPUT_LOG = $(addsuffix .log, $(basename $(TESTCASE)))
-OUTPUT_TOK = $(addsuffix .toks, $(basename $(TESTCASE)))
-OUTPUT_IR = $(addsuffix .ll, $(basename $(TESTCASE)))
-OUTPUT_AST = $(addsuffix .ast, $(basename $(TESTCASE)))
 
-.phony:all app run gdb test clean clean-all clean-test clean-app llvmir gccasm run1 run2 testlexer testir testast
+.phony:all app run gdb test clean clean-all clean-test clean-app llvmir gccasm run1 ll run2
 
 all:app
 
@@ -51,25 +46,29 @@ $(BINARY):$(OBJ)
 
 app:$(LEXER) $(PARSER) $(BINARY)
 
-run:app example.sy
+run:app
 	@$(BINARY) -o example.s -S example.sy -O2
 
-run1:app example.sy
+run1:app
 	@$(BINARY) -o example.s -S example.sy -O2
-	arm-linux-gnueabihf-gcc -march=armv7-a example.s -Lsysyruntimelibrary -lsysy -static -o example
+	arm-linux-gnueabihf-gcc example.s $(SYSLIB_PATH)/sylib.a -o example
 	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
 	echo $$?
 
-run2:app example.sy
+run2:app
 	@$(BINARY) -o example.s -S example.sy
-	@$(BINARY) -o example.ast -a example.sy
-	@$(BINARY) -o example.toks -t example.sy
-	@$(BINARY) -o example.ll -i example.sy
-	@clang -x c example.sy -S -m32 -emit-llvm -o example_std.ll
-	@arm-linux-gnueabihf-gcc -x c example.sy -S -march=armv7-a -o example_std.s
-	@arm-linux-gnueabihf-gcc -march=armv7-a -o example example.s -Lsysyruntimelibrary -lsysy -static
+	arm-linux-gnueabihf-gcc example.s $(SYSLIB_PATH)/sylib.a -o example
+	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
+	echo $$?
 
-	@qemu-arm -L /usr/arm-linux-gnueabihf ./example < example.in > example.out 2>> example.log
+ll:app
+	@$(BINARY) -o example.ll -i example.sy -O2
+
+llrun:app
+	@$(BINARY) -o example.ll -i example.sy -O2
+	clang -o example example.ll sysyruntimelibrary/sylib.a
+	./example 
+	echo $$?
 
 gdb:app
 	@gdb $(BINARY)
@@ -101,12 +100,6 @@ llvmir:$(LLVM_IR)
 
 gccasm:$(GCC_ASM)
 
-testir:app $(LLVM_IR) $(OUTPUT_IR)
-
-testlexer:app $(OUTPUT_TOK)
-
-testast:app $(OUTPUT_AST)
-
 .ONESHELL:
 test:app
 	@success=0
@@ -120,7 +113,7 @@ test:app
 		OUT=$${file%.*}.out
 		FILE=$${file##*/}
 		FILE=$${FILE%.*}
-		timeout 500s $(BINARY) $${file} -o $${ASM} -S 2>$${LOG}
+		timeout 500s $(BINARY) $${file} -o $${ASM} -S -O2 2>$${LOG}
 		RETURN_VALUE=$$?
 		if [ $$RETURN_VALUE = 124 ]; then
 			echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mCompile Timeout\033[0m"
@@ -130,7 +123,7 @@ test:app
 			continue
 			fi
 		fi
-		arm-linux-gnueabihf-gcc -march=armv7-a -o $${BIN} $${ASM} -Lsysyruntimelibrary -lsysy -static >>$${LOG} 2>&1
+		arm-linux-gnueabihf-gcc -mcpu=cortex-a72 -o $${BIN} $${ASM} $(SYSLIB_PATH)/sylib.a >>$${LOG} 2>&1
 		if [ $$? != 0 ]; then
 			echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mAssemble Error\033[0m"
 		else
@@ -142,13 +135,19 @@ test:app
 			RETURN_VALUE=$$?
 			FINAL=`tail -c 1 $${RES}`
 			[ $${FINAL} ] && echo "\n$${RETURN_VALUE}" >> $${RES} || echo "$${RETURN_VALUE}" >> $${RES}
-
-			diff -Z $${RES} $${OUT} >/dev/null 2>&1
-			if [ $$? != 0 ]; then
-				echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mWrong Answer\033[0m"
-			else
-				success=$$((success + 1))
-				echo "\033[1;32mPASS:\033[0m $${FILE}"
+			if [ "$${RETURN_VALUE}" = "124" ]; then
+				echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mExecute Timeout\033[0m"
+			else if [ "$${RETURN_VALUE}" = "127" ]; then
+				echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mExecute Error\033[0m"
+				else
+					diff -Z $${RES} $${OUT} >/dev/null 2>&1
+					if [ $$? != 0 ]; then
+						echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mWrong Answer\033[0m"
+					else
+						success=$$((success + 1))
+						echo "\033[1;32mPASS:\033[0m $${FILE}"
+					fi
+				fi
 			fi
 		fi
 	done
@@ -160,12 +159,7 @@ clean-app:
 	@rm -rf $(BUILD_PATH) $(PARSER) $(LEXER) $(PARSERH)
 
 clean-test:
-	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) \
-		    $(OUTPUT_RES) $(OUTPUT_TOK) $(OUTPUT_IR)  \
-			$(LLVM_IR) $(GCC_ASM) $(OUTPUT_AST)       \
-			./example.ast ./example.ll ./example.s    \
-			./example.toks ./example_std.ll ./example \
-			./example_std.s
+	@rm -rf $(OUTPUT_ASM) $(OUTPUT_LOG) $(OUTPUT_BIN) $(OUTPUT_RES) $(LLVM_IR) $(GCC_ASM) ./example.ast ./example.ll ./example.s
 
 clean-all:clean-test clean-app
 

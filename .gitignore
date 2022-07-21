@@ -11,8 +11,11 @@ example
 *.ast
 *.toks
 *.s
-performance/
+# performance/
 test1
 test
 .VSCodeCounter/
 sysyruntimelibrary
+
+perf.*
+Makefile

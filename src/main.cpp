@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <iostream>
 #include "Ast.h"
+#include "CopyProp.h"
 #include "ElimUnreachCode.h"
 #include "GraphColor.h"
 #include "LinearScan.h"
@@ -80,13 +81,17 @@ int main(int argc, char* argv[]) {
         Starighten s(&unit);
         Mem2reg m(&unit);
         SSADestruction s1(&unit);
+        CopyProp c(&unit);
         m.pass();
+        // c.copy_prop();
         e.pass();
         s.pass();
         s1.pass();
     }
-    if (dump_ir)
+    if (dump_ir) {
         unit.output();
+        return 0;
+    }
     unit.genMachineCode(&mUnit);
     if (!optimize) {
         LinearScan linearScan(&mUnit);

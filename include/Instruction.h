@@ -22,15 +22,20 @@ class Instruction {
     bool isCall() const { return instType == CALL; }
     bool isStore() const { return instType == STORE; }
     bool isPhi() const { return instType == PHI; };
+    bool isBin() const { return instType == BINARY; };
+    bool isLoad() const { return instType == LOAD; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
+    void remove();
     Instruction* getNext();
     Instruction* getPrev();
     virtual void output() const = 0;
     MachineOperand* genMachineOperand(Operand*);
+    MachineOperand* genMachineFloatOperand(Operand*);
     MachineOperand* genMachineReg(int reg);
-    MachineOperand* genMachineVReg();
+    MachineOperand* genMachineFReg(int freg);
+    MachineOperand* genMachineVReg(bool fpu = false);
     MachineOperand* genMachineImm(int val);
     MachineOperand* genMachineLabel(int block_no);
     virtual void genMachineCode(AsmBuilder*) = 0;
@@ -42,6 +47,7 @@ class Instruction {
     virtual Operand* getDef() { return nullptr; }
     virtual void replaceUse(Operand* old, Operand* new_) {}
     virtual void replaceDef(Operand* new_) {}
+    std::vector<Operand*> getOperands() { return operands; }
 
    protected:
     unsigned instType;
@@ -64,7 +70,9 @@ class Instruction {
         ZEXT,
         XOR,
         GEP,
-        PHI
+        PHI,
+        FPTOSI,  // floating point to signed int
+        SITOFP,  // signed int to floating point
     };
 };
 
@@ -314,6 +322,34 @@ class PhiInstruction : public Instruction {
     void replaceOriginDef(Operand* new_);
     void changeSrcBlock(
         std::map<BasicBlock*, std::vector<BasicBlock*>> changes);
+};
+
+class FptosiInstruction : public Instruction {
+   private:
+    Operand* dst;
+    Operand* src;
+
+   public:
+    FptosiInstruction(Operand* dst,
+                      Operand* src,
+                      BasicBlock* insert_bb = nullptr);
+    ~FptosiInstruction();
+    void output() const;
+    void genMachineCode(AsmBuilder*);
+};
+
+class SitofpInstruction : public Instruction {
+   private:
+    Operand* dst;
+    Operand* src;
+
+   public:
+    SitofpInstruction(Operand* dst,
+                      Operand* src,
+                      BasicBlock* insert_bb = nullptr);
+    ~SitofpInstruction();
+    void output() const;
+    void genMachineCode(AsmBuilder*);
 };
 
 #endif

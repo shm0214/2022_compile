@@ -60,15 +60,15 @@ class SymbolTable {
 */
 class ConstantSymbolEntry : public SymbolEntry {
    private:
-    int value;
+    double value;
     std::string strValue;
 
    public:
-    ConstantSymbolEntry(Type* type, int value);
+    ConstantSymbolEntry(Type* type, double value);
     ConstantSymbolEntry(Type* type, std::string strValue);
     ConstantSymbolEntry(Type* type);
     virtual ~ConstantSymbolEntry(){};
-    int getValue() const;
+    double getValue() const;
     std::string getStrValue() const;
     std::string toStr();
     // You can add any function you need here.
@@ -101,11 +101,11 @@ class IdentifierSymbolEntry : public SymbolEntry {
     enum { GLOBAL, PARAM, LOCAL };
     std::string name;
     int scope;
-    int value;
+    double value;
     int label;
     bool initial;
     bool sysy;
-    int* arrayValue;
+    double* arrayValue;
     bool allZero;
     int paramNo;
     bool constant;
@@ -127,10 +127,10 @@ class IdentifierSymbolEntry : public SymbolEntry {
     int getScope() const { return scope; };
     void setAddr(Operand* addr) { this->addr = addr; };
     Operand* getAddr() { return addr; };
-    void setValue(int value);
-    int getValue() const { return value; };
-    void setArrayValue(int* arrayValue);
-    int* getArrayValue() const { return arrayValue; };
+    void setValue(double value);
+    double getValue() const { return value; };
+    void setArrayValue(double* arrayValue);
+    double* getArrayValue() const { return arrayValue; };
     int getLabel() const { return label; };
     void setLabel() { label = SymbolTable::getLabel(); };
     void setAllZero() { allZero = true; };

@@ -21,7 +21,6 @@ class Instruction {
     bool isRet() const { return instType == RET; };
     bool isCall() const { return instType == CALL; }
     bool isStore() const { return instType == STORE; }
-    bool isStore() const { return instType == STORE; };
     bool isPhi() const { return instType == PHI; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
@@ -39,7 +38,6 @@ class Instruction {
     bool isEssential() const;
     void setMark() { mark = true; }
     void unsetMark() { mark = false; }
-    std::vector<Operand*> getUse() { return std::vector<Operand*>(); }
     virtual std::vector<Operand*> getUse() { return std::vector<Operand*>(); }
     virtual Operand* getDef() { return nullptr; }
     virtual void replaceUse(Operand* old, Operand* new_) {}
@@ -138,6 +136,8 @@ class BinaryInstruction : public Instruction {
     void genMachineCode(AsmBuilder*);
     enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
     Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
@@ -156,7 +156,9 @@ class CmpInstruction : public Instruction {
     enum { E, NE, L, LE, G, GE };
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
-    std::vector<Operand*> getUse() {}
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1], operands[2]});
+    }
 };
 
 class UncondBrInstruction : public Instruction {
@@ -243,6 +245,8 @@ class ZextInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1]});
     }
@@ -286,10 +290,8 @@ class GepInstruction : public Instruction {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
     Operand* getDef() { return operands[0]; }
+    void replaceDef(Operand* new_);
     void replaceUse(Operand* old, Operand* new_);
-    std::vector<Operand*> getUse() {
-        return std::vector<Operand*>({operands[1], operands[2]});
-    }
 };
 
 class PhiInstruction : public Instruction {
@@ -313,3 +315,5 @@ class PhiInstruction : public Instruction {
     void changeSrcBlock(
         std::map<BasicBlock*, std::vector<BasicBlock*>> changes);
 };
+
+#endif

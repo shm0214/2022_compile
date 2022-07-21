@@ -27,6 +27,7 @@ class Operand {
     Type* getType() { return se->getType(); };
     std::string toStr() const;
     SymbolEntry* getEntry() { return se; };
+    void setEntry(SymbolEntry* se) { this->se = se;};
     Instruction* getDef() { return def; };
 };
 

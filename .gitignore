@@ -1,12 +1,7 @@
 *.ast
 *.o
 .vscode/
-# *.out
-build/*
-# parser.h
-# parser.cpp
-# lexer.h
-# lexer.cpp
+build
 *.ll
 *.bin
 *.log

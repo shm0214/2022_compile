@@ -18,9 +18,13 @@ class Instruction {
     bool isCond() const { return instType == COND; };
     bool isAlloc() const { return instType == ALLOCA; };
     bool isRet() const { return instType == RET; };
+    bool isBin() const { return instType == BINARY; };
+    bool isLoad() const { return instType == LOAD; };
+    bool isStore() const { return instType == STORE; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
+    void remove();
     Instruction* getNext();
     Instruction* getPrev();
     virtual void output() const = 0;
@@ -32,7 +36,8 @@ class Instruction {
     MachineOperand* genMachineImm(int val);
     MachineOperand* genMachineLabel(int block_no);
     virtual void genMachineCode(AsmBuilder*) = 0;
-    int getInstType() { return instType; }
+    int getInstType() { return instType; };
+    std::vector<Operand*> getOperands(){ return operands; }
 
    protected:
     unsigned instType;

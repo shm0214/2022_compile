@@ -49,7 +49,7 @@ class ExprNode : public Node {
     int kind;
 
    protected:
-    enum { EXPR, INITVALUELISTEXPR, IMPLICITCASTEXPR, UNARYEXPR };
+    enum { EXPR, INITVALUELISTEXPR, IMPLICITCASTEXPR, UNARYEXPR, BINARYEXPR};
     Type* type;
     SymbolEntry* symbolEntry;
     Operand* dst;  // The result of the subtree is stored into dst.
@@ -63,11 +63,15 @@ class ExprNode : public Node {
     bool isInitValueListExpr() const { return kind == INITVALUELISTEXPR; };
     bool isImplicitCastExpr() const { return kind == IMPLICITCASTEXPR; };
     bool isUnaryExpr() const { return kind == UNARYEXPR; };
+    bool isBinaryExpr() const { return kind == BINARYEXPR; };
     SymbolEntry* getSymbolEntry() { return symbolEntry; };
     virtual bool typeCheck(Type* retType = nullptr) { return false; };
     void genCode();
     virtual Type* getType() { return type; };
     Type* getOriginType() { return type; };
+    ExprNode* const_fold();
+    int fold_const(bool &flag);
+    ExprNode* alge_simple(int depth);
 };
 
 class BinaryExpr : public ExprNode {
@@ -96,6 +100,9 @@ class BinaryExpr : public ExprNode {
     double getValue();
     bool typeCheck(Type* retType = nullptr);
     void genCode();
+    int getOp() const { return op; };
+    ExprNode* getLeft();
+    ExprNode* getRight();
 };
 
 class UnaryExpr : public ExprNode {
@@ -112,6 +119,7 @@ class UnaryExpr : public ExprNode {
     void genCode();
     int getOp() const { return op; };
     void setType(Type* type) { this->type = type; }
+    ExprNode* getSubExpr();
 };
 
 class CallExpr : public ExprNode {
@@ -417,6 +425,7 @@ class Ast {
    public:
     Ast() { root = nullptr; }
     void setRoot(Node* n) { root = n; }
+    Node* getRoot() { return root;}
     void output();
     bool typeCheck(Type* retType = nullptr);
     void genCode(Unit* unit);

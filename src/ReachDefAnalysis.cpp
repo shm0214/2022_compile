@@ -57,7 +57,9 @@ void ReachDefAnalysis::iterate(MachineFunction* func) {
             i++;
         }
     }
-    func->getEntry()->getDefIn() = func->getEntry()->getDefOut();
+    func->getEntry()->getDefIn().clear();
+    func->getEntry()->getDefOut().insert(gen[func->getEntry()].begin(),
+                                        gen[func->getEntry()].end());
     bool change;
     change = true;
     while (change) {

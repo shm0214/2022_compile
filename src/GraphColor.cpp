@@ -45,19 +45,19 @@ void GraphColor::makeDuChains() {
     rd.pass(func);
     std::map<MachineOperand, std::set<MachineOperand*>> reachingDef;
     du_chains.clear();
-    for (auto& bb : func->getBlocks()) {
-        for (auto& inst : bb->getInsts()) {
+    for (auto& block : func->getBlocks()) {
+        for (auto& inst : block->getInsts()) {
             auto defs = inst->getDef();
             for (auto& def : defs)
                 if (def->needColor())
                     du_chains[def].insert({});
         }
     }
-    for (auto& bb : func->getBlocks()) {
+    for (auto& block : func->getBlocks()) {
         reachingDef.clear();
-        for (auto& t : bb->getDefIn())
+        for (auto& t : block->getDefIn())
             reachingDef[*t].insert(t);
-        for (auto& inst : bb->getInsts()) {
+        for (auto& inst : block->getInsts()) {
             for (auto& use : inst->getUse()) {
                 if (use->needColor()) {
                     if (reachingDef[*use].empty())
@@ -85,13 +85,13 @@ void GraphColor::makeDuChains() {
     // du_chains.clear();
     // int i = 0;
     // std::map<MachineOperand, std::set<MachineOperand*>> liveVar;
-    // for (auto& bb : func->getBlocks()) {
+    // for (auto& block : func->getBlocks()) {
     //     liveVar.clear();
-    //     for (auto& t : bb->getLiveOut())
+    //     for (auto& t : block->getLiveOut())
     //         liveVar[*t].insert(t);
     //     int no;
-    //     no = i = bb->getInsts().size() + i;
-    //     for (auto inst = bb->getInsts().rbegin(); inst != bb->getInsts().rend();
+    //     no = i = block->getInsts().size() + i;
+    //     for (auto inst = block->getInsts().rbegin(); inst != block->getInsts().rend();
     //          inst++) {
     //         (*inst)->setNo(no--);
     //         for (auto& def : (*inst)->getDef()) {
@@ -288,6 +288,8 @@ bool GraphColor::coalesceRegs() {
                 continue;
             int u = operand2web[def];
             int v = operand2web[use];
+            if(webs[u]->defs.size() != 1)
+                continue;
             if (!matrix[u][v]) {
                 flag = true;
                 for (auto i = 0; i < (int)matrix.size(); i++)
@@ -307,8 +309,8 @@ bool GraphColor::coalesceRegs() {
                     webs[v]->defs.insert(new_);
                     in->replaceDef(d, new_);
                 }
+                tempList.push_back(ins);
             }
-            tempList.push_back(ins);
         }
     }
     for (auto& ins : tempList)
@@ -374,7 +376,7 @@ void GraphColor::pruneGraph() {
             }
     }
     while (stk.size() < list.size()) {
-        double spillCost = MAX;
+        double spillCost = __DBL_MAX__;
         int spillNode = -1;
         for (int i = 0; i < (int)list.size(); i++) {
             int nInts = list[i].size();
@@ -453,6 +455,8 @@ void GraphColor::modifyCode() {
                 for (auto use : uses)
                     if (use->isImm() && use->getVal() == 0)
                         flag = true;
+                if (uses[0]->isParam())
+                    flag = false;
             }
             if (!flag)
                 continue;

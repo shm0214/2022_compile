@@ -76,22 +76,25 @@ int main(int argc, char* argv[]) {
     ast.typeCheck();
     ast.genCode(&unit);
     if (optimize) {
-        // ElimUnreachCode e(&unit);
-        // Starighten s(&unit);
+        ElimUnreachCode e(&unit);
+        Starighten s(&unit);
         Mem2reg m(&unit);
-        // SSADestruction s1(&unit);
+        SSADestruction s1(&unit);
         m.pass();
-        // e.pass();
-        // s.pass();
-        // s1.pass();
+        e.pass();
+        s.pass();
+        s1.pass();
     }
     if (dump_ir)
         unit.output();
     unit.genMachineCode(&mUnit);
-    LinearScan linearScan(&mUnit);
-    // linearScan.allocateRegisters();
-    GraphColor GraphColor(&mUnit);
-    GraphColor.allocateRegisters();
+    if (optimize) {
+        LinearScan linearScan(&mUnit);
+        linearScan.allocateRegisters();
+    } else {
+        GraphColor GraphColor(&mUnit);
+        GraphColor.allocateRegisters();
+    }
     if (dump_asm)
         mUnit.output();
     return 0;

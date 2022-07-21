@@ -434,7 +434,7 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
             if (id_se->getParamNo() < 4)
                 mope = new MachineOperand(MachineOperand::REG,
                                           id_se->getParamNo());
-            else{
+            else {
                 // 用r3代表一下
                 mope = new MachineOperand(MachineOperand::REG, 3);
                 mope->setParam();
@@ -584,6 +584,19 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
      * instructions, such as MUL, CMP, you need to deal with this situation,
      * too.*/
     MachineInstruction* cur_inst = nullptr;
+    if (src1->isImm() && src2->isImm() && src2->getVal() == 0 &&
+        opcode == ADD) {
+        if (!(src1->getVal() < 256 && src1->getVal() > -255)) {
+            auto internal_reg = genMachineVReg();
+            cur_inst = new LoadMInstruction(cur_block, internal_reg, src1);
+            cur_block->InsertInst(cur_inst);
+            src1 = new MachineOperand(*internal_reg);
+        }
+        cur_inst =
+            new MovMInstruction(cur_block, MovMInstruction::MOV, dst, src1);
+        cur_block->InsertInst(cur_inst);
+        return;
+    }
     if (src1->isImm()) {
         auto internal_reg = genMachineVReg();
         cur_inst = new LoadMInstruction(cur_block, internal_reg, src1);

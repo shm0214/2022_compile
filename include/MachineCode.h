@@ -32,11 +32,12 @@ class MachineOperand {
     int val;            // value of immediate number
     int reg_no;         // register no
     std::string label;  // address label
-    bool is_float = false;
+    bool fpu = false;   // floating point
     float fval;
+
    public:
     enum { IMM, VREG, REG, LABEL };
-    MachineOperand(int tp, int val);
+    MachineOperand(int tp, int val, bool fpu = false);
     MachineOperand(std::string label);
     MachineOperand(int tp, float fval);
     bool operator==(const MachineOperand&) const;
@@ -48,8 +49,12 @@ class MachineOperand {
     int getVal() { return this->val; };
     void setVal(int val) { this->val = val; };
     float getFVal() { return this->fval; }
-    void setFVal(float val) { this->fval = fval; is_float = true; }
-    bool isFloat() { return this->is_float; }
+    void setFVal(float fval) {
+        this->fval = fval;
+        this->fpu = true;
+    }
+    uint32_t getBinVal();
+    bool isFloat() { return this->fpu; }
     int getReg() { return this->reg_no; };
     void setReg(int regno) {
         this->type = REG;
@@ -78,7 +83,7 @@ class MachineInstruction {
     void addUse(MachineOperand* ope) { use_list.push_back(ope); };
     // Print execution code after printing opcode
     void PrintCond();
-    enum instType { BINARY, LOAD, STORE, MOV, BRANCH, CMP, STACK };
+    enum instType { BINARY, LOAD, STORE, MOV, BRANCH, CMP, STACK, VCVT, VMRS };
 
    public:
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
@@ -98,7 +103,7 @@ class MachineInstruction {
 
 class BinaryMInstruction : public MachineInstruction {
    public:
-    enum opType { ADD, SUB, MUL, DIV, AND, OR };
+    enum opType { ADD, SUB, MUL, DIV, AND, OR, VADD, VSUB, VMUL, VDIV };
     BinaryMInstruction(MachineBlock* p,
                        int op,
                        MachineOperand* dst,
@@ -110,7 +115,9 @@ class BinaryMInstruction : public MachineInstruction {
 
 class LoadMInstruction : public MachineInstruction {
    public:
+    enum opType { LDR, VLDR };
     LoadMInstruction(MachineBlock* p,
+                     int op,
                      MachineOperand* dst,
                      MachineOperand* src1,
                      MachineOperand* src2 = nullptr,
@@ -120,7 +127,9 @@ class LoadMInstruction : public MachineInstruction {
 
 class StoreMInstruction : public MachineInstruction {
    public:
+    enum opType { STR, VSTR };
     StoreMInstruction(MachineBlock* p,
+                      int op,
                       MachineOperand* src1,
                       MachineOperand* src2,
                       MachineOperand* src3 = nullptr,
@@ -130,7 +139,7 @@ class StoreMInstruction : public MachineInstruction {
 
 class MovMInstruction : public MachineInstruction {
    public:
-    enum opType { MOV, MVN };
+    enum opType { MOV, MVN, MOVT, VMOV, VMOVF32 };
     MovMInstruction(MachineBlock* p,
                     int op,
                     MachineOperand* dst,
@@ -151,24 +160,42 @@ class BranchMInstruction : public MachineInstruction {
 
 class CmpMInstruction : public MachineInstruction {
    public:
-    enum opType { CMP };
+    enum opType { CMP, VCMP };
     CmpMInstruction(MachineBlock* p,
+                    int op,
                     MachineOperand* src1,
                     MachineOperand* src2,
                     int cond = MachineInstruction::NONE);
     void output();
 };
 
-class StackMInstrcuton : public MachineInstruction {
+class StackMInstruction : public MachineInstruction {
    public:
-    enum opType { PUSH, POP };
-    StackMInstrcuton(MachineBlock* p,
+    enum opType { PUSH, POP, VPUSH, VPOP };
+    StackMInstruction(MachineBlock* p,
+                      int op,
+                      std::vector<MachineOperand*> srcs,
+                      MachineOperand* src = nullptr,
+                      MachineOperand* src1 = nullptr,
+                      int cond = MachineInstruction::NONE);
+    void output();
+};
+
+class VcvtMInstruction : public MachineInstruction {
+   public:
+    enum opType { S2F, F2S };
+    VcvtMInstruction(MachineBlock* p,
                      int op,
-                     std::vector<MachineOperand*> srcs,
+                     MachineOperand* dst,
                      MachineOperand* src,
-                     MachineOperand* src1 = nullptr,
                      int cond = MachineInstruction::NONE);
     void output();
+};
+
+class VmrsMInstruction : public MachineInstruction {
+    public:
+        VmrsMInstruction(MachineBlock* p);
+        void output();
 };
 
 class MachineBlock {
@@ -215,7 +242,9 @@ class MachineFunction {
     MachineUnit* parent;
     std::vector<MachineBlock*> block_list;
     int stack_size;
+    int align_size;
     std::set<int> saved_regs;
+    std::set<int> saved_fpregs;
     SymbolEntry* sym_ptr;
     int paramsNum;
 
@@ -232,14 +261,29 @@ class MachineFunction {
      * LinearScan::genSpillCode() */
     int AllocSpace(int size) {
         this->stack_size += size;
+        int occupied_size = stack_size - align_size;
+        
+        if (occupied_size + size <= stack_size) {
+            align_size = stack_size - (occupied_size + size);
+        } else {
+            if ((occupied_size + size) % 8 != 0) {
+                stack_size = ((occupied_size + size) / 8 + 1) * 8;
+                align_size = stack_size - (occupied_size + size);
+            } else {
+                stack_size = occupied_size + size;
+                align_size = 0;
+            }
+        }
+
         return this->stack_size;
     };
     void InsertBlock(MachineBlock* block) {
         this->block_list.push_back(block);
     };
-    void addSavedRegs(int regno) { saved_regs.insert(regno); };
+    void addSavedRegs(int regno);
     void output();
     std::vector<MachineOperand*> getSavedRegs();
+    std::vector<MachineOperand*> getSavedFpRegs();
     int getParamsNum() const { return paramsNum; };
     MachineUnit* getParent() const { return parent; };
 };

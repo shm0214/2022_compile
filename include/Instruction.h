@@ -29,8 +29,10 @@ class Instruction {
     Instruction* getPrev();
     virtual void output() const = 0;
     MachineOperand* genMachineOperand(Operand*);
+    MachineOperand* genMachineFloatOperand(Operand*);
     MachineOperand* genMachineReg(int reg);
-    MachineOperand* genMachineVReg();
+    MachineOperand* genMachineFReg(int freg);
+    MachineOperand* genMachineVReg(bool fpu = false);
     MachineOperand* genMachineImm(int val);
     MachineOperand* genMachineLabel(int block_no);
     virtual void genMachineCode(AsmBuilder*) = 0;

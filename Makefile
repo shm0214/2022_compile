@@ -56,7 +56,7 @@ run:app example.sy
 
 run1:app example.sy
 	@$(BINARY) -o example.s -S example.sy -O2
-	arm-linux-gnueabihf-gcc example.s $(SYSLIB_PATH)/sylib.a -o example
+	arm-linux-gnueabihf-gcc -march=armv7-a example.s -Lsysyruntimelibrary -lsysy -static -o example
 	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
 	echo $$?
 
@@ -66,10 +66,10 @@ run2:app example.sy
 	@$(BINARY) -o example.toks -t example.sy
 	@$(BINARY) -o example.ll -i example.sy
 	@clang -x c example.sy -S -m32 -emit-llvm -o example_std.ll
-	@arm-linux-gnueabihf-gcc -x c example.sy -S -mcpu=cortex-a72 -mfloat-abi=soft -o example_std.s
-	arm-linux-gnueabihf-gcc -mcpu=cortex-a72 -o example example.s $(SYSLIB_PATH)/sylib.a
+	@arm-linux-gnueabihf-gcc -x c example.sy -S -march=armv7-a -o example_std.s
+	@arm-linux-gnueabihf-gcc -march=armv7-a -o example example.s -Lsysyruntimelibrary -lsysy -static
 
-	qemu-arm -L /usr/arm-linux-gnueabihf ./example < example.in > example.out 2>> example.log
+	@qemu-arm -L /usr/arm-linux-gnueabihf ./example < example.in > example.out 2>> example.log
 
 gdb:app
 	@gdb $(BINARY)
@@ -130,7 +130,7 @@ test:app
 			continue
 			fi
 		fi
-		arm-linux-gnueabihf-gcc -mcpu=cortex-a72 -o $${BIN} $${ASM} $(SYSLIB_PATH)/sylib.a >>$${LOG} 2>&1
+		arm-linux-gnueabihf-gcc -march=armv7-a -o $${BIN} $${ASM} -Lsysyruntimelibrary -lsysy -static >>$${LOG} 2>&1
 		if [ $$? != 0 ]; then
 			echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mAssemble Error\033[0m"
 		else

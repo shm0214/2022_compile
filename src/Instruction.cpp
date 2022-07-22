@@ -1384,6 +1384,7 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
             cur_block, BranchMInstruction::BL, new MachineOperand("@memset")));
         return;
     }
+    int stk_cnt = 0;
     int gpreg_cnt = 1;
     for (idx = 1; idx < operands.size(); idx++) {
         if (gpreg_cnt == 5)
@@ -1424,6 +1425,7 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         cur_inst = new StackMInstruction(cur_block, StackMInstruction::PUSH,
                                          vec, operand);
         cur_block->InsertInst(cur_inst);
+        stk_cnt++;
     }
 
     int fpreg_cnt = 1;
@@ -1461,13 +1463,14 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         cur_inst = new StackMInstruction(cur_block, StackMInstruction::VPUSH,
                                          vec, operand);
         cur_block->InsertInst(cur_inst);
+        stk_cnt++;
     }
 
     auto label = new MachineOperand(func->toStr().c_str());
     cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::BL, label);
     cur_block->InsertInst(cur_inst);
-    if (operands.size() > 5) {
-        auto off = genMachineImm((operands.size() - 5) * 4);
+    if (gpreg_cnt >= 5 || fpreg_cnt >= 5) {
+        auto off = genMachineImm(stk_cnt * 4);
         auto sp = new MachineOperand(MachineOperand::REG, 13);
         cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
                                           sp, sp, off);

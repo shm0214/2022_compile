@@ -44,7 +44,7 @@
 extern int yydebug;
 #endif
 /* "%code requires" blocks.  */
-#line 27 "src/parser.y"
+#line 28 "src/parser.y"
 
     #include "Ast.h"
     #include "SymbolTable.h"
@@ -102,7 +102,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 33 "src/parser.y"
+#line 34 "src/parser.y"
 
     double numtype; // store all number in float
     char* strtype;

@@ -127,3 +127,9 @@ void BasicBlock::insertPhiInstruction(Operand* dst) {
     Instruction* i = new PhiInstruction(dst);
     insertFront(i);
 }
+
+void BasicBlock::deleteBack(int num) {
+    while (num--) {
+        remove(head->getPrev());
+    }
+}

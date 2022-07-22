@@ -6,6 +6,7 @@
 
 IntType TypeSystem::commonConstInt = IntType(32, true);
 IntType TypeSystem::commonInt = IntType(32);
+IntType TypeSystem::commonInt8 = IntType(8);
 IntType TypeSystem::commonBool = IntType(1);
 VoidType TypeSystem::commonVoid = VoidType();
 FloatType TypeSystem::commonFloat = FloatType(32);
@@ -13,6 +14,7 @@ FloatType TypeSystem::commonConstFloat = FloatType(32, true);
 
 Type* TypeSystem::constIntType = &commonConstInt;
 Type* TypeSystem::intType = &commonInt;
+Type* TypeSystem::int8Type = &commonInt8;
 Type* TypeSystem::voidType = &commonVoid;
 Type* TypeSystem::boolType = &commonBool;
 Type* TypeSystem::floatType = &commonFloat;

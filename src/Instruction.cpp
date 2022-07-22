@@ -125,16 +125,32 @@ void BinaryInstruction::output() const {
     type = operands[0]->getType()->toStr();
     switch (opcode) {
         case ADD:
-            op = "add";
+            if (type == "float") {
+                op = "fadd";
+            } else {
+                op = "add";
+            }
             break;
         case SUB:
-            op = "sub";
+            if (type == "float") {
+                op = "fsub";
+            } else {
+                op = "sub";
+            }
             break;
         case MUL:
-            op = "mul";
+            if (type == "float") {
+                op = "fmul";
+            } else {
+                op = "mul";
+            }
             break;
         case DIV:
-            op = "sdiv";
+            if (type == "float") {
+                op = "fdiv";
+            } else {
+                op = "sdiv";
+            }
             break;
         case MOD:
             op = "srem";
@@ -1041,6 +1057,13 @@ void RetInstruction::genMachineCode(AsmBuilder* builder) {
         if (operands[0]->getType()->isFloat()) {
             dst = new MachineOperand(MachineOperand::REG, 16, true);
             src = genMachineFloatOperand(operands[0]);
+            if (src->isImm()) {
+                auto internal_reg = genMachineVReg();
+                cur_inst = new LoadMInstruction(
+                    cur_block, LoadMInstruction::LDR, internal_reg, src);
+                cur_block->InsertInst(cur_inst);
+                src = internal_reg;
+            }
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
                                            dst, src);  // TODO: movw movt
         } else {

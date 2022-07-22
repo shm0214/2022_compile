@@ -1,7 +1,7 @@
 SRC_PATH ?= src
 INC_PATH += include
 BUILD_PATH ?= build
-TEST_PATH ?= test
+TEST_PATH ?= test/functional
 OBJ_PATH ?= $(BUILD_PATH)/obj
 BINARY ?= $(BUILD_PATH)/compiler
 SYSLIB_PATH ?= sysyruntimelibrary
@@ -59,6 +59,10 @@ run2:app
 	@$(BINARY) -o example.s -S example.sy
 	arm-linux-gnueabihf-gcc example.s $(SYSLIB_PATH)/sylib.a -o example
 	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
+	echo $$?
+
+	arm-linux-gnueabihf-gcc -x c example.sy $(SYSLIB_PATH)/sylib.c -include $(SYSLIB_PATH)/sylib.h -o example_std
+	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example_std
 	echo $$?
 
 ll:app

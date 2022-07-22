@@ -73,6 +73,7 @@ class Instruction {
         PHI,
         FPTOSI,  // floating point to signed int
         SITOFP,  // signed int to floating point
+        BITCAST,
     };
 };
 
@@ -350,6 +351,23 @@ class SitofpInstruction : public Instruction {
     ~SitofpInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+};
+
+class BitcastInstruction : public Instruction {
+   private:
+    Operand* dst;
+    Operand* src;
+
+   public:
+    BitcastInstruction(Operand* dst,
+                       Operand* src,
+                       BasicBlock* insert_bb = nullptr);
+    ~BitcastInstruction();
+    void output() const;
+    void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
 };
 
 #endif

@@ -1343,6 +1343,47 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
     // auto fp = new MachineOperand(MachineOperand::REG, 11);
     // TODO
     size_t idx;
+    auto funcSE = (IdentifierSymbolEntry*)func;
+    if (funcSE->getName() == "llvm.memset.p0.i32") {
+        auto r0 = genMachineReg(0);
+        auto r1 = genMachineReg(1);
+        auto r2 = genMachineReg(2);
+        auto int8Ptr = operands[1];
+        auto bitcast = (BitcastInstruction*)(int8Ptr->getDef());
+        auto arraySE =
+            (TemporarySymbolEntry*)(bitcast->getUse()[0]->getEntry());
+        int offset = arraySE->getOffset();
+        operand = genMachineVReg();
+        auto fp = genMachineReg(11);
+        if (offset > -255 && offset < 255) {
+            cur_block->InsertInst(
+                new BinaryMInstruction(cur_block, BinaryMInstruction::ADD, r0,
+                                       fp, genMachineImm(offset)));
+        } else {
+            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
+                                            operand, genMachineImm(offset));
+            operand = new MachineOperand(*operand);
+            cur_block->InsertInst(cur_inst);
+            cur_block->InsertInst(new BinaryMInstruction(
+                cur_block, BinaryMInstruction::ADD, r0, fp, operand));
+        }
+        cur_block->InsertInst(new MovMInstruction(
+            cur_block, MovMInstruction::MOV, r1, genMachineImm(0)));
+        auto len = genMachineOperand(operands[3]);
+        if (len->isImm() && len->getVal() > 255) {
+            operand = genMachineVReg();
+            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
+                                            operand, len);
+            operand = new MachineOperand(*operand);
+            cur_block->InsertInst(cur_inst);
+        } else
+            operand = len;
+        cur_block->InsertInst(
+            new MovMInstruction(cur_block, MovMInstruction::MOV, r2, operand));
+        cur_block->InsertInst(new BranchMInstruction(
+            cur_block, BranchMInstruction::BL, new MachineOperand("@memset")));
+        return;
+    }
     int gpreg_cnt = 1;
     for (idx = 1; idx < operands.size(); idx++) {
         if (gpreg_cnt == 5)
@@ -1730,3 +1771,30 @@ void SitofpInstruction::genMachineCode(AsmBuilder* builder) {
                                     dst_operand, dst_operand);
     cur_block->InsertInst(cur_inst);
 }
+
+BitcastInstruction::BitcastInstruction(Operand* dst,
+                                       Operand* src,
+                                       BasicBlock* insert_bb)
+    : Instruction(BITCAST, insert_bb), dst(dst), src(src) {
+    operands.push_back(dst);
+    operands.push_back(src);
+    dst->setDef(this);
+    src->addUse(this);
+}
+
+void BitcastInstruction::output() const {
+    Operand* dst = operands[0];
+    Operand* src = operands[1];
+    fprintf(yyout, "  %s = bitcast %s %s to %s\n", dst->toStr().c_str(),
+            src->getType()->toStr().c_str(), src->toStr().c_str(),
+            dst->getType()->toStr().c_str());
+}
+
+BitcastInstruction::~BitcastInstruction() {
+    operands[0]->setDef(nullptr);
+    if (operands[0]->usersNum() == 0)
+        delete operands[0];
+    operands[1]->removeUse(this);
+}
+
+void BitcastInstruction::genMachineCode(AsmBuilder* builder) {}

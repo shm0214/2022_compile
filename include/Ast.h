@@ -310,6 +310,7 @@ class DeclStmt : public StmtNode {
    private:
     Id* id;
     ExprNode* expr;
+    bool hasMemset = false;
 
    public:
     DeclStmt(Id* id, ExprNode* expr = nullptr);

@@ -20,6 +20,7 @@
     int whileCnt = 0;
     int paramNo = 0;
     int fpParamNo = 0;
+    int notZeroNum = 0;
     extern int yylineno;
     #include <iostream>
 }
@@ -508,11 +509,15 @@ VarDef
         se = new IdentifierSymbolEntry(type, $1, identifiers->getLevel());
         $<se>$ = se;
         arrayValue = new double[arrayType->getSize()];
+        notZeroNum = 0;
     }
       InitVal {
         ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
-        if (((InitValueListExpr*)$5)->isEmpty())
+        ((IdentifierSymbolEntry*)$<se>4)->setNotZeroNum(notZeroNum);
+        if ((notZeroNum == 0) || ((InitValueListExpr*)$5)->isEmpty()){
+            fprintf(stderr, "set setAllZero\n");
             ((IdentifierSymbolEntry*)$<se>4)->setAllZero();
+        }
         if (!identifiers->install($1, $<se>4))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         $$ = new DeclStmt(new Id($<se>4), $5);
@@ -578,9 +583,13 @@ ConstDef
         ((IdentifierSymbolEntry*)se)->setConst();
         $<se>$ = se;
         arrayValue = new double[arrayType->getSize()];
+        notZeroNum = 0;
     }
       ConstInitVal {
         ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
+        ((IdentifierSymbolEntry*)$<se>4)->setNotZeroNum(notZeroNum);
+        if ((notZeroNum == 0) || ((InitValueListExpr*)$5)->isEmpty())
+            ((IdentifierSymbolEntry*)$<se>4)->setAllZero();
         if (!identifiers->install($1, $<se>4))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         identifiers->install($1, $<se>4);
@@ -607,6 +616,8 @@ InitVal
         if (!stk.empty()) {
             
             double val = $1->getValue();
+            if (val)
+                notZeroNum++;
             if (declType->isInt() && $1->getType()->isFloat()) {
                 float temp = (float)val;
                 int temp1 = (int)temp;
@@ -721,6 +732,8 @@ ConstInitVal
         if (!stk.empty()) {
 
             double val = $1->getValue();
+            if (!val)
+                notZeroNum++;
             if (declType->isInt() && $1->getType()->isFloat()) {
                 float temp = (float)val;
                 int temp1 = (int)temp;

@@ -106,6 +106,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     bool initial;
     bool sysy;
     double* arrayValue;
+    int notZeroNum;
     bool allZero;
     int paramNo;
     bool constant;
@@ -138,7 +139,9 @@ class IdentifierSymbolEntry : public SymbolEntry {
     int getParamNo() const { return paramNo; };
     void setConst() { constant = true; };
     bool getConst() const { return constant; };
-
+    int getNotZeroNum() const { return notZeroNum; }
+    void setNotZeroNum(int num) { notZeroNum = num; }
+    std::string getName() const { return name; }
     // You can add any function you need here.
 };
 

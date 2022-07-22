@@ -128,6 +128,7 @@ class TypeSystem {
    private:
     static IntType commonInt;
     static IntType commonBool;
+    static IntType commonInt8;
     static FloatType commonFloat;
     static VoidType commonVoid;
     static IntType commonConstInt;
@@ -135,6 +136,7 @@ class TypeSystem {
 
    public:
     static Type* intType;
+    static Type* int8Type;
     static Type* floatType;
     static Type* voidType;
     static Type* boolType;

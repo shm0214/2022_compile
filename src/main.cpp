@@ -83,7 +83,7 @@ int main(int argc, char* argv[]) {
         SSADestruction s1(&unit);
         CopyProp c(&unit);
         m.pass();
-        // c.copy_prop();
+        c.copy_prop();
         e.pass();
         s.pass();
         s1.pass();

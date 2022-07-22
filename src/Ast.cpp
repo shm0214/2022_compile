@@ -601,6 +601,51 @@ void DeclStmt::genCode() {
         se->setAddr(addr);  // set the addr operand in symbol entry so that
                             // we can use it in subsequent code generation.
                             // can use it in subsequent code generation.
+        bool useMemset = false;
+        if (expr && se->getType()->isArray()) {
+            int notZeroNum = se->getNotZeroNum();
+            int size = se->getType()->getSize() / 8;
+            int length = size / 4;
+            if (notZeroNum < length / 2) {
+                useMemset = true;
+                auto int8PtrType = new PointerType(TypeSystem::int8Type);
+                Operand* int8Ptr = new Operand(new TemporarySymbolEntry(
+                    int8PtrType, SymbolTable::getLabel()));
+                auto bb = builder->getInsertBB();
+                new BitcastInstruction(int8Ptr, addr, bb);
+                std::string name = "llvm.memset.p0.i32";
+                SymbolEntry* funcSE;
+                if (!hasMemset) {
+                    hasMemset = true;
+                    std::vector<Type*> vec;
+                    vec.push_back(int8PtrType);
+                    vec.push_back(TypeSystem::int8Type);
+                    vec.push_back(TypeSystem::intType);
+                    vec.push_back(TypeSystem::boolType);
+                    std::vector<SymbolEntry*> vec1;
+                    auto funcType =
+                        new FunctionType(TypeSystem::voidType, vec, vec1);
+                    SymbolTable* st = identifiers;
+                    while (st->getPrev())
+                        st = st->getPrev();
+                    funcSE = new IdentifierSymbolEntry(funcType, name,
+                                                       st->getLevel());
+                    unit.insertDeclare(funcSE);
+                } else {
+                    funcSE = identifiers->lookup(name);
+                    assert(funcSE);
+                }
+                std::vector<Operand*> params;
+                params.push_back(int8Ptr);
+                params.push_back(new Operand(
+                    new ConstantSymbolEntry(TypeSystem::int8Type, 0)));
+                params.push_back(new Operand(
+                    new ConstantSymbolEntry(TypeSystem::intType, size)));
+                params.push_back(new Operand(
+                    new ConstantSymbolEntry(TypeSystem::boolType, 0)));
+                new CallInstruction(nullptr, funcSE, params, bb);
+            }
+        }
         if (expr) {
             if (expr->isInitValueListExpr()) {
                 Operand* init = nullptr;
@@ -633,7 +678,8 @@ void DeclStmt::genCode() {
                                         ->getOperand();
                             auto gep =
                                 new GepInstruction(tempDst, tempSrc, index, bb);
-                            gep->setInit(init);
+                            if (!useMemset)
+                                gep->setInit(init);
                             if (flag) {
                                 gep->setFirst();
                                 flag = false;
@@ -649,7 +695,15 @@ void DeclStmt::genCode() {
                             type = ((ArrayType*)type)->getElementType();
                             tempSrc = tempDst;
                         }
-                        new StoreInstruction(tempDst, temp->getOperand(), bb);
+                        if (useMemset &&
+                            temp->getOperand()->getEntry()->isConstant() &&
+                            ((ConstantSymbolEntry*)(temp->getOperand()
+                                                        ->getEntry()))
+                                    ->getValue() == 0) {
+                            bb->deleteBack(idx.size() - 1);
+                        } else
+                            new StoreInstruction(tempDst, temp->getOperand(),
+                                                 bb);
                     }
                     while (true) {
                         if (temp->getNext()) {
@@ -875,8 +929,8 @@ ExprNode* ExprNode::alge_simple(int depth) {
                                    ->getValue() == 0) {
                     res = lhs;
                 } else {
-                    SymbolEntry* se = new TemporarySymbolEntry(
-                        type, SymbolTable::getLabel());
+                    SymbolEntry* se =
+                        new TemporarySymbolEntry(type, SymbolTable::getLabel());
                     res = new BinaryExpr(se, ADD, lhs, rhs);
                 }
                 break;
@@ -886,8 +940,8 @@ ExprNode* ExprNode::alge_simple(int depth) {
                             ->getValue() == 0) {
                     res = lhs;
                 } else {
-                    SymbolEntry* se = new TemporarySymbolEntry(
-                        type, SymbolTable::getLabel());
+                    SymbolEntry* se =
+                        new TemporarySymbolEntry(type, SymbolTable::getLabel());
                     res = new BinaryExpr(se, SUB, lhs, rhs);
                 }
                 break;
@@ -895,8 +949,7 @@ ExprNode* ExprNode::alge_simple(int depth) {
                 if (lhs->getSymbolEntry()->isConstant()) {
                     if (((ConstantSymbolEntry*)(lhs->getSymbolEntry()))
                             ->getValue() == 0) {
-                        SymbolEntry* se =
-                            new ConstantSymbolEntry(type, 0);
+                        SymbolEntry* se = new ConstantSymbolEntry(type, 0);
                         res = new Constant(se);
                     } else if (((ConstantSymbolEntry*)(lhs->getSymbolEntry()))
                                    ->getValue() == 1) {
@@ -905,16 +958,15 @@ ExprNode* ExprNode::alge_simple(int depth) {
                 } else if (rhs->getSymbolEntry()->isConstant()) {
                     if (((ConstantSymbolEntry*)(rhs->getSymbolEntry()))
                             ->getValue() == 0) {
-                        SymbolEntry* se =
-                            new ConstantSymbolEntry(type, 0);
+                        SymbolEntry* se = new ConstantSymbolEntry(type, 0);
                         res = new Constant(se);
                     } else if (((ConstantSymbolEntry*)(rhs->getSymbolEntry()))
                                    ->getValue() == 1) {
                         res = lhs;
                     }
                 } else {
-                    SymbolEntry* se = new TemporarySymbolEntry(
-                        type, SymbolTable::getLabel());
+                    SymbolEntry* se =
+                        new TemporarySymbolEntry(type, SymbolTable::getLabel());
                     res = new BinaryExpr(se, MUL, lhs, rhs);
                 }
                 break;
@@ -924,8 +976,8 @@ ExprNode* ExprNode::alge_simple(int depth) {
                             ->getValue() == 1) {
                     res = lhs;
                 } else {
-                    SymbolEntry* se = new TemporarySymbolEntry(
-                        type, SymbolTable::getLabel());
+                    SymbolEntry* se =
+                        new TemporarySymbolEntry(type, SymbolTable::getLabel());
                     res = new BinaryExpr(se, DIV, lhs, rhs);
                 }
                 break;

@@ -134,16 +134,32 @@ void BinaryInstruction::output() const {
     type = operands[0]->getType()->toStr();
     switch (opcode) {
         case ADD:
-            op = "add";
+            if (type == "float") {
+                op = "fadd";
+            } else {
+                op = "add";
+            }
             break;
         case SUB:
-            op = "sub";
+            if (type == "float") {
+                op = "fsub";
+            } else {
+                op = "sub";
+            }
             break;
         case MUL:
-            op = "mul";
+            if (type == "float") {
+                op = "fmul";
+            } else {
+                op = "mul";
+            }
             break;
         case DIV:
-            op = "sdiv";
+            if (type == "float") {
+                op = "fdiv";
+            } else {
+                op = "sdiv";
+            }
             break;
         case MOD:
             op = "srem";
@@ -1050,6 +1066,13 @@ void RetInstruction::genMachineCode(AsmBuilder* builder) {
         if (operands[0]->getType()->isFloat()) {
             dst = new MachineOperand(MachineOperand::REG, 16, true);
             src = genMachineFloatOperand(operands[0]);
+            if (src->isImm()) {
+                auto internal_reg = genMachineVReg();
+                cur_inst = new LoadMInstruction(
+                    cur_block, LoadMInstruction::LDR, internal_reg, src);
+                cur_block->InsertInst(cur_inst);
+                src = internal_reg;
+            }
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
                                            dst, src);  // TODO: movw movt
         } else {
@@ -1370,6 +1393,7 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
             cur_block, BranchMInstruction::BL, new MachineOperand("@memset")));
         return;
     }
+    int stk_cnt = 0;
     int gpreg_cnt = 1;
     for (idx = 1; idx < operands.size(); idx++) {
         if (gpreg_cnt == 5)
@@ -1410,6 +1434,7 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         cur_inst = new StackMInstruction(cur_block, StackMInstruction::PUSH,
                                          vec, operand);
         cur_block->InsertInst(cur_inst);
+        stk_cnt++;
     }
 
     int fpreg_cnt = 1;
@@ -1447,13 +1472,14 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         cur_inst = new StackMInstruction(cur_block, StackMInstruction::VPUSH,
                                          vec, operand);
         cur_block->InsertInst(cur_inst);
+        stk_cnt++;
     }
 
     auto label = new MachineOperand(func->toStr().c_str());
     cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::BL, label);
     cur_block->InsertInst(cur_inst);
-    if (operands.size() > 5) {
-        auto off = genMachineImm((operands.size() - 5) * 4);
+    if (gpreg_cnt >= 5 || fpreg_cnt >= 5) {
+        auto off = genMachineImm(stk_cnt * 4);
         auto sp = new MachineOperand(MachineOperand::REG, 13);
         cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
                                           sp, sp, off);

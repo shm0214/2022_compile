@@ -1,5 +1,6 @@
 #include "MachineCode.h"
 #include <iostream>
+#include <sstream>
 #include "Type.h"
 extern FILE* yyout;
 
@@ -475,6 +476,13 @@ BranchMInstruction::BranchMInstruction(MachineBlock* p,
         this->use_list.push_back(r1u);
         this->use_list.push_back(r2u);
         this->use_list.push_back(r3u);
+    } else if (op == BX) {
+        auto r0 = new MachineOperand(MachineOperand::REG, 0);
+        auto sp = new MachineOperand(MachineOperand::REG, 13);
+        r0->setParent(this);
+        sp->setParent(this);
+        this->use_list.push_back(r0);
+        this->use_list.push_back(sp);
     }
 }
 
@@ -632,6 +640,26 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
         ((FunctionType*)(sym_ptr->getType()))->getParamsSe().size();
 };
 
+std::string MachineBlock::getLabel() {
+    std::stringstream s;
+    s << ".L" << no;
+    return s.str();
+}
+
+void MachineBlock::cleanSucc() {
+    for (auto s : succ)
+        s->removePred(this);
+    std::vector<MachineBlock*>().swap(succ);
+}
+
+void MachineBlock::removePred(MachineBlock* block) {
+    pred.erase(std::find(pred.begin(), pred.end(), block));
+}
+
+void MachineBlock::removeSucc(MachineBlock* block) {
+    succ.erase(std::find(succ.begin(), succ.end(), block));
+}
+
 void MachineBlock::output() {
     bool first = true;
     int offset =
@@ -639,89 +667,85 @@ void MachineBlock::output() {
         4;
     int num = parent->getParamsNum();
     int count = 0;
-    if (!inst_list.empty()) {
-        fprintf(yyout, ".L%d:\n", this->no);
-        for (auto it = inst_list.begin(); it != inst_list.end(); it++) {
-            if ((*it)->isBX()) {
+    // if (!inst_list.empty()) {
+    fprintf(yyout, ".L%d:\n", this->no);
+    for (auto it = inst_list.begin(); it != inst_list.end(); it++) {
+        if ((*it)->isBX()) {
+            auto fp = new MachineOperand(MachineOperand::REG, 11);
+            auto lr = new MachineOperand(MachineOperand::REG, 14);
+            auto cur_inst = new StackMInstruction(this, StackMInstruction::VPOP,
+                                                  parent->getSavedFpRegs());
+            cur_inst->output();
+            cur_inst = new StackMInstruction(this, StackMInstruction::POP,
+                                             parent->getSavedRegs(), fp, lr);
+            cur_inst->output();
+        }
+        if (num > 4 && (*it)->isStore()) {
+            MachineOperand* operand = (*it)->getUse()[0];
+            if (operand->isReg() && operand->getReg() == 3 &&
+                operand->isParam()) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
-                auto lr = new MachineOperand(MachineOperand::REG, 14);
-                auto cur_inst = new StackMInstruction(
-                    this, StackMInstruction::VPOP, parent->getSavedFpRegs());
+                auto r3 = new MachineOperand(MachineOperand::REG, 3);
+                auto off = new MachineOperand(MachineOperand::IMM, offset);
+                offset += 4;
+                auto cur_inst = new LoadMInstruction(
+                    this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();
-                cur_inst =
-                    new StackMInstruction(this, StackMInstruction::POP,
-                                          parent->getSavedRegs(), fp, lr);
-                cur_inst->output();
-            }
-            if (num > 4 && (*it)->isStore()) {
-                MachineOperand* operand = (*it)->getUse()[0];
-                if (operand->isReg() && operand->getReg() == 3 &&
-                    operand->isParam()) {
+            } else if (operand->isReg() && operand->getReg() == 19) {
+                // floating point
+                if (first) {
+                    first = false;
+                } else {
                     auto fp = new MachineOperand(MachineOperand::REG, 11);
-                    auto r3 = new MachineOperand(MachineOperand::REG, 3);
+                    auto s3 = new MachineOperand(MachineOperand::REG, 19, true);
                     auto off = new MachineOperand(MachineOperand::IMM, offset);
                     offset += 4;
                     auto cur_inst = new LoadMInstruction(
-                        this, LoadMInstruction::LDR, r3, fp, off);
-                    cur_inst->output();
-                } else if (operand->isReg() && operand->getReg() == 19) {
-                    // floating point
-                    if (first) {
-                        first = false;
-                    } else {
-                        auto fp = new MachineOperand(MachineOperand::REG, 11);
-                        auto s3 =
-                            new MachineOperand(MachineOperand::REG, 19, true);
-                        auto off =
-                            new MachineOperand(MachineOperand::IMM, offset);
-                        offset += 4;
-                        auto cur_inst = new LoadMInstruction(
-                            this, LoadMInstruction::VLDR, s3, fp, off);
-                        cur_inst->output();
-                    }
-                }
-            }
-            if (num > 4 && (*it)->isAdd()) {
-                auto uses = (*it)->getUse();
-                if (uses[0]->isParam() && uses[1]->isImm() &&
-                    uses[1]->getVal() == 0) {
-                    auto fp = new MachineOperand(MachineOperand::REG, 11);
-                    auto r3 = new MachineOperand(MachineOperand::REG, 3);
-                    auto off = new MachineOperand(MachineOperand::IMM, offset);
-                    offset += 4;
-                    auto cur_inst = new LoadMInstruction(
-                        this, LoadMInstruction::LDR, r3, fp, off);
+                        this, LoadMInstruction::VLDR, s3, fp, off);
                     cur_inst->output();
                 }
-            }
-            if ((*it)->isAdd()) {
-                auto dst = (*it)->getDef()[0];
-                auto src1 = (*it)->getUse()[0];
-                if (dst->isReg() && dst->getReg() == 13 && src1->isReg() &&
-                    src1->getReg() == 13 && (*(it + 1))->isBX()) {
-                    int size = parent->AllocSpace(0);
-                    if (size < -255 || size > 255) {
-                        auto r1 = new MachineOperand(MachineOperand::REG, 1);
-                        auto off =
-                            new MachineOperand(MachineOperand::IMM, size);
-                        (new LoadMInstruction(nullptr, LoadMInstruction::LDR,
-                                              r1, off))
-                            ->output();
-                        (*it)->getUse()[1]->setReg(1);
-                    } else
-                        (*it)->getUse()[1]->setVal(size);
-                }
-            }
-            (*it)->output();
-            count++;
-            if (count % 500 == 0) {
-                fprintf(yyout, "\tb .B%d\n", label);
-                fprintf(yyout, ".LTORG\n");
-                parent->getParent()->printGlobal();
-                fprintf(yyout, ".B%d:\n", label++);
             }
         }
+        if (num > 4 && (*it)->isAdd()) {
+            auto uses = (*it)->getUse();
+            if (uses[0]->isParam() && uses[1]->isImm() &&
+                uses[1]->getVal() == 0) {
+                auto fp = new MachineOperand(MachineOperand::REG, 11);
+                auto r3 = new MachineOperand(MachineOperand::REG, 3);
+                auto off = new MachineOperand(MachineOperand::IMM, offset);
+                offset += 4;
+                auto cur_inst = new LoadMInstruction(
+                    this, LoadMInstruction::LDR, r3, fp, off);
+                cur_inst->output();
+            }
+        }
+        if ((*it)->isAdd()) {
+            auto dst = (*it)->getDef()[0];
+            auto src1 = (*it)->getUse()[0];
+            if (dst->isReg() && dst->getReg() == 13 && src1->isReg() &&
+                src1->getReg() == 13 && (*(it + 1))->isBX()) {
+                int size = parent->AllocSpace(0);
+                if (size < -255 || size > 255) {
+                    auto r1 = new MachineOperand(MachineOperand::REG, 1);
+                    auto off = new MachineOperand(MachineOperand::IMM, size);
+                    (new LoadMInstruction(nullptr, LoadMInstruction::LDR, r1,
+                                          off))
+                        ->output();
+                    (*it)->getUse()[1]->setReg(1);
+                } else
+                    (*it)->getUse()[1]->setVal(size);
+            }
+        }
+        (*it)->output();
+        count++;
+        if (count % 500 == 0) {
+            fprintf(yyout, "\tb .B%d\n", label);
+            fprintf(yyout, ".LTORG\n");
+            parent->getParent()->printGlobal();
+            fprintf(yyout, ".B%d:\n", label++);
+        }
     }
+    // }
 }
 
 void MachineFunction::output() {
@@ -972,4 +996,24 @@ void MachineBlock::remove(MachineInstruction* ins) {
     auto it = find(inst_list.begin(), inst_list.end(), ins);
     if (it != inst_list.end())
         inst_list.erase(it);
+}
+
+MachineInstruction* MachineBlock::getNext(MachineInstruction* in) {
+    auto it = find(inst_list.begin(), inst_list.end(), in);
+    if (it != inst_list.end() && (it + 1) != inst_list.end()) {
+        return *(it + 1);
+    }
+    return nullptr;
+}
+
+void MachineFunction::removeBlock(MachineBlock* block) {
+    block_list.erase(std::find(block_list.begin(), block_list.end(), block));
+}
+
+MachineBlock* MachineFunction::getNext(MachineBlock* block) {
+    auto it = find(block_list.begin(), block_list.end(), block);
+    if (it != block_list.end() && (it + 1) != block_list.end()) {
+        return *(it + 1);
+    }
+    return nullptr;
 }

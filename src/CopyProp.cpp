@@ -3,7 +3,7 @@
 #include <set>
 #include <queue>
 using namespace std;
-const int N = 100010;
+const int N = 10000000;
 typedef vector<BasicBlock*>::iterator bb_iterator;
 bool st[N]; // 标记基本块是否已遍历过
 
@@ -88,7 +88,7 @@ void CopyProp::copy_prop(){
     while (iter != unit->end()){
         vector<BasicBlock*> block_list = (*iter)->getBlockList();
         BasicBlock* bb = (*iter)->getEntry(); // 函数入口基本块
-        //COPY[bb->getNo()];
+        COPY[bb->getNo()];
         queue<BasicBlock*> q;
         q.push(bb);
         bool first = true;

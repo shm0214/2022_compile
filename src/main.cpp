@@ -8,6 +8,8 @@
 #include "GraphColor.h"
 #include "LinearScan.h"
 #include "MachineCode.h"
+#include "MachineDeadCodeElimination.h"
+#include "MachineStraighten.h"
 #include "Mem2reg.h"
 #include "SSADestruction.h"
 #include "Starighten.h"
@@ -86,7 +88,7 @@ int main(int argc, char* argv[]) {
         CopyProp c(&unit);
         m.pass();
         d.pass();
-        //c.copy_prop();
+        c.copy_prop();
         e.pass();
         s.pass();
         s1.pass();
@@ -96,12 +98,24 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     unit.genMachineCode(&mUnit);
+    if (optimize) {
+        MachineDeadCodeElimination mdce(&mUnit);
+        MachineStraighten ms(&mUnit);
+        mdce.pass();
+        ms.pass();
+    }
     if (!optimize) {
         LinearScan linearScan(&mUnit);
         linearScan.allocateRegisters();
     } else {
         GraphColor GraphColor(&mUnit);
         GraphColor.allocateRegisters();
+    }
+    if (optimize) {
+        MachineDeadCodeElimination mdce(&mUnit);
+        MachineStraighten ms(&mUnit);
+        mdce.pass();
+        ms.pass();
     }
     if (dump_asm)
         mUnit.output();

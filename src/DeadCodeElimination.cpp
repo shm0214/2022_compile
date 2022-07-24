@@ -69,10 +69,8 @@ bool DeadCodeElimination::remove(Function* func) {
                     temp.push_back(it);
                 if (it->isCond()) {
                     BasicBlock* b = func->getMarkBranch(block);
-                    auto branch = new UncondBrInstruction(b, block);
-                    for (auto it1 = block->succ_begin();
-                         it1 != block->succ_end(); it1++)
-                        (*it1)->removePred(block);
+                    new UncondBrInstruction(b, block);
+                    block->cleanSucc();
                     block->addSucc(b);
                     b->addPred(block);
                 }

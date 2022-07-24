@@ -33,7 +33,7 @@ class MachineOperand {
     int reg_no;         // register no
     std::string label;  // address label
     bool param = false;
-    bool fpu = false;   // floating point
+    bool fpu = false;  // floating point
     float fval;
 
    public:
@@ -101,11 +101,17 @@ class MachineInstruction {
     MachineBlock* getParent() const { return parent; };
     // 简单起见这样写了
     bool isBX() const { return type == BRANCH && op == 2; };
+    bool isBL() const { return type == BRANCH && op == 1; };
+    bool isB() const { return type == BRANCH && op == 0; };
     bool isStore() const { return type == STORE; };
     bool isAdd() const { return type == BINARY && op == 0; };
     bool isMov() const { return type == MOV && op == 0; };
+    bool isCondMov() const { return type == MOV && op == 0 && cond != NONE; };
     void replaceUse(MachineOperand* old, MachineOperand* new_);
     void replaceDef(MachineOperand* old, MachineOperand* new_);
+    int getCond() const { return cond; }
+    void setCond(int cond) { this->cond = cond; }
+    void setParent(MachineBlock* block) { this->parent = block; }
 };
 
 class BinaryMInstruction : public MachineInstruction {
@@ -200,9 +206,9 @@ class VcvtMInstruction : public MachineInstruction {
 };
 
 class VmrsMInstruction : public MachineInstruction {
-    public:
-        VmrsMInstruction(MachineBlock* p);
-        void output();
+   public:
+    VmrsMInstruction(MachineBlock* p);
+    void output();
 };
 
 class MachineBlock {
@@ -232,6 +238,7 @@ class MachineBlock {
     };
     void InsertInst(MachineInstruction* inst) {
         this->inst_list.push_back(inst);
+        inst->setParent(this);
     };
     void addPred(MachineBlock* p) { this->pred.push_back(p); };
     void addSucc(MachineBlock* s) { this->succ.push_back(s); };
@@ -248,6 +255,12 @@ class MachineBlock {
     MachineFunction* getParent() const { return parent; };
     bool isBefore(MachineInstruction* a, MachineInstruction* b);
     void remove(MachineInstruction* ins);
+    MachineInstruction* getNext(MachineInstruction* in);
+    std::string getLabel();
+    void cleanSucc();
+    void removePred(MachineBlock* block);
+    void removeSucc(MachineBlock* block);
+    int getNo() const { return no; }
 };
 
 class MachineFunction {
@@ -261,6 +274,7 @@ class MachineFunction {
     SymbolEntry* sym_ptr;
     int paramsNum;
     MachineBlock* entry;
+    std::map<int, MachineBlock*> no2Block;
 
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };
@@ -276,7 +290,7 @@ class MachineFunction {
     int AllocSpace(int size) {
         this->stack_size += size;
         int occupied_size = stack_size - align_size;
-        
+
         if (occupied_size + size <= stack_size) {
             align_size = stack_size - (occupied_size + size);
         } else {
@@ -293,6 +307,7 @@ class MachineFunction {
     };
     void InsertBlock(MachineBlock* block) {
         this->block_list.push_back(block);
+        no2Block[block->getNo()] = block;
     };
     void addSavedRegs(int regno);
     void output();
@@ -309,6 +324,9 @@ class MachineFunction {
             res += block->getSize();
         return res;
     };
+    void removeBlock(MachineBlock* block);
+    MachineBlock* getBlock(int no) { return no2Block[no]; }
+    MachineBlock* getNext(MachineBlock* block);
 };
 
 class MachineUnit {

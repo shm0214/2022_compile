@@ -3,6 +3,7 @@
 #include <iostream>
 #include "Ast.h"
 #include "CopyProp.h"
+#include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
 #include "GraphColor.h"
 #include "LinearScan.h"
@@ -78,12 +79,14 @@ int main(int argc, char* argv[]) {
     ast.genCode(&unit);
     if (optimize) {
         ElimUnreachCode e(&unit);
+        DeadCodeElimination d(&unit);
         Starighten s(&unit);
         Mem2reg m(&unit);
         SSADestruction s1(&unit);
         CopyProp c(&unit);
         m.pass();
-        c.copy_prop();
+        d.pass();
+        //c.copy_prop();
         e.pass();
         s.pass();
         s1.pass();

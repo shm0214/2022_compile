@@ -9,6 +9,7 @@ class DeadCodeElimination {
    public:
     DeadCodeElimination(Unit* unit) : unit(unit){};
     void mark(Function* function);
+    bool remove(Function* function);
     void pass();
     void pass(Function* function);
 };

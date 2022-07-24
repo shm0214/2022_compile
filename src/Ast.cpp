@@ -565,6 +565,8 @@ void SeqNode::genCode() {
     stmt2->genCode();
 }
 
+bool DeclStmt::hasMemset = false;
+
 void DeclStmt::genCode() {
     IdentifierSymbolEntry* se =
         dynamic_cast<IdentifierSymbolEntry*>(id->getSymbolEntry());
@@ -630,6 +632,7 @@ void DeclStmt::genCode() {
                         st = st->getPrev();
                     funcSE = new IdentifierSymbolEntry(funcType, name,
                                                        st->getLevel());
+                    st->install(name, funcSE);
                     unit.insertDeclare(funcSE);
                 } else {
                     funcSE = identifiers->lookup(name);

@@ -310,7 +310,7 @@ class DeclStmt : public StmtNode {
    private:
     Id* id;
     ExprNode* expr;
-    bool hasMemset = false;
+    static bool hasMemset;
 
    public:
     DeclStmt(Id* id, ExprNode* expr = nullptr);
@@ -319,6 +319,7 @@ class DeclStmt : public StmtNode {
     void genCode();
     Id* getId() { return id; };
 };
+
 
 class BlankStmt : public StmtNode {
    public:

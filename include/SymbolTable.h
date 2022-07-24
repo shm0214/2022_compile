@@ -4,9 +4,9 @@
 #include <assert.h>
 #include <map>
 #include <string>
-
 class Type;
 class Operand;
+class Function;
 
 class SymbolEntry {
    private:
@@ -112,6 +112,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     bool constant;
     Operand* addr;  // The address of the identifier.
                     // You can add any field you need here.
+    Function* func = nullptr;
 
    public:
     IdentifierSymbolEntry(Type* type,
@@ -142,6 +143,8 @@ class IdentifierSymbolEntry : public SymbolEntry {
     int getNotZeroNum() const { return notZeroNum; }
     void setNotZeroNum(int num) { notZeroNum = num; }
     std::string getName() const { return name; }
+    Function* getFunction() { return func; }
+    void setFunction(Function* func) { this->func = func; }
     // You can add any function you need here.
 };
 

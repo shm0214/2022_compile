@@ -590,10 +590,10 @@ static const yytype_int16 yyrline[] =
      314,   324,   336,   339,   344,   349,   354,   361,   362,   367,
      374,   375,   382,   383,   390,   393,   394,   399,   403,   406,
      412,   413,   416,   419,   425,   429,   432,   436,   439,   447,
-     474,   490,   490,   528,   554,   554,   601,   604,   610,   666,
-     692,   692,   730,   789,   815,   815,   852,   855,   860,   863,
-     869,   876,   869,   903,   904,   906,   910,   915,   928,   955,
-     958
+     474,   490,   490,   527,   553,   553,   600,   603,   609,   665,
+     691,   691,   729,   788,   814,   814,   851,   854,   859,   862,
+     868,   875,   868,   902,   903,   905,   909,   914,   927,   954,
+     957
 };
 #endif
 
@@ -2318,7 +2318,6 @@ yyreduce:
         ((IdentifierSymbolEntry*)(yyvsp[-1].se))->setArrayValue(arrayValue);
         ((IdentifierSymbolEntry*)(yyvsp[-1].se))->setNotZeroNum(notZeroNum);
         if ((notZeroNum == 0) || ((InitValueListExpr*)(yyvsp[0].exprtype))->isEmpty()){
-            fprintf(stderr, "set setAllZero\n");
             ((IdentifierSymbolEntry*)(yyvsp[-1].se))->setAllZero();
         }
         if (!identifiers->install((yyvsp[-4].strtype), (yyvsp[-1].se)))
@@ -2326,11 +2325,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id((yyvsp[-1].se)), (yyvsp[0].exprtype));
         delete [](yyvsp[-4].strtype);
     }
-#line 2330 "src/parser.cpp"
+#line 2329 "src/parser.cpp"
     break;
 
   case 83:
-#line 528 "src/parser.y"
+#line 527 "src/parser.y"
                              {
 
         if (declType->isFloat()) {
@@ -2357,11 +2356,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se), (yyvsp[0].exprtype));
         delete [](yyvsp[-2].strtype);
     }
-#line 2361 "src/parser.cpp"
+#line 2360 "src/parser.cpp"
     break;
 
   case 84:
-#line 554 "src/parser.y"
+#line 553 "src/parser.y"
                              {
 
         if (declType->isFloat()) {
@@ -2396,11 +2395,11 @@ yyreduce:
         arrayValue = new double[arrayType->getSize()];
         notZeroNum = 0;
     }
-#line 2400 "src/parser.cpp"
+#line 2399 "src/parser.cpp"
     break;
 
   case 85:
-#line 588 "src/parser.y"
+#line 587 "src/parser.y"
                    {
         ((IdentifierSymbolEntry*)(yyvsp[-1].se))->setArrayValue(arrayValue);
         ((IdentifierSymbolEntry*)(yyvsp[-1].se))->setNotZeroNum(notZeroNum);
@@ -2412,28 +2411,28 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id((yyvsp[-1].se)), (yyvsp[0].exprtype));
         delete [](yyvsp[-4].strtype);
     }
-#line 2416 "src/parser.cpp"
+#line 2415 "src/parser.cpp"
     break;
 
   case 86:
-#line 601 "src/parser.y"
+#line 600 "src/parser.y"
                                  {
         (yyval.exprtype) = (yyvsp[-1].exprtype);
     }
-#line 2424 "src/parser.cpp"
+#line 2423 "src/parser.cpp"
     break;
 
   case 87:
-#line 604 "src/parser.y"
+#line 603 "src/parser.y"
                                               {
         (yyval.exprtype) = (yyvsp[-3].exprtype);
         (yyvsp[-3].exprtype)->setNext((yyvsp[-1].exprtype));
     }
-#line 2433 "src/parser.cpp"
+#line 2432 "src/parser.cpp"
     break;
 
   case 88:
-#line 610 "src/parser.y"
+#line 609 "src/parser.y"
           {
         if (!(yyvsp[0].exprtype)->getType()->isInt() && !(yyvsp[0].exprtype)->getType()->isFloat()) {
             // error
@@ -2490,11 +2489,11 @@ yyreduce:
             }
         }         
     }
-#line 2494 "src/parser.cpp"
+#line 2493 "src/parser.cpp"
     break;
 
   case 89:
-#line 666 "src/parser.y"
+#line 665 "src/parser.y"
                     {
         SymbolEntry* se;
         ExprNode* list;
@@ -2521,11 +2520,11 @@ yyreduce:
         }
         (yyval.exprtype) = list;
     }
-#line 2525 "src/parser.cpp"
+#line 2524 "src/parser.cpp"
     break;
 
   case 90:
-#line 692 "src/parser.y"
+#line 691 "src/parser.y"
              {
         SymbolEntry* se;
         if (!stk.empty())
@@ -2543,11 +2542,11 @@ yyreduce:
         (yyval.exprtype) = expr;
         leftCnt++;
     }
-#line 2547 "src/parser.cpp"
+#line 2546 "src/parser.cpp"
     break;
 
   case 91:
-#line 709 "src/parser.y"
+#line 708 "src/parser.y"
                          {
         leftCnt--;
         while (stk.top() != (yyvsp[-2].exprtype) && stk.size() > (long unsigned int)(leftCnt + 1))
@@ -2566,11 +2565,11 @@ yyreduce:
             arrayType = (ArrayType*)(
                 ((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
     }
-#line 2570 "src/parser.cpp"
+#line 2569 "src/parser.cpp"
     break;
 
   case 92:
-#line 730 "src/parser.y"
+#line 729 "src/parser.y"
                {
         (yyval.exprtype) = (yyvsp[0].exprtype);
         if (!stk.empty()) {
@@ -2630,11 +2629,11 @@ yyreduce:
             }
         }
     }
-#line 2634 "src/parser.cpp"
+#line 2633 "src/parser.cpp"
     break;
 
   case 93:
-#line 789 "src/parser.y"
+#line 788 "src/parser.y"
                     {
         SymbolEntry* se;
         ExprNode* list;
@@ -2661,11 +2660,11 @@ yyreduce:
         }
         (yyval.exprtype) = list;
     }
-#line 2665 "src/parser.cpp"
+#line 2664 "src/parser.cpp"
     break;
 
   case 94:
-#line 815 "src/parser.y"
+#line 814 "src/parser.y"
              {
         SymbolEntry* se;
         if (!stk.empty())
@@ -2683,11 +2682,11 @@ yyreduce:
         (yyval.exprtype) = expr;
         leftCnt++;
     }
-#line 2687 "src/parser.cpp"
+#line 2686 "src/parser.cpp"
     break;
 
   case 95:
-#line 832 "src/parser.y"
+#line 831 "src/parser.y"
                               {
         leftCnt--;
         while (stk.top() != (yyvsp[-2].exprtype) && stk.size() > (long unsigned int)(leftCnt + 1))
@@ -2706,43 +2705,43 @@ yyreduce:
             arrayType = (ArrayType*)(
                 ((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
     }
-#line 2710 "src/parser.cpp"
+#line 2709 "src/parser.cpp"
     break;
 
   case 96:
-#line 852 "src/parser.y"
+#line 851 "src/parser.y"
               {
         (yyval.exprtype) = (yyvsp[0].exprtype);
     }
-#line 2718 "src/parser.cpp"
+#line 2717 "src/parser.cpp"
     break;
 
   case 97:
-#line 855 "src/parser.y"
+#line 854 "src/parser.y"
                                 {
         (yyval.exprtype) = (yyvsp[-2].exprtype);
     }
-#line 2726 "src/parser.cpp"
+#line 2725 "src/parser.cpp"
     break;
 
   case 98:
-#line 860 "src/parser.y"
+#line 859 "src/parser.y"
                    {
         (yyval.exprtype) = (yyvsp[0].exprtype);
     }
-#line 2734 "src/parser.cpp"
+#line 2733 "src/parser.cpp"
     break;
 
   case 99:
-#line 863 "src/parser.y"
+#line 862 "src/parser.y"
                                           {
         (yyval.exprtype) = (yyvsp[-2].exprtype);
     }
-#line 2742 "src/parser.cpp"
+#line 2741 "src/parser.cpp"
     break;
 
   case 100:
-#line 869 "src/parser.y"
+#line 868 "src/parser.y"
             {
         // SymbolTable::resetLabel();
         identifiers = new SymbolTable(identifiers);
@@ -2750,11 +2749,11 @@ yyreduce:
         fpParamNo = 0;
         funcRetType = (yyvsp[-1].type);
     }
-#line 2754 "src/parser.cpp"
+#line 2753 "src/parser.cpp"
     break;
 
   case 101:
-#line 876 "src/parser.y"
+#line 875 "src/parser.y"
                                      {
         Type* funcType;
         std::vector<Type*> vec;
@@ -2773,11 +2772,11 @@ yyreduce:
         }
         (yyval.se) = se; 
     }
-#line 2777 "src/parser.cpp"
+#line 2776 "src/parser.cpp"
     break;
 
   case 102:
-#line 894 "src/parser.y"
+#line 893 "src/parser.y"
                 {
         (yyval.stmttype) = new FunctionDef((yyvsp[-1].se), (DeclStmt*)(yyvsp[-3].stmttype), (yyvsp[0].stmttype));
         SymbolTable* top = identifiers;
@@ -2785,40 +2784,40 @@ yyreduce:
         delete top;
         delete [](yyvsp[-6].strtype);
     }
-#line 2789 "src/parser.cpp"
+#line 2788 "src/parser.cpp"
     break;
 
   case 103:
-#line 903 "src/parser.y"
+#line 902 "src/parser.y"
                   { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 2795 "src/parser.cpp"
+#line 2794 "src/parser.cpp"
     break;
 
   case 104:
-#line 904 "src/parser.y"
+#line 903 "src/parser.y"
              { (yyval.stmttype) = nullptr; }
-#line 2801 "src/parser.cpp"
+#line 2800 "src/parser.cpp"
     break;
 
   case 105:
-#line 906 "src/parser.y"
+#line 905 "src/parser.y"
                                    {
         (yyval.stmttype) = (yyvsp[-2].stmttype);
         (yyval.stmttype)->setNext((yyvsp[0].stmttype));
     }
-#line 2810 "src/parser.cpp"
+#line 2809 "src/parser.cpp"
     break;
 
   case 106:
-#line 910 "src/parser.y"
+#line 909 "src/parser.y"
                  {
         (yyval.stmttype) = (yyvsp[0].stmttype);
     }
-#line 2818 "src/parser.cpp"
+#line 2817 "src/parser.cpp"
     break;
 
   case 107:
-#line 915 "src/parser.y"
+#line 914 "src/parser.y"
               {
         SymbolEntry* se;
         if ((yyvsp[-1].type)->isFloat()) {
@@ -2832,11 +2831,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se));
         delete [](yyvsp[0].strtype);
     }
-#line 2836 "src/parser.cpp"
+#line 2835 "src/parser.cpp"
     break;
 
   case 108:
-#line 928 "src/parser.y"
+#line 927 "src/parser.y"
                                {
         // 这里也需要求值
         SymbolEntry* se;
@@ -2862,28 +2861,28 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se));
         delete [](yyvsp[-1].strtype);
     }
-#line 2866 "src/parser.cpp"
+#line 2865 "src/parser.cpp"
     break;
 
   case 109:
-#line 955 "src/parser.y"
+#line 954 "src/parser.y"
                         {
         (yyval.exprtype) = new ExprNode(nullptr);
     }
-#line 2874 "src/parser.cpp"
+#line 2873 "src/parser.cpp"
     break;
 
   case 110:
-#line 958 "src/parser.y"
+#line 957 "src/parser.y"
                                              {
         (yyval.exprtype) = (yyvsp[-3].exprtype);
         (yyval.exprtype)->setNext((yyvsp[-1].exprtype));
     }
-#line 2883 "src/parser.cpp"
+#line 2882 "src/parser.cpp"
     break;
 
 
-#line 2887 "src/parser.cpp"
+#line 2886 "src/parser.cpp"
 
       default: break;
     }
@@ -3115,7 +3114,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 962 "src/parser.y"
+#line 961 "src/parser.y"
 
 
 int yyerror(char const* message)

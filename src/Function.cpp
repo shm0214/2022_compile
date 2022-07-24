@@ -13,6 +13,7 @@ Function::Function(Unit* u, SymbolEntry* s) {
     entry = new BasicBlock(this);
     sym_ptr = s;
     parent = u;
+    ((IdentifierSymbolEntry*)s)->setFunction(this);
 }
 
 int TreeNode::Num = 0;
@@ -270,9 +271,9 @@ void Function::computeDomFrontier() {
         }
     }
     // for (auto block : block_list) {
-    //     cout << preOrder2DFS[block->order]->block->getNo()<< ": ";
+    //     cout << preOrder2DFS[block->order]->block->getNo() << ": ";
     //     for (auto c : block->domFrontier) {
-    //         cout << preOrder2DFS[c->order]->block->getNo()<< " ";
+    //         cout << preOrder2DFS[c->order]->block->getNo() << " ";
     //     }
     //     cout << endl;
     // }
@@ -314,12 +315,20 @@ void Function::domTest() {
     //         a2b(i, links[i][j] - 1);
     //     }
     // https://blog.csdn.net/dashuniuniu/article/details/103275708
-    for (int i = 0; i < 12; i++)
+    // for (int i = 0; i < 12; i++)
+    //     new BasicBlock(this);
+    // entry = block_list[0];
+    // int links[12][2] = {{1, 2}, {5},    {3, 4},  {6},  {6},    {1, 7},
+    //                     {2, 7}, {8, 9}, {8, 10}, {10}, {7, 11}};
+    // for (int i = 0; i < 12; i++)
+    //     for (int j = 0; j < 2 && links[i][j]; j++) {
+    //         a2b(i, links[i][j]);
+    //     }
+    for (int i = 0; i < 8; i++)
         new BasicBlock(this);
     entry = block_list[0];
-    int links[12][2] = {{1, 2}, {5},    {3, 4},  {6},  {6},    {1, 7},
-                        {2, 7}, {8, 9}, {8, 10}, {10}, {7, 11}};
-    for (int i = 0; i < 12; i++)
+    int links[8][2] = {{1}, {2}, {3, 6}, {}, {2}, {4, 7}, {5}, {5}};
+    for (int i = 0; i < 8; i++)
         for (int j = 0; j < 2 && links[i][j]; j++) {
             a2b(i, links[i][j]);
         }
@@ -327,4 +336,159 @@ void Function::domTest() {
     computeSdom();
     computeIdom();
     computeDomFrontier();
+}
+
+void Function::computeReverseDFSTree(BasicBlock* exit) {
+    TreeNode::Num = 0;
+    int len = block_list.size();
+    preOrder2DFS.resize(len);
+    bool* visited = new bool[len]{};
+    DFSTreeRoot = new TreeNode(exit);
+    preOrder2DFS[DFSTreeRoot->num] = DFSTreeRoot;
+    reverseSearch(DFSTreeRoot, visited);
+    delete[] visited;
+}
+
+void Function::reverseSearch(TreeNode* node, bool* visited) {
+    int n = getIndex(node->block);
+    visited[n] = true;
+    auto block = block_list[n];
+    for (auto it = block->pred_begin(); it != block->pred_end(); it++) {
+        int idx = getIndex(*it);
+        if (!visited[idx]) {
+            TreeNode* child = new TreeNode(*it);
+            preOrder2DFS[child->num] = child;
+            child->parent = node;
+            node->addChild(child);
+            reverseSearch(child, visited);
+        }
+    }
+}
+
+void Function::computeReverseSdom(BasicBlock* exit) {
+    int len = block_list.size();
+    sdoms.resize(len);
+    int* ancestors = new int[len];
+    for (int i = 0; i < len; i++) {
+        sdoms[i] = i;
+        ancestors[i] = -1;
+    }
+    for (auto it = preOrder2DFS.rbegin(); (*it)->block != exit; it++) {
+        auto block = (*it)->block;
+        int s = block->order;
+        for (auto it1 = block->succ_begin(); it1 != block->succ_end(); it1++) {
+            int z = eval((*it1)->order, ancestors);
+            if (sdoms[z] < sdoms[s])
+                sdoms[s] = sdoms[z];
+        }
+        ancestors[s] = (*it)->parent->num;
+    }
+    delete[] ancestors;
+}
+
+void Function::computeReverseIdom(BasicBlock* exit) {
+    int len = block_list.size();
+    idoms.resize(len);
+    domTreeRoot = new TreeNode(exit, 0);
+    preOrder2dom.resize(len);
+    preOrder2dom[exit->order] = domTreeRoot;
+    idoms[exit->order] = 0;
+    for (auto it = preOrder2DFS.begin() + 1; it != preOrder2DFS.end(); it++) {
+        int p = LCA((*it)->parent->num, sdoms[(*it)->num]);
+        idoms[(*it)->num] = p;
+        auto parent = preOrder2dom[p];
+        TreeNode* node = new TreeNode((*it)->block, 0);
+        node->parent = parent;
+        parent->addChild(node);
+        preOrder2dom[(*it)->num] = node;
+    }
+}
+
+void Function::computeReverseDomFrontier() {
+    BasicBlock* exit = new BasicBlock(this);
+    for (auto b : block_list) {
+        if (b->rbegin()->isRet()) {
+            b->addSucc(exit);
+            exit->addPred(b);
+        }
+    }
+    computeReverseDFSTree(exit);
+    computeReverseSdom(exit);
+    computeReverseIdom(exit);
+    for (auto block : block_list) {
+        if (block->getNumOfSucc() >= 2) {
+            for (auto it = block->succ_begin(); it != block->succ_end(); it++) {
+                int runner = (*it)->order;
+                while (runner != idoms[block->order]) {
+                    preOrder2DFS[runner]->block->domFrontier.insert(block);
+                    runner = idoms[runner];
+                }
+            }
+        }
+    }
+    delete exit;
+}
+
+int Function::getEssential() {
+    if (essential != -1)
+        return essential;
+    FunctionType* type = (FunctionType*)(sym_ptr->getType());
+    auto paramsType = type->getParamsType();
+    for (auto type : paramsType)
+        if (type->isArray()) {
+            essential = 1;
+            return essential;
+        }
+    for (auto block : block_list) {
+        for (auto it = block->begin(); it != block->end(); it = it->getNext()) {
+            if (it->isCall()) {
+                IdentifierSymbolEntry* funcSE =
+                    (IdentifierSymbolEntry*)(((CallInstruction*)it)
+                                                 ->getFuncSE());
+                if (funcSE->isSysy() ||
+                    funcSE->getName() == "llvm.memset.p0.i32") {
+                    essential = 1;
+                    return essential;
+                } else {
+                    auto func = funcSE->getFunction();
+                    if (func == this)
+                        continue;
+                    if (func->getEssential() == 1) {
+                        essential = 1;
+                        return essential;
+                    }
+                }
+            } else {
+                auto def = it->getDef();
+                if (def && def->getEntry()->isVariable()) {
+                    auto se = (IdentifierSymbolEntry*)(def->getEntry());
+                    if (se->isGlobal()) {
+                        essential = 1;
+                        return essential;
+                    }
+                }
+                auto uses = it->getUse();
+                for (auto use : uses) {
+                    if (use && use->getEntry()->isVariable()) {
+                        auto se = (IdentifierSymbolEntry*)(use->getEntry());
+                        if (se->isGlobal()) {
+                            essential = 1;
+                            return essential;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    essential = 0;
+    return essential;
+}
+
+BasicBlock* Function::getMarkBranch(BasicBlock* block) {
+    while (true) {
+        auto order = idoms[block->order];
+        block = preOrder2dom[order]->block;
+        if (block->isMark())
+            return block;
+    }
 }

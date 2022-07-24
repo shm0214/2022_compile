@@ -515,7 +515,6 @@ VarDef
         ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
         ((IdentifierSymbolEntry*)$<se>4)->setNotZeroNum(notZeroNum);
         if ((notZeroNum == 0) || ((InitValueListExpr*)$5)->isEmpty()){
-            fprintf(stderr, "set setAllZero\n");
             ((IdentifierSymbolEntry*)$<se>4)->setAllZero();
         }
         if (!identifiers->install($1, $<se>4))

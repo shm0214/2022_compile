@@ -24,7 +24,7 @@ Instruction::~Instruction() {
     parent->remove(this);
 }
 
-bool Instruction::isEssential() const {
+bool Instruction::isEssential() {
     // return value
     if (isRet()) {
         // 先简单处理，所有return都true
@@ -32,7 +32,16 @@ bool Instruction::isEssential() const {
     }
     // input/output
     if (isCall()) {
-        return true;
+        IdentifierSymbolEntry* funcSE =
+            (IdentifierSymbolEntry*)(((CallInstruction*)this)->getFuncSE());
+        if (funcSE->isSysy() || funcSE->getName() == "llvm.memset.p0.i32") {
+            return true;
+        } else {
+            auto func = funcSE->getFunction();
+            if (func->getEssential() == 1) {
+                return true;
+            }
+        }
     }
     if (isStore()) {
         return true;

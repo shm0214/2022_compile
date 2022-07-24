@@ -61,6 +61,11 @@ class Function {
     // sdoms idoms order->order
     std::vector<int> sdoms;
     std::vector<int> idoms;
+    // -1 for not calculate
+    // 1 for essential
+    // 0 not essential
+    // a function is essential if it is a sysy/memset function or it has a array param or it call a essential function
+    int essential = -1;
 
    public:
     Function() {}
@@ -97,6 +102,13 @@ class Function {
              std::set<BasicBlock*>& v,
              std::map<BasicBlock*, MachineBlock*>& map);
     void dfs1(BasicBlock* block, std::set<BasicBlock*>& v);
+    void computeReverseDFSTree(BasicBlock* exit);
+    void reverseSearch(TreeNode* node, bool* visited);
+    void computeReverseSdom(BasicBlock* exit);
+    void computeReverseIdom(BasicBlock* exit);
+    void computeReverseDomFrontier();
+    int getEssential();
+    BasicBlock* getMarkBranch(BasicBlock* block);
 };
 
 #endif

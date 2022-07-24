@@ -88,7 +88,7 @@ void CopyProp::copy_prop(){
     while (iter != unit->end()){
         vector<BasicBlock*> block_list = (*iter)->getBlockList();
         BasicBlock* bb = (*iter)->getEntry(); // 函数入口基本块
-        COPY[bb->getNo()];
+        //COPY[bb->getNo()];
         queue<BasicBlock*> q;
         q.push(bb);
         bool first = true;

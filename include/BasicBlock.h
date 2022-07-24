@@ -17,6 +17,7 @@ class BasicBlock {
     int no;
     // for phi::changeSrcBlock
     std::map<BasicBlock*, BasicBlock*> phiBlocks;
+    bool mark;
 
    public:
     int order;
@@ -57,6 +58,9 @@ class BasicBlock {
     std::map<BasicBlock*, BasicBlock*>& getPhiBlocks() { return phiBlocks; }
     std::vector<BasicBlock*> getSucc() { return succ; }
     void deleteBack(int num = 1);
+    void setMark() { mark = true; }
+    void unsetMark() { mark = false; }
+    bool isMark() { return mark; }
 };
 
 #endif

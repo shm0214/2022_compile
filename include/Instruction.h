@@ -40,9 +40,10 @@ class Instruction {
     MachineOperand* genMachineLabel(int block_no);
     virtual void genMachineCode(AsmBuilder*) = 0;
     int getInstType() { return instType; }
-    bool isEssential() const;
+    bool isEssential();
     void setMark() { mark = true; }
     void unsetMark() { mark = false; }
+    bool isMark() const { return mark; }
     virtual std::vector<Operand*> getUse() { return std::vector<Operand*>(); }
     virtual Operand* getDef() { return nullptr; }
     virtual void replaceUse(Operand* old, Operand* new_) {}
@@ -243,6 +244,7 @@ class CallInstruction : public Instruction {
             vec.push_back(*it);
         return vec;
     }
+    SymbolEntry* getFuncSE() { return func; }
 };
 
 class ZextInstruction : public Instruction {
@@ -323,6 +325,13 @@ class PhiInstruction : public Instruction {
     void replaceOriginDef(Operand* new_);
     void changeSrcBlock(
         std::map<BasicBlock*, std::vector<BasicBlock*>> changes);
+    std::vector<Operand*> getUse() {
+        std::vector<Operand*> ret;
+        for (auto ope : operands)
+            if (ope != operands[0])
+                ret.push_back(ope);
+        return ret;
+    }
 };
 
 class FptosiInstruction : public Instruction {

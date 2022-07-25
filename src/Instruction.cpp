@@ -1532,9 +1532,16 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
     if (init) {
         if (last) {
             auto base = genMachineOperand(init);
-            cur_inst =
-                new BinaryMInstruction(cur_block, BinaryMInstruction::ADD, dst,
-                                       base, genMachineImm(4));
+            MachineOperand* imm = genMachineImm(off + 4);
+            int off = this->off + 4;
+            if (off > 255) {
+                MachineOperand* temp = genMachineVReg();
+                cur_block->InsertInst(new LoadMInstruction(
+                    cur_block, LoadMInstruction::LDR, temp, imm));
+                imm = temp;
+            }
+            cur_inst = new BinaryMInstruction(
+                cur_block, BinaryMInstruction::ADD, dst, base, imm);
             cur_block->InsertInst(cur_inst);
         }
         return;

@@ -652,6 +652,7 @@ void DeclStmt::genCode() {
         if (expr) {
             if (expr->isInitValueListExpr()) {
                 Operand* init = nullptr;
+                int off = 0;
                 BasicBlock* bb = builder->getInsertBB();
                 ExprNode* temp = expr;
                 std::stack<ExprNode*> stk;
@@ -681,8 +682,8 @@ void DeclStmt::genCode() {
                                         ->getOperand();
                             auto gep =
                                 new GepInstruction(tempDst, tempSrc, index, bb);
-                            if (!useMemset)
-                                gep->setInit(init);
+                            // if (!useMemset)
+                            gep->setInit(init, off);
                             if (flag) {
                                 gep->setFirst();
                                 flag = false;
@@ -692,7 +693,6 @@ void DeclStmt::genCode() {
                                 type == TypeSystem::floatType ||
                                 type == TypeSystem::constFloatType) {
                                 gep->setLast();
-                                init = tempDst;
                                 break;
                             }
                             type = ((ArrayType*)type)->getElementType();
@@ -704,9 +704,13 @@ void DeclStmt::genCode() {
                                                         ->getEntry()))
                                     ->getValue() == 0) {
                             bb->deleteBack(idx.size() - 1);
-                        } else
+                            off += 4;
+                        } else {
+                            init = tempDst;
+                            off = 0;
                             new StoreInstruction(tempDst, temp->getOperand(),
                                                  bb);
+                        }
                     }
                     while (true) {
                         if (temp->getNext()) {

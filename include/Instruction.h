@@ -283,6 +283,7 @@ class GepInstruction : public Instruction {
     bool first;
     bool last;
     Operand* init;
+    int off;
 
    public:
     GepInstruction(Operand* dst,
@@ -296,7 +297,10 @@ class GepInstruction : public Instruction {
     void setFirst() { first = true; };
     void setLast() { last = true; };
     Operand* getInit() const { return init; };
-    void setInit(Operand* init) { this->init = init; };
+    void setInit(Operand* init, int off) {
+        this->init = init;
+        this->off = off;
+    };
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }

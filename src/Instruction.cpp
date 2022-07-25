@@ -1678,6 +1678,9 @@ void PhiInstruction::replaceUse(Operand* old, Operand* new_) {
             new_->addUse(this);
         }
     }
+    for (auto it = operands.begin() + 1; it != operands.end(); it++)
+        if (*it == old)
+            *it = new_;
 }
 
 void PhiInstruction::replaceDef(Operand* new_) {

@@ -20,7 +20,7 @@ void Mem2reg::pass(Function* function) {
     insertPhiInstruction(function);
     rename(function);
     // 这个会导致r0-r3被覆盖
-    //cleanAddZeroIns(function);
+    // cleanAddZeroIns(function);
 }
 
 void Mem2reg::insertPhiInstruction(Function* function) {
@@ -143,7 +143,7 @@ void Mem2reg::rename(BasicBlock* block) {
                 else
                     phi->addSrc(block, new Operand(new ConstantSymbolEntry(
                                            TypeSystem::intType, 0)));
-            }else
+            } else
                 break;
         }
     }
@@ -165,12 +165,15 @@ Operand* Mem2reg::newName(Operand* old) {
 void Mem2reg::cleanAddZeroIns(Function* func) {
     for (auto i : addZeroIns) {
         auto use = i->getUse()[0];
+        if (use->getEntry()->isConstant())
+            continue;
         auto def = i->getDef();
         while (def->use_begin() != def->use_end()) {
             auto u = *(def->use_begin());
             u->replaceUse(def, use);
         }
         i->getParent()->remove(i);
+        use->removeUse(i);
         delete i;
     }
 }

@@ -89,7 +89,6 @@ void DeadCodeElimination::pass(Function* func) {
     bool again = true;
     while (again) {
         mark(func);
-        remove(func);
-        again = false;
+        again = remove(func);
     }
 }

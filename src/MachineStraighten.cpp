@@ -3,15 +3,20 @@
 
 void MachineStraighten::pass() {
     for (auto func : unit->getFuncs()) {
-        pass4(func);
-        pass1(func);
-        pass2(func);
-        pass3(func);
+        bool again = true;
+        while (again) {
+            again = false;
+            again = again || pass4(func);
+            again = again || pass1(func);
+            again = again || pass2(func);
+            again = again || pass3(func);
+        }
     }
 }
 
-void MachineStraighten::pass1(MachineFunction* func) {
+bool MachineStraighten::pass1(MachineFunction* func) {
     // 合并单后继与单前驱块
+    bool flag = false;
     for (auto block : func->getBlocks()) {
         auto succs = block->getSuccs();
         if (succs.size() == 1 && succs[0]->getPreds().size() == 1) {
@@ -19,10 +24,12 @@ void MachineStraighten::pass1(MachineFunction* func) {
             auto succ = succs[0];
             if (succ == func->getEntry())
                 continue;
+            flag = true;
             fuseBlock(func, block, succ);
             pass1(func);
         }
     }
+    return flag;
 }
 
 void MachineStraighten::fuseBlock(MachineFunction* func,
@@ -55,8 +62,9 @@ void MachineStraighten::fuseBlock(MachineFunction* func,
     func->removeBlock(j);
 }
 
-void MachineStraighten::pass2(MachineFunction* func) {
+bool MachineStraighten::pass2(MachineFunction* func) {
     // 删除只有一句无条件跳转的基本块
+    bool flag = false;
     auto& blocklist = func->getBlocks();
     for (auto it = blocklist.begin(); it != blocklist.end();) {
         auto block = *it;
@@ -104,13 +112,16 @@ void MachineStraighten::pass2(MachineFunction* func) {
                 pred->removeSucc(block);
             }
             it = blocklist.erase(it);
+            flag = true;
         } else
             it++;
     }
+    return flag;
 }
 
-void MachineStraighten::pass3(MachineFunction* func) {
+bool MachineStraighten::pass3(MachineFunction* func) {
     // 删除顺序连接的基本块的无条件跳转
+    bool flag = false;
     auto blocks = func->getBlocks();
     auto it1 = blocks.begin();
     auto it2 = blocks.begin() + 1;
@@ -146,6 +157,7 @@ void MachineStraighten::pass3(MachineFunction* func) {
                 assert(in1->getCond() == MachineInstruction::NONE);
                 if (block1 == *it2) {
                     (*it1)->remove(in1);
+                    flag = true;
                 } else {
                     auto use2 = in2->getUse()[0];
                     assert(use2->isLabel());
@@ -162,6 +174,7 @@ void MachineStraighten::pass3(MachineFunction* func) {
                         in2->setCond(cond);
                         in2->replaceUse(use2, use1);
                         (*it1)->remove(in1);
+                        flag = true;
                     } else
                         // shouldn't reach here
                         assert(0);
@@ -169,20 +182,24 @@ void MachineStraighten::pass3(MachineFunction* func) {
             } else {
                 if (block1 == *it2) {
                     (*it1)->remove(in1);
+                    flag = true;
                 }
             }
         } else {
             if (block1 == *it2) {
                 (*it1)->remove(in1);
+                flag = true;
             }
         }
         it1++;
         it2++;
     }
+    return flag;
 }
 
-void MachineStraighten::pass4(MachineFunction* func) {
+bool MachineStraighten::pass4(MachineFunction* func) {
     // 处理空块的跳转
+    bool flag = false;
     std::vector<MachineBlock*> temp;
     for (auto block : func->getBlocks()) {
         if (block->getSize() == 0) {
@@ -219,7 +236,10 @@ void MachineStraighten::pass4(MachineFunction* func) {
             next->removePred(block);
         }
     }
+    if (temp.size())
+        flag = true;
     for (auto b : temp) {
         func->removeBlock(b);
     }
+    return flag;
 }

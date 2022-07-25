@@ -9,10 +9,10 @@ class MachineStraighten {
    public:
     MachineStraighten(MachineUnit* unit) : unit(unit){};
     void pass();
-    void pass1(MachineFunction* func);
-    void pass2(MachineFunction* func);
-    void pass3(MachineFunction* func);
-    void pass4(MachineFunction* func);
+    bool pass1(MachineFunction* func);
+    bool pass2(MachineFunction* func);
+    bool pass3(MachineFunction* func);
+    bool pass4(MachineFunction* func);
     void fuseBlock(MachineFunction* func, MachineBlock* i, MachineBlock* j);
 };
 

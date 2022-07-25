@@ -1478,7 +1478,7 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
     auto label = new MachineOperand(func->toStr().c_str());
     cur_inst = new BranchMInstruction(cur_block, BranchMInstruction::BL, label);
     cur_block->InsertInst(cur_inst);
-    if (gpreg_cnt >= 5 || fpreg_cnt >= 5) {
+    if ((gpreg_cnt >= 5 || fpreg_cnt >= 5) && stk_cnt != 0) {
         auto off = genMachineImm(stk_cnt * 4);
         auto sp = new MachineOperand(MachineOperand::REG, 13);
         cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,

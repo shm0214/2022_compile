@@ -113,6 +113,7 @@ class BinaryInstruction : public Instruction {
     ~BinaryInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    int getOp() const{return opcode;};
     enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
 };
 

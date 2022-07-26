@@ -951,8 +951,12 @@ int ExprNode::fold_const(bool &flag){
         }
         else return 0;
     }
-    else if(this->isExpr() && this->getSymbolEntry()->isConstant()){
-        return ((ConstantSymbolEntry*)(this->getSymbolEntry()))->getValue();
+    else if(this->isExpr()){
+        SymbolEntry* sym = this->getSymbolEntry();
+        if(sym->isConstant())
+            return ((ConstantSymbolEntry*)sym)->getValue();
+        // else if(sym->isVariable() && ((IdentifierSymbolEntry*)sym)->getValue())
+        //     return ((IdentifierSymbolEntry*)sym)->getValue();
     }
     flag = 0;
     return 0;
@@ -1206,6 +1210,8 @@ AssignStmt::AssignStmt(ExprNode* lval, ExprNode* expr)
                     ((IdentifierSymbolEntry*)se)->toStr().c_str(),
                     type->toStr().c_str());
             flag = false;
+        } else{
+            ((IdentifierSymbolEntry*)se)->setValue(expr->getValue());
         }
     } else if (type->isFloat()) {
         if (((FloatType*)type)->isConst()) {
@@ -1215,6 +1221,8 @@ AssignStmt::AssignStmt(ExprNode* lval, ExprNode* expr)
                     ((IdentifierSymbolEntry*)se)->toStr().c_str(),
                     type->toStr().c_str());
             flag = false;
+        } else{
+            ((IdentifierSymbolEntry*)se)->setValue(expr->getValue());
         }
     } else if (type->isArray()) {
         fprintf(stderr, "array type \'%s\' is not assignable\n",

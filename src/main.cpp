@@ -8,6 +8,7 @@
 #include "Starighten.h"
 #include "Unit.h"
 #include "CopyProp.h"
+#include "ElimComSubexpr.h"
 using namespace std;
 
 Ast ast;
@@ -76,6 +77,8 @@ int main(int argc, char* argv[]) {
     e.pass();
     CopyProp c(&unit);
     c.copy_prop();
+    ElimComSubexpr ec(&unit);
+    ec.elim_cse();
     if (dump_ir)
         unit.output();
     unit.genMachineCode(&mUnit);

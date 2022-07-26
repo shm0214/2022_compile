@@ -1,3 +1,8 @@
+//test local var define
 int main(){
-    return 3;
+    int a, b, c;
+    b = 1;
+    a = b + 4;
+    c = b + 4;
+    return 0;
 }

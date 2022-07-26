@@ -3,7 +3,7 @@
 #include <set>
 #include <queue>
 using namespace std;
-const int N = 100010;
+const int N = 2000100;
 typedef vector<BasicBlock*>::iterator bb_iterator;
 bool st[N]; // 标记基本块是否已遍历过
 
@@ -71,7 +71,6 @@ USS intersection(BasicBlock* bb){
     USS res;
     bb_iterator iter = bb->pred_begin();
     bb_iterator end = bb->pred_end();
-    vector<USS> tmp;
     while(iter != end){
         int no = (*iter)->getNo();
         if(st[no]){

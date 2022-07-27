@@ -18,6 +18,7 @@ Instruction::Instruction(unsigned instType, BasicBlock* insert_bb) {
         parent = insert_bb;
     }
     mark = false;
+    node = nullptr;
 }
 
 Instruction::~Instruction() {
@@ -1820,3 +1821,195 @@ BitcastInstruction::~BitcastInstruction() {
 }
 
 void BitcastInstruction::genMachineCode(AsmBuilder* builder) {}
+
+bool AllocaInstruction::genNode() {
+    node = new SSAGraphNode(this, SSAGraphNode::ALLOCA);
+    return true;
+};
+
+bool LoadInstruction::genNode() {
+    node = new SSAGraphNode(this, SSAGraphNode::LOAD);
+    auto node1 = operands[1]->getDef()->getNode();
+    node->addChild(node1);
+    return true;
+}
+
+bool BinaryInstruction::genNode() {
+    // add 0
+    if (operands[2]->isZero()) {
+        auto se = operands[1]->getEntry();
+        if (se->isConstant()) {
+            int val = ((ConstantSymbolEntry*)se)->getValue();
+            if (opcode == AND || opcode == MUL)
+                val = 0;
+            node = new SSAGraphNode(val);
+            return true;
+        } else {
+            auto def = operands[1]->getDef();
+            node = def->getNode();
+            return true;
+        }
+    }
+    auto se1 = operands[1]->getEntry();
+    auto se2 = operands[2]->getEntry();
+    // const +/-/... const
+    if (se1->isConstant() && se2->isConstant()) {
+        int val1 = ((ConstantSymbolEntry*)se1)->getValue();
+        int val2 = ((ConstantSymbolEntry*)se2)->getValue();
+        int val;
+        switch (opcode) {
+            case SUB:
+                val = val1 - val2;
+                break;
+            case ADD:
+                val = val1 + val2;
+                break;
+            case AND:
+                val = val1 && val2;
+                break;
+            case OR:
+                val = val1 || val2;
+                break;
+            case MUL:
+                val = val1 * val2;
+                break;
+            case DIV:
+                val = val1 / val2;
+                break;
+            case MOD:
+                val = val1 % val2;
+                break;
+        }
+        node = new SSAGraphNode(val);
+        return true;
+    }
+    // 1 temp 1 const
+    node = new SSAGraphNode(this, opcode + SSAGraphNode::SUB);
+    SSAGraphNode *node1, *node2;
+    if (se1->isConstant()) {
+        int val1 = ((ConstantSymbolEntry*)se1)->getValue();
+        node1 = new SSAGraphNode(val1);
+    } else
+        node1 = operands[1]->getDef()->getNode();
+    if (se2->isConstant()) {
+        int val2 = ((ConstantSymbolEntry*)se2)->getValue();
+        node2 = new SSAGraphNode(val2);
+    } else
+        node2 = operands[2]->getDef()->getNode();
+    node->addChild(node1);
+    node->addChild(node2);
+    return true;
+}
+
+bool CmpInstruction::genNode() {
+    node = new SSAGraphNode(this, opcode + SSAGraphNode::E);
+    auto se1 = operands[1]->getEntry();
+    auto se2 = operands[2]->getEntry();
+    SSAGraphNode *node1, *node2;
+    if (se1->isConstant()) {
+        int val1 = ((ConstantSymbolEntry*)se1)->getValue();
+        node1 = new SSAGraphNode(val1);
+    } else
+        node1 = operands[1]->getDef()->getNode();
+    if (se2->isConstant()) {
+        int val2 = ((ConstantSymbolEntry*)se2)->getValue();
+        node2 = new SSAGraphNode(val2);
+    } else
+        node2 = operands[2]->getDef()->getNode();
+    node->addChild(node1);
+    node->addChild(node2);
+    return true;
+}
+
+bool CallInstruction::genNode() {
+    node = new SSAGraphNode(this, SSAGraphNode::CALL);
+    return true;
+}
+
+bool ZextInstruction::genNode() {
+    node = new SSAGraphNode(this, SSAGraphNode::ZEXT);
+    auto node1 = operands[1]->getDef()->getNode();
+    node->addChild(node1);
+    return true;
+}
+
+bool XorInstruction::genNode() {
+    node = new SSAGraphNode(this, SSAGraphNode::XOR);
+    auto se1 = operands[1]->getEntry();
+    auto se2 = operands[2]->getEntry();
+    SSAGraphNode *node1, *node2;
+    if (se1->isConstant()) {
+        int val1 = ((ConstantSymbolEntry*)se1)->getValue();
+        node1 = new SSAGraphNode(val1);
+    } else
+        node1 = operands[1]->getDef()->getNode();
+    if (se2->isConstant()) {
+        int val2 = ((ConstantSymbolEntry*)se2)->getValue();
+        node2 = new SSAGraphNode(val2);
+    } else
+        node2 = operands[2]->getDef()->getNode();
+    node->addChild(node1);
+    node->addChild(node2);
+    return true;
+}
+
+bool BitcastInstruction::genNode() {
+    node = new SSAGraphNode(this, SSAGraphNode::BITCAST);
+    auto node1 = operands[1]->getDef()->getNode();
+    node->addChild(node1);
+    return true;
+}
+
+bool GepInstruction::genNode() {
+    node = new SSAGraphNode(this, SSAGraphNode::GEP);
+    auto node1 = operands[1]->getDef()->getNode();
+    node->addChild(node1);
+    SSAGraphNode* node2;
+    auto se2 = operands[2]->getEntry();
+    if (se2->isConstant()) {
+        int val2 = ((ConstantSymbolEntry*)se2)->getValue();
+        node2 = new SSAGraphNode(val2);
+    } else
+        node2 = operands[2]->getDef()->getNode();
+    node->addChild(node2);
+    return true;
+}
+
+bool PhiInstruction::genNode() {
+    bool ret = true;
+    node = new SSAGraphNode(this, SSAGraphNode::PHI);
+    for (int i = 1; i < (int)operands.size(); i++) {
+        auto operand = operands[i];
+        auto se = operand->getEntry();
+        SSAGraphNode* node1;
+        if (se->isConstant()) {
+            int val = ((ConstantSymbolEntry*)se)->getValue();
+            node1 = new SSAGraphNode(val);
+            node->addChild(node1);
+        } else {
+            node1 = operand->getDef()->getNode();
+            if (!node1)
+                ret = false;
+        }
+        node->addChild(node1);
+    }
+    return ret;
+}
+
+bool PhiInstruction::reGenNode() {
+    bool ret = true;
+    auto& children = node->getChildren();
+    for (int i = 0; i < (int)children.size(); i++) {
+        auto& child = children[i];
+        if (!child) {
+            auto operand = operands[i + 1];
+            auto se = operand->getEntry();
+            assert(se->isTemporary());
+            child = operand->getDef()->getNode();
+            if (!child)
+                ret = false;
+            children[i] = child;
+        }
+    }
+    return ret;
+}

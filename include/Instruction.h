@@ -6,8 +6,10 @@
 #include <vector>
 #include "AsmBuilder.h"
 #include "Operand.h"
+#include "SSAGraph.h"
 #include "Type.h"
 
+class SSAGraphNode;
 class BasicBlock;
 
 class Instruction {
@@ -49,6 +51,8 @@ class Instruction {
     virtual void replaceUse(Operand* old, Operand* new_) {}
     virtual void replaceDef(Operand* new_) {}
     std::vector<Operand*> getOperands() { return operands; }
+    virtual bool genNode() { return true; }
+    SSAGraphNode* getNode() { return node; }
 
    protected:
     unsigned instType;
@@ -76,6 +80,7 @@ class Instruction {
         SITOFP,  // signed int to floating point
         BITCAST,
     };
+    SSAGraphNode* node;
 };
 
 // meaningless instruction, used as the head node of the instruction list.
@@ -97,6 +102,7 @@ class AllocaInstruction : public Instruction {
     Operand* getDef() { return operands[0]; }
     void replaceDef(Operand* new_);
     bool isArray() { return se->getType()->isArray(); }
+    bool genNode();
 
    private:
     SymbolEntry* se;
@@ -116,6 +122,7 @@ class LoadInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1]});
     }
+    bool genNode();
 };
 
 class StoreInstruction : public Instruction {
@@ -151,6 +158,7 @@ class BinaryInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
+    bool genNode();
 };
 
 class CmpInstruction : public Instruction {
@@ -169,6 +177,7 @@ class CmpInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
+    bool genNode();
 };
 
 class UncondBrInstruction : public Instruction {
@@ -245,6 +254,7 @@ class CallInstruction : public Instruction {
         return vec;
     }
     SymbolEntry* getFuncSE() { return func; }
+    bool genNode();
 };
 
 class ZextInstruction : public Instruction {
@@ -261,6 +271,7 @@ class ZextInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1]});
     }
+    bool genNode();
 };
 
 class XorInstruction : public Instruction {
@@ -275,6 +286,7 @@ class XorInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1]});
     }
+    bool genNode();
 };
 
 class GepInstruction : public Instruction {
@@ -307,6 +319,7 @@ class GepInstruction : public Instruction {
     Operand* getDef() { return operands[0]; }
     void replaceDef(Operand* new_);
     void replaceUse(Operand* old, Operand* new_);
+    bool genNode();
 };
 
 class PhiInstruction : public Instruction {
@@ -336,6 +349,8 @@ class PhiInstruction : public Instruction {
                 ret.push_back(ope);
         return ret;
     }
+    bool genNode();
+    bool reGenNode();
 };
 
 class FptosiInstruction : public Instruction {
@@ -381,6 +396,7 @@ class BitcastInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1]});
     }
+    bool genNode();
 };
 
 #endif

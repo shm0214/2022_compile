@@ -492,3 +492,27 @@ BasicBlock* Function::getMarkBranch(BasicBlock* block) {
             return block;
     }
 }
+
+void Function::genSSAGraph() {
+    vector<Instruction*> temp;
+    for (auto block : block_list) {
+        for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+            bool flag = in->genNode();
+            if (!flag) {
+                assert(in->isPhi());
+                temp.push_back(in);
+                nodes.push_back(in->getNode());
+            } else {
+                auto node = in->getNode();
+                if (node &&
+                    find(nodes.begin(), nodes.end(), node) == nodes.end())
+                    nodes.push_back(node);
+            }
+        }
+    }
+    for (auto in : temp) {
+        PhiInstruction* phi = (PhiInstruction*)in;
+        bool flag = phi->reGenNode();
+        assert(flag);
+    }
+}

@@ -10,8 +10,8 @@
 #include "AsmBuilder.h"
 #include "Ast.h"
 #include "BasicBlock.h"
+#include "SSAGraph.h"
 #include "SymbolTable.h"
-
 class Unit;
 
 struct TreeNode {
@@ -66,6 +66,7 @@ class Function {
     // 0 not essential
     // a function is essential if it is a sysy/memset function or it has a array param or it call a essential function
     int essential = -1;
+    std::vector<SSAGraphNode*> nodes;
 
    public:
     Function() {}
@@ -109,6 +110,7 @@ class Function {
     void computeReverseDomFrontier();
     int getEssential();
     BasicBlock* getMarkBranch(BasicBlock* block);
+    void genSSAGraph();
 };
 
 #endif

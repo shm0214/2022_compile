@@ -20,7 +20,7 @@ void Mem2reg::pass(Function* function) {
     insertPhiInstruction(function);
     rename(function);
     // 这个会导致r0-r3被覆盖
-    // cleanAddZeroIns(function);
+    cleanAddZeroIns(function);
 }
 
 void Mem2reg::insertPhiInstruction(Function* function) {
@@ -165,7 +165,11 @@ Operand* Mem2reg::newName(Operand* old) {
 void Mem2reg::cleanAddZeroIns(Function* func) {
     for (auto i : addZeroIns) {
         auto use = i->getUse()[0];
-        if (use->getEntry()->isConstant())
+        // if (use->getEntry()->isConstant())
+        //     continue;
+        if (i->getParent()->begin() == i && i->getNext()->isUncond())
+            continue;
+        if (use->getEntry()->isVariable())
             continue;
         auto def = i->getDef();
         while (def->use_begin() != def->use_end()) {

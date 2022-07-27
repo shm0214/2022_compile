@@ -56,6 +56,20 @@ void DeadCodeElimination::mark(Function* func) {
                 worklist.push_back(in);
             }
         }
+        // 增加对于phi前驱的block的保留
+        for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+            if (!in->isPhi())
+                continue;
+            auto phi = (PhiInstruction*)in;
+            for (auto it : phi->getSrcs()) {
+                Instruction* in = it.first->rbegin();
+                if (!in->isMark() && (in->isCond() || in->isUncond())) {
+                    in->setMark();
+                    in->getParent()->setMark();
+                    worklist.push_back(in);
+                }
+            }
+        }
     }
 }
 

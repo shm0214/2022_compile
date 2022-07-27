@@ -745,6 +745,9 @@ void MachineFunction::output() {
         ->output();
     (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();
     int off = AllocSpace(0);
+    if (off % 8 != 0) {
+        off = AllocSpace(4);
+    }
     auto size = new MachineOperand(MachineOperand::IMM, off);
     if (off < -255 || off > 255) {
         auto r4 = new MachineOperand(MachineOperand::REG, 4);

@@ -2,7 +2,6 @@
 #include <unistd.h>
 #include <iostream>
 #include "Ast.h"
-#include "ConstAsm.h"
 #include "CopyProp.h"
 #include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
@@ -87,7 +86,7 @@ int main(int argc, char* argv[]) {
         CopyProp c(&unit);
         m.pass();
         d.pass();
-        // c.copy_prop();
+        //c.copy_prop();
         e.pass();
         s.pass();
         s1.pass();
@@ -97,12 +96,6 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     unit.genMachineCode(&mUnit);
-
-    if (optimize) {
-        ConstAsm const_asm(&mUnit);
-        const_asm.pass();
-    }
-
     if (!optimize) {
         LinearScan linearScan(&mUnit);
         linearScan.allocateRegisters();

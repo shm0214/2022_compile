@@ -2013,3 +2013,127 @@ bool PhiInstruction::reGenNode() {
     }
     return ret;
 }
+
+std::string LoadInstruction::getHash() {
+    if (operands[1]->getEntry()->isVariable())
+        return "";
+    std::stringstream s;
+    s << "load ";
+    s << operands[1]->toStr();
+    return s.str();
+}
+
+std::string BinaryInstruction::getHash() {
+    std::stringstream s;
+    switch (opcode) {
+        case SUB:
+            s << "sub ";
+            break;
+        case ADD:
+            s << "add ";
+            break;
+        case AND:
+            s << "and ";
+            break;
+        case OR:
+            s << "or ";
+            break;
+        case MUL:
+            s << "mul ";
+            break;
+        case DIV:
+            s << "div ";
+            break;
+        case MOD:
+            s << "mod ";
+            break;
+    }
+    auto ope1 = operands[1];
+    auto ope2 = operands[2];
+    // 可交换的考虑顺序
+    // const 在前 temp在后
+    // 小的在前 大的在后
+    if (opcode >= ADD && opcode <= MUL) {
+        auto se1 = ope1->getEntry();
+        auto se2 = ope2->getEntry();
+        if (se2->isConstant()) {
+            if (se1->isConstant()) {
+                auto str1 = se1->toStr();
+                auto str2 = se2->toStr();
+                if (str1 < str2)
+                    s << str1 << " " << str2;
+                else
+                    s << str2 << " " << str1;
+            } else {
+                s << ope2->toStr() << " " << ope1->toStr();
+            }
+        } else {
+            if (se1->isConstant()) {
+                s << ope1->toStr() << " " << ope2->toStr();
+            } else {
+                auto str1 = se1->toStr();
+                auto str2 = se2->toStr();
+                if (str1 < str2)
+                    s << str1 << " " << str2;
+                else
+                    s << str2 << " " << str1;
+            }
+        }
+    } else {
+        s << ope1->toStr() << " " << ope2->toStr();
+    }
+    return s.str();
+}
+
+std::string CmpInstruction::getHash() {
+    std::stringstream s;
+    switch (opcode) {
+        case E:
+            s << "e ";
+            break;
+        case NE:
+            s << "ne ";
+            break;
+        case L:
+            s << "l ";
+            break;
+        case LE:
+            s << "le ";
+            break;
+        case G:
+            s << "g ";
+            break;
+        case GE:
+            s << "ge ";
+            break;
+    }
+    s << operands[1]->toStr() << " " << operands[2]->toStr();
+    return s.str();
+}
+
+std::string XorInstruction::getHash() {
+    std::stringstream s;
+    s << "xor ";
+    s << operands[1]->toStr() << " " << operands[2]->toStr();
+    return s.str();
+}
+
+std::string GepInstruction::getHash() {
+    std::stringstream s;
+    s << "gep ";
+    s << operands[1]->toStr() << " " << operands[2]->toStr();
+    return s.str();
+}
+
+std::string PhiInstruction::getHash() {
+    std::stringstream s;
+    s << "phi";
+    std::vector<std::string> strs;
+    for (auto it = operands.begin() + 1; it != operands.end(); it++) {
+        strs.push_back((*it)->toStr());
+    }
+    std::sort(strs.begin(), strs.end());
+    for (auto str : strs)
+        s << " " << str;
+    return s.str();
+}

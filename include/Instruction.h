@@ -53,6 +53,7 @@ class Instruction {
     std::vector<Operand*> getOperands() { return operands; }
     virtual bool genNode() { return true; }
     SSAGraphNode* getNode() { return node; }
+    virtual std::string getHash() { return ""; }
 
    protected:
     unsigned instType;
@@ -123,6 +124,7 @@ class LoadInstruction : public Instruction {
         return std::vector<Operand*>({operands[1]});
     }
     bool genNode();
+    std::string getHash();
 };
 
 class StoreInstruction : public Instruction {
@@ -159,6 +161,7 @@ class BinaryInstruction : public Instruction {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
     bool genNode();
+    std::string getHash();
 };
 
 class CmpInstruction : public Instruction {
@@ -178,6 +181,7 @@ class CmpInstruction : public Instruction {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
     bool genNode();
+    std::string getHash();
 };
 
 class UncondBrInstruction : public Instruction {
@@ -287,6 +291,7 @@ class XorInstruction : public Instruction {
         return std::vector<Operand*>({operands[1]});
     }
     bool genNode();
+    std::string getHash();
 };
 
 class GepInstruction : public Instruction {
@@ -320,6 +325,7 @@ class GepInstruction : public Instruction {
     void replaceDef(Operand* new_);
     void replaceUse(Operand* old, Operand* new_);
     bool genNode();
+    std::string getHash();
 };
 
 class PhiInstruction : public Instruction {
@@ -351,6 +357,8 @@ class PhiInstruction : public Instruction {
     }
     bool genNode();
     bool reGenNode();
+    std::string getHash();
+    std::map<BasicBlock*, Operand*>& getSrcs() { return srcs; }
 };
 
 class FptosiInstruction : public Instruction {

@@ -261,7 +261,6 @@ class MachineFunction {
     MachineUnit* parent;
     std::vector<MachineBlock*> block_list;
     int stack_size;
-    int align_size;
     std::set<int> saved_regs;
     std::set<int> saved_fpregs;
     SymbolEntry* sym_ptr;
@@ -281,20 +280,6 @@ class MachineFunction {
      * LinearScan::genSpillCode() */
     int AllocSpace(int size) {
         this->stack_size += size;
-        int occupied_size = stack_size - align_size;
-        
-        if (occupied_size + size <= stack_size) {
-            align_size = stack_size - (occupied_size + size);
-        } else {
-            if ((occupied_size + size) % 8 != 0) {
-                stack_size = ((occupied_size + size) / 8 + 1) * 8;
-                align_size = stack_size - (occupied_size + size);
-            } else {
-                stack_size = occupied_size + size;
-                align_size = 0;
-            }
-        }
-
         return this->stack_size;
     };
     void InsertBlock(MachineBlock* block) {

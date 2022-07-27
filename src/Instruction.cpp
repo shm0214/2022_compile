@@ -1393,7 +1393,33 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
             cur_block, BranchMInstruction::BL, new MachineOperand("@memset")));
         return;
     }
+
     int stk_cnt = 0;
+    std::vector<MachineOperand*> vec;
+
+    bool additional_push = false;  // for alignment
+    int float_num = 0;
+    int int_num = 0;
+    for (size_t i = 1; i < operands.size(); i++) {
+        if (operands[i]->getType()->isFloat()) {
+            float_num++;
+        } else {
+            int_num++;
+        }
+    }
+
+    int push_num = 0;
+    if (float_num > 4) {
+        push_num += float_num - 4;
+    }
+    if (int_num > 4) {
+        push_num += int_num - 4;
+    }
+
+    if (push_num % 2 != 0) {
+        additional_push = true;
+    }
+
     int gpreg_cnt = 1;
     for (idx = 1; idx < operands.size(); idx++) {
         if (gpreg_cnt == 5)
@@ -1413,29 +1439,8 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         cur_block->InsertInst(cur_inst);
         gpreg_cnt++;
     }
-    for (size_t i = operands.size() - 1; i >= idx; i--) {
-        if (operands[i]->getType()->isFloat()) {
-            continue;
-        }
-        operand = genMachineOperand(operands[i]);
-        if (operand->isImm()) {
-            auto dst = genMachineVReg();
-            if (operand->getVal() < 256) {
-                cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV,
-                                               dst, operand);
-            } else {
-                cur_inst = new LoadMInstruction(
-                    cur_block, LoadMInstruction::LDR, dst, operand);
-            }
-            cur_block->InsertInst(cur_inst);
-            operand = new MachineOperand(*dst);
-        }
-        std::vector<MachineOperand*> vec;
-        cur_inst = new StackMInstruction(cur_block, StackMInstruction::PUSH,
-                                         vec, operand);
-        cur_block->InsertInst(cur_inst);
-        stk_cnt++;
-    }
+
+    size_t int_idx = idx;
 
     int fpreg_cnt = 1;
     for (idx = 1; idx < operands.size(); idx++) {
@@ -1456,23 +1461,51 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         cur_block->InsertInst(cur_inst);
         fpreg_cnt++;
     }
-    for (size_t i = operands.size() - 1; i >= idx; i--) {
-        if (!operands[i]->getType()->isFloat()) {
-            continue;
-        }
-        operand = genMachineFloatOperand(operands[i]);
-        if (operand->isImm()) {
-            auto dst = genMachineVReg(true);
-            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::VLDR,
-                                            dst, operand);  // TODO
-            cur_block->InsertInst(cur_inst);
-            operand = new MachineOperand(*dst);
-        }
-        std::vector<MachineOperand*> vec;
-        cur_inst = new StackMInstruction(cur_block, StackMInstruction::VPUSH,
-                                         vec, operand);
+
+    size_t float_idx = idx;
+
+    if (additional_push) {
+        cur_inst = new StackMInstruction(cur_block, StackMInstruction::PUSH,
+                                         vec, genMachineReg(0));
         cur_block->InsertInst(cur_inst);
         stk_cnt++;
+    }
+
+    idx = std::min(float_idx, int_idx);
+
+    for (size_t i = operands.size() - 1; i >= idx; i--) {
+        if (operands[i]->getType()->isFloat() && i >= float_idx) {
+            operand = genMachineFloatOperand(operands[i]);
+            if (operand->isImm()) {
+                auto dst = genMachineVReg(true);
+                cur_inst = new LoadMInstruction(
+                    cur_block, LoadMInstruction::VLDR, dst, operand);  // TODO
+                cur_block->InsertInst(cur_inst);
+                operand = new MachineOperand(*dst);
+            }
+            cur_inst = new StackMInstruction(
+                cur_block, StackMInstruction::VPUSH, vec, operand);
+            cur_block->InsertInst(cur_inst);
+            stk_cnt++;
+        } else if (!operands[i]->getType()->isFloat() && i >= int_idx) {
+            operand = genMachineOperand(operands[i]);
+            if (operand->isImm()) {
+                auto dst = genMachineVReg();
+                if (operand->getVal() < 256) {
+                    cur_inst = new MovMInstruction(
+                        cur_block, MovMInstruction::MOV, dst, operand);
+                } else {
+                    cur_inst = new LoadMInstruction(
+                        cur_block, LoadMInstruction::LDR, dst, operand);
+                }
+                cur_block->InsertInst(cur_inst);
+                operand = new MachineOperand(*dst);
+            }
+            cur_inst = new StackMInstruction(cur_block, StackMInstruction::PUSH,
+                                             vec, operand);
+            cur_block->InsertInst(cur_inst);
+            stk_cnt++;
+        }
     }
 
     auto label = new MachineOperand(func->toStr().c_str());

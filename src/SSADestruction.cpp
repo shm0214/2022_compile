@@ -9,13 +9,15 @@ void SSADestruction::pass() {
 }
 
 void SSADestruction::pass(Function* function) {
+    map<BasicBlock*, vector<Instruction*>> copyInss;
     for (auto it = function->begin(); it != function->end(); it++) {
         if (!(*it)->begin()->isPhi())
             continue;
         vector<BasicBlock*> preds((*it)->pred_begin(), (*it)->pred_end());
         for (auto pred : preds) {
             if (pred->getNumOfSucc() == 1) {
-                for (auto i = (*it)->begin(); i != (*it)->end(); i = i->getNext()) {
+                for (auto i = (*it)->begin(); i != (*it)->end();
+                     i = i->getNext()) {
                     if (!i->isPhi())
                         break;
                     auto def = i->getDef();
@@ -24,8 +26,9 @@ void SSADestruction::pass(Function* function) {
                         BinaryInstruction::ADD, def, src,
                         new Operand(
                             new ConstantSymbolEntry(TypeSystem::intType, 0)));
-                    auto endIns = pred->rbegin();
-                    pred->insertBefore(copyIns, endIns);
+                    // auto endIns = pred->rbegin();
+                    // pred->insertBefore(copyIns, endIns);
+                    copyInss[pred].push_back(copyIns);
                 }
             } else {
                 BasicBlock* newBlock = new BasicBlock(function);
@@ -44,7 +47,8 @@ void SSADestruction::pass(Function* function) {
                 pred->removeSucc(*it);
                 pred->addSucc(newBlock, first);
                 newBlock->addPred(pred);
-                for (auto i = (*it)->begin(); i != (*it)->end(); i=i->getNext()) {
+                for (auto i = (*it)->begin(); i != (*it)->end();
+                     i = i->getNext()) {
                     if (!i->isPhi())
                         break;
                     auto def = i->getDef();
@@ -53,7 +57,8 @@ void SSADestruction::pass(Function* function) {
                         BinaryInstruction::ADD, def, src,
                         new Operand(
                             new ConstantSymbolEntry(TypeSystem::intType, 0)));
-                    newBlock->insertFront(copyIns);
+                    // newBlock->insertFront(copyIns);
+                    copyInss[newBlock].push_back(copyIns);
                 }
             }
         }
@@ -65,5 +70,38 @@ void SSADestruction::pass(Function* function) {
             } else
                 break;
         }
+    }
+    // 修改加入的顺序
+    for (auto it : copyInss) {
+        auto block = it.first;
+        auto& ins = it.second;
+        set<Operand*> defs;
+        for (auto in : ins)
+            defs.insert(in->getDef());
+        vector<Instruction*> temp;
+        for (auto it = ins.begin(); it != ins.end();) {
+            if (defs.count((*it)->getUse()[0]) == 0) {
+                temp.push_back(*it);
+                it = ins.erase(it);
+            } else
+                it++;
+        }
+        for (auto in : ins) {
+            bool flag = false;
+            auto def = in->getDef();
+            for (auto it = temp.begin(); it != temp.end(); it++) {
+                if ((*it)->getUse()[0] == def) {
+                    temp.insert(it + 1, in);
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag)
+                continue;
+            temp.insert(temp.begin(), in);
+        }
+        auto endIns = block->rbegin();
+        for (auto in : temp)
+            block->insertBefore(in, endIns);
     }
 }

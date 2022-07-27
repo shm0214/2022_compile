@@ -101,13 +101,8 @@ class MachineInstruction {
     MachineBlock* getParent() const { return parent; };
     // 简单起见这样写了
     bool isBX() const { return type == BRANCH && op == 2; };
-    bool isLoad() const { return type == LOAD; }
     bool isStore() const { return type == STORE; };
-    bool isBinary() const { return type == BINARY; }
     bool isAdd() const { return type == BINARY && op == 0; };
-    bool isSub() const { return type == BINARY && op == 1; };
-    bool isMul() const { return type == BINARY && op == 2; };
-    bool isDiv() const { return type == BINARY && op == 3; };
     bool isMov() const { return type == MOV && op == 0; };
     void replaceUse(MachineOperand* old, MachineOperand* new_);
     void replaceDef(MachineOperand* old, MachineOperand* new_);
@@ -252,7 +247,6 @@ class MachineBlock {
     int getSize() const { return inst_list.size(); };
     MachineFunction* getParent() const { return parent; };
     bool isBefore(MachineInstruction* a, MachineInstruction* b);
-    void replace(MachineInstruction* before, MachineInstruction* after);
     void remove(MachineInstruction* ins);
 };
 

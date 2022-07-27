@@ -51,13 +51,13 @@ run:app
 
 run1:app
 	@$(BINARY) -o example.s -S example.sy -O2
-	arm-linux-gnueabihf-gcc example.s $(SYSLIB_PATH)/sylib.a -o example
+	arm-linux-gnueabihf-gcc -march=armv7-a example.s -o example -L $(SYSLIB_PATH) -lsysy -static
 	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
 	echo $$?
 
 run2:app
 	@$(BINARY) -o example.s -S example.sy
-	arm-linux-gnueabihf-gcc example.s $(SYSLIB_PATH)/sylib.a -o example
+	arm-linux-gnueabihf-gcc -march=armv7-a example.s -o example -L $(SYSLIB_PATH) -lsysy -static
 	qemu-arm -L /usr/arm-linux-gnueabihf/ ./example
 	echo $$?
 
@@ -117,7 +117,7 @@ test:app
 		OUT=$${file%.*}.out
 		FILE=$${file##*/}
 		FILE=$${FILE%.*}
-		timeout 500s $(BINARY) $${file} -o $${ASM} -S -O2 2>$${LOG}
+		timeout 500s $(BINARY) $${file} -o $${ASM} -O2 -S 2>$${LOG}
 		RETURN_VALUE=$$?
 		if [ $$RETURN_VALUE = 124 ]; then
 			echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mCompile Timeout\033[0m"
@@ -127,7 +127,7 @@ test:app
 			continue
 			fi
 		fi
-		arm-linux-gnueabihf-gcc -mcpu=cortex-a72 -o $${BIN} $${ASM} $(SYSLIB_PATH)/sylib.a >>$${LOG} 2>&1
+		arm-linux-gnueabihf-gcc -march=armv7-a $${ASM} -o $${BIN} -L $(SYSLIB_PATH) -lsysy -static >>$${LOG} 2>&1
 		if [ $$? != 0 ]; then
 			echo "\033[1;31mFAIL:\033[0m $${FILE}\t\033[1;31mAssemble Error\033[0m"
 		else

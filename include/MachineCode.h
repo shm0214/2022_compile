@@ -103,8 +103,13 @@ class MachineInstruction {
     bool isBX() const { return type == BRANCH && op == 2; };
     bool isBL() const { return type == BRANCH && op == 1; };
     bool isB() const { return type == BRANCH && op == 0; };
+    bool isLoad() const { return type == LOAD; }
     bool isStore() const { return type == STORE; };
+    bool isBinary() const { return type == BINARY; }
     bool isAdd() const { return type == BINARY && op == 0; };
+    bool isSub() const { return type == BINARY && op == 1; };
+    bool isMul() const { return type == BINARY && op == 2; };
+    bool isDiv() const { return type == BINARY && op == 3; };
     bool isMov() const { return type == MOV && op == 0; };
     bool isCondMov() const { return type == MOV && op == 0 && cond != NONE; };
     void replaceUse(MachineOperand* old, MachineOperand* new_);
@@ -254,6 +259,7 @@ class MachineBlock {
     int getSize() const { return inst_list.size(); };
     MachineFunction* getParent() const { return parent; };
     bool isBefore(MachineInstruction* a, MachineInstruction* b);
+    void replace(MachineInstruction* before, MachineInstruction* after);
     void remove(MachineInstruction* ins);
     MachineInstruction* getNext(MachineInstruction* in);
     std::string getLabel();
@@ -268,7 +274,6 @@ class MachineFunction {
     MachineUnit* parent;
     std::vector<MachineBlock*> block_list;
     int stack_size;
-    int align_size;
     std::set<int> saved_regs;
     std::set<int> saved_fpregs;
     SymbolEntry* sym_ptr;
@@ -289,20 +294,6 @@ class MachineFunction {
      * LinearScan::genSpillCode() */
     int AllocSpace(int size) {
         this->stack_size += size;
-        int occupied_size = stack_size - align_size;
-
-        if (occupied_size + size <= stack_size) {
-            align_size = stack_size - (occupied_size + size);
-        } else {
-            if ((occupied_size + size) % 8 != 0) {
-                stack_size = ((occupied_size + size) / 8 + 1) * 8;
-                align_size = stack_size - (occupied_size + size);
-            } else {
-                stack_size = occupied_size + size;
-                align_size = 0;
-            }
-        }
-
         return this->stack_size;
     };
     void InsertBlock(MachineBlock* block) {

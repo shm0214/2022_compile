@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <iostream>
 #include "Ast.h"
+#include "ConstAsm.h"
 #include "CopyProp.h"
 #include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
@@ -104,6 +105,12 @@ int main(int argc, char* argv[]) {
         mdce.pass();
         ms.pass();
     }
+
+    // if (optimize) {
+    //     ConstAsm const_asm(&mUnit);
+    //     const_asm.pass();
+    // }
+
     if (!optimize) {
         LinearScan linearScan(&mUnit);
         linearScan.allocateRegisters();

@@ -635,7 +635,6 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
     this->parent = p;
     this->sym_ptr = sym_ptr;
     this->stack_size = 0;
-    this->align_size = 0;
     this->paramsNum =
         ((FunctionType*)(sym_ptr->getType()))->getParamsSe().size();
 };
@@ -770,6 +769,9 @@ void MachineFunction::output() {
         ->output();
     (new MovMInstruction(nullptr, MovMInstruction::MOV, fp, sp))->output();
     int off = AllocSpace(0);
+    if (off % 8 != 0) {
+        off = AllocSpace(4);
+    }
     auto size = new MachineOperand(MachineOperand::IMM, off);
     if (off < -255 || off > 255) {
         auto r4 = new MachineOperand(MachineOperand::REG, 4);

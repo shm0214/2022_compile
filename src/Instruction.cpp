@@ -1393,7 +1393,9 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
             cur_block, BranchMInstruction::BL, new MachineOperand("@memset")));
         return;
     }
+
     int stk_cnt = 0;
+    std::vector<MachineOperand*> vec;
     int gpreg_cnt = 1;
     for (idx = 1; idx < operands.size(); idx++) {
         if (gpreg_cnt == 5)

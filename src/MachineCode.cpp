@@ -627,7 +627,6 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
     this->parent = p;
     this->sym_ptr = sym_ptr;
     this->stack_size = 0;
-    this->align_size = 0;
     this->paramsNum =
         ((FunctionType*)(sym_ptr->getType()))->getParamsSe().size();
 };

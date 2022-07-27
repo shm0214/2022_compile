@@ -98,10 +98,10 @@ int main(int argc, char* argv[]) {
     }
     unit.genMachineCode(&mUnit);
 
-    if (optimize) {
-        ConstAsm const_asm(&mUnit);
-        const_asm.pass();
-    }
+    // if (optimize) {
+    //     ConstAsm const_asm(&mUnit);
+    //     const_asm.pass();
+    // }
 
     if (!optimize) {
         LinearScan linearScan(&mUnit);

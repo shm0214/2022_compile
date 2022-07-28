@@ -250,6 +250,9 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
         this->expr1 = temp;
         type = TypeSystem::floatType;
     } else if (expr1->getType()->isFloat() && expr2->getType()->isFloat()) {
+        if (op == BinaryExpr::MOD) {
+            fprintf(stderr, "Operands of `mod` must be both integers");
+        }
         type = TypeSystem::floatType;
     } else {
         type = TypeSystem::intType;
@@ -1415,7 +1418,8 @@ double BinaryExpr::getValue() {
                 value = expr1->getValue() / expr2->getValue();
             break;
         case MOD:
-            value = (int)(expr1->getValue()) % (int)(expr2->getValue());
+            if(expr2->getValue())
+                value = (int)(expr1->getValue()) % (int)(expr2->getValue());
             break;
         case AND:
             value = expr1->getValue() && expr2->getValue();

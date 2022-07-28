@@ -7,7 +7,7 @@ typedef vector<struct aeb> VAEB;
 using namespace std;
 const int N = 2000100;
 bool ste[N]; // 标记基本块是否已遍历过
-unordered_map<int, VAEB> EVAL, AEin, AEout;
+unordered_map<int, VAEB> AEin, AEout;
 
 
 void delAEB(SymbolEntry* sym, VAEB AEB){
@@ -77,7 +77,6 @@ void ElimComSubexpr::elim_cse(){
     while (iter != unit->end()){
         vector<BasicBlock*> block_list = (*iter)->getBlockList();
         BasicBlock* bb = (*iter)->getEntry(); // 函数入口基本块
-        EVAL[bb->getNo()];
         queue<BasicBlock*> q;
         q.push(bb);
         bool first = true;
@@ -93,7 +92,6 @@ void ElimComSubexpr::elim_cse(){
             else{
                 AEin[no] = vintersection(bb);
             }
-            cout<<"local"<<endl;
             local_elim_cse(bb, AEB);
             for(auto succ = bb->succ_begin(); succ != bb->succ_end(); succ++){
                 if(!ste[(*succ)->getNo()]){
@@ -105,16 +103,16 @@ void ElimComSubexpr::elim_cse(){
     }
     // global
     cout<<"global"<<endl;
-    iter = unit->begin();
-    AEB.clear();
-    while (iter != unit->end()){
-        vector<BasicBlock*> block_list = (*iter)->getBlockList();
-        for(auto bb: block_list){
-            AEB = AEin[bb->getNo()];
-            local_elim_cse(bb, AEB);
-        }
-        iter++;
-    }
+    // iter = unit->begin();
+    // AEB.clear();
+    // while (iter != unit->end()){
+    //     vector<BasicBlock*> block_list = (*iter)->getBlockList();
+    //     for(auto bb: block_list){
+    //         AEB = AEin[bb->getNo()];
+    //         local_elim_cse(bb, AEB);
+    //     }
+    //     iter++;
+    // }
 }
 
 void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){

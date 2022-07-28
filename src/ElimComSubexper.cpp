@@ -138,7 +138,6 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                     sym1 = def_operands[1]->getEntry();
                 }
             }
-            cout<<"h2";
             if(!sym2->isConstant()){
                 auto iter_def = operands[2]->getDef();
                 if(iter_def){
@@ -146,7 +145,6 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                     sym2 = def_operands[1]->getEntry();
                 }
             }
-            cout<<"t2"<<endl;
             int len = AEB.size();
             // cout<<"len:"<<len<<", op:"<<op<<", opd1:"<<sym1->toStr()<<", opd2:"<<sym2->toStr()<<endl;
             // cout<<"len:"<<len<<", op:"<<op<<", opd0:"<<operands[0]->getEntry()->toStr()<<", opd1:"<<operands[1]->getEntry()->toStr()<<", opd2:"<<operands[2]->getEntry()->toStr()<<endl;
@@ -157,9 +155,8 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                     break;
                 }
             }
-            cout<<"t3"<<endl;
             if(found){
-                cout<<"found"<<endl;
+                // cout<<"found"<<endl;
                 p = AEB[i].inst;
                 Operand* dst = AEB[i].tmp;
                 if(dst == nullptr){
@@ -181,7 +178,7 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                 bb->remove(iter);
             } else {
                 // insert
-                cout<<"not found"<<endl;
+                // cout<<"not found"<<endl;
                 struct aeb tmp;
                 tmp.inst = (BinaryInstruction*)iter, tmp.opd1 = sym1, tmp.opr = op, tmp.opd2 = sym2;
                 AEB.push_back(tmp);
@@ -197,7 +194,6 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
             cout<<"aeb size:"<< AEB.size() << "  bin end"<<endl;
         }
     }
-    cout<<"this block end"<<endl;
     AEout[no] = vec_union(AEB, AEin[no]);
     AEB.clear();
 }

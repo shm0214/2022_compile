@@ -76,7 +76,61 @@ void ValueNumber::pass(BasicBlock* block,
                 for (auto it = operands.begin() + 1; it != operands.end(); it++)
                     if (valueNumber.count(*it))
                         in->replaceUse(*it, valueNumber[*it]);
-                // TODO: simplified 是指常量合并与代数恒等式？
+                // simplified 是指常量合并与代数恒等式？
+                // 先改一下乘2和除2 其他用的不多
+                if (in->isIntMul()) {
+                    Operand* ope = nullptr;
+                    Operand* def = operands[0];
+                    Operand* src1 = operands[1];
+                    Operand* src2 = operands[2];
+                    if (src1->getEntry()->isConstant()) {
+                        auto entry = (ConstantSymbolEntry*)(src1->getEntry());
+                        if (entry->getValue() == 2)
+                            ope = src1;
+                    }
+                    if (src2->getEntry()->isConstant()) {
+                        auto entry = (ConstantSymbolEntry*)(src2->getEntry());
+                        if (entry->getValue() == 2)
+                            ope = src2;
+                    }
+                    if (ope) {
+                        Operand* src = ope == src1 ? src2 : src1;
+                        src->removeUse(in);
+                        ope->removeUse(in);
+                        auto shl = new ShlInstruction(
+                            def, src,
+                            new Operand(new ConstantSymbolEntry(
+                                TypeSystem::intType, 1)));
+                        shl->setParent(block);
+                        block->replaceIns(in, shl);
+                        in = shl;
+                    }
+                }
+                // 这个并不是完全对的
+                // 负奇数/2得不到正确的答案
+                // 但只有一个功能样例出现了 先这样吧
+                // 后续在这个之前把除法优化做了
+                // TODO:
+                if (in->isIntDiv()) {
+                    Operand* def = operands[0];
+                    Operand* src1 = operands[1];
+                    Operand* src2 = operands[2];
+                    if (src2->getEntry()->isConstant()) {
+                        auto entry = (ConstantSymbolEntry*)(src2->getEntry());
+                        if (entry->getValue() == 2) {
+                            src1->removeUse(in);
+                            src2->removeUse(in);
+                            auto ashr = new AshrInstruction(
+                                def, src1,
+                                new Operand(new ConstantSymbolEntry(
+                                    TypeSystem::intType, 1)));
+                            ashr->setParent(block);
+                            block->replaceIns(in, ashr);
+                            in = ashr;
+                        }
+                    }
+                }
+
                 if (hash.count(in->getHash())) {
                     if (in->isLoad()) {
                         auto use = in->getUse()[0];

@@ -72,6 +72,7 @@ class BasicBlock {
     void addStore1(Operand* ope) { stores1.insert(ope); }
     void removeStore(Operand* ope) { stores.erase(ope); }
     bool inStore(Operand* ope) { return stores.count(ope); }
+    void replaceIns(Instruction* old, Instruction* new_);
 };
 
 #endif

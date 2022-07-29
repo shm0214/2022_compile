@@ -147,3 +147,10 @@ bool BasicBlock::isBefore(Instruction* a, Instruction* b) {
     }
     return false;
 }
+
+void BasicBlock::replaceIns(Instruction* old, Instruction* new_) {
+    old->getPrev()->setNext(new_);
+    new_->setPrev(old->getPrev());
+    old->getNext()->setPrev(new_);
+    new_->setNext(old->getNext());
+}

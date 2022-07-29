@@ -50,6 +50,20 @@ bool Instruction::isEssential() {
     return false;
 }
 
+bool Instruction::isIntMul() {
+    if (instType == BINARY && opcode == BinaryInstruction::MUL)
+        if (operands[0]->getType()->isInt())
+            return true;
+    return false;
+}
+
+bool Instruction::isIntDiv() {
+    if (instType == BINARY && opcode == BinaryInstruction::DIV)
+        if (operands[0]->getType()->isInt())
+            return true;
+    return false;
+}
+
 BasicBlock* Instruction::getParent() {
     return parent;
 }
@@ -2169,4 +2183,192 @@ std::string PhiInstruction::getHash() {
     for (auto str : strs)
         s << " " << str;
     return s.str();
+}
+
+ShlInstruction::ShlInstruction(Operand* dst,
+                               Operand* src,
+                               Operand* num,
+                               BasicBlock* insert_bb)
+    : Instruction(SHL, insert_bb) {
+    operands.push_back(dst);
+    operands.push_back(src);
+    operands.push_back(num);
+    dst->setDef(this);
+    src->addUse(this);
+    num->addUse(this);
+}
+
+void ShlInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+    } else if (operands[2] == old) {
+        operands[2]->removeUse(this);
+        operands[2] = new_;
+        new_->addUse(this);
+    }
+}
+
+void ShlInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
+}
+
+ShlInstruction::~ShlInstruction() {
+    operands[0]->setDef(nullptr);
+    if (operands[0]->usersNum() == 0)
+        delete operands[0];
+    operands[1]->removeUse(this);
+    operands[2]->removeUse(this);
+}
+
+void ShlInstruction::output() const {
+    std::string dst = operands[0]->toStr();
+    std::string src = operands[1]->toStr();
+    std::string num = operands[2]->toStr();
+    std::string src_type;
+    src_type = operands[1]->getType()->toStr();
+    fprintf(yyout, "  %s = shl %s %s, %s\n", dst.c_str(), src_type.c_str(),
+            src.c_str(), num.c_str());
+}
+
+bool ShlInstruction::genNode() {
+    node = new SSAGraphNode(this, SSAGraphNode::SHL);
+    auto se1 = operands[1]->getEntry();
+    auto se2 = operands[2]->getEntry();
+    SSAGraphNode *node1, *node2;
+    if (se1->isConstant()) {
+        int val1 = ((ConstantSymbolEntry*)se1)->getValue();
+        node1 = new SSAGraphNode(val1);
+    } else
+        node1 = operands[1]->getDef()->getNode();
+    if (se2->isConstant()) {
+        int val2 = ((ConstantSymbolEntry*)se2)->getValue();
+        node2 = new SSAGraphNode(val2);
+    } else
+        node2 = operands[2]->getDef()->getNode();
+    node->addChild(node1);
+    node->addChild(node2);
+    return true;
+}
+
+std::string ShlInstruction::getHash() {
+    std::stringstream s;
+    s << "shl ";
+    s << operands[1]->toStr() << " " << operands[2]->toStr();
+    return s.str();
+}
+
+void ShlInstruction::genMachineCode(AsmBuilder* builder) {
+    auto cur_block = builder->getBlock();
+    auto dst = genMachineOperand(operands[0]);
+    auto src = genMachineOperand(operands[1]);
+    auto num = genMachineOperand(operands[2]);
+    // 目前只是立即数
+    assert(num->isImm());
+    if (src->isImm()) {
+        auto temp = genMachineVReg();
+        cur_block->InsertInst(
+            new LoadMInstruction(cur_block, LoadMInstruction::LDR, temp, src));
+        src = new MachineOperand(*temp);
+    }
+    auto cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOVLSL, dst,
+                                        src, MachineInstruction::NONE, num);
+    cur_block->InsertInst(cur_inst);
+}
+
+AshrInstruction::AshrInstruction(Operand* dst,
+                                 Operand* src,
+                                 Operand* num,
+                                 BasicBlock* insert_bb)
+    : Instruction(ASHR, insert_bb) {
+    operands.push_back(dst);
+    operands.push_back(src);
+    operands.push_back(num);
+    dst->setDef(this);
+    src->addUse(this);
+    num->addUse(this);
+}
+
+void AshrInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+    } else if (operands[2] == old) {
+        operands[2]->removeUse(this);
+        operands[2] = new_;
+        new_->addUse(this);
+    }
+}
+
+void AshrInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
+}
+
+AshrInstruction::~AshrInstruction() {
+    operands[0]->setDef(nullptr);
+    if (operands[0]->usersNum() == 0)
+        delete operands[0];
+    operands[1]->removeUse(this);
+    operands[2]->removeUse(this);
+}
+
+void AshrInstruction::output() const {
+    std::string dst = operands[0]->toStr();
+    std::string src = operands[1]->toStr();
+    std::string num = operands[2]->toStr();
+    std::string src_type;
+    src_type = operands[1]->getType()->toStr();
+    fprintf(yyout, "  %s = ashr %s %s, %s\n", dst.c_str(), src_type.c_str(),
+            src.c_str(), num.c_str());
+}
+
+bool AshrInstruction::genNode() {
+    node = new SSAGraphNode(this, SSAGraphNode::ASHR);
+    auto se1 = operands[1]->getEntry();
+    auto se2 = operands[2]->getEntry();
+    SSAGraphNode *node1, *node2;
+    if (se1->isConstant()) {
+        int val1 = ((ConstantSymbolEntry*)se1)->getValue();
+        node1 = new SSAGraphNode(val1);
+    } else
+        node1 = operands[1]->getDef()->getNode();
+    if (se2->isConstant()) {
+        int val2 = ((ConstantSymbolEntry*)se2)->getValue();
+        node2 = new SSAGraphNode(val2);
+    } else
+        node2 = operands[2]->getDef()->getNode();
+    node->addChild(node1);
+    node->addChild(node2);
+    return true;
+}
+
+std::string AshrInstruction::getHash() {
+    std::stringstream s;
+    s << "shl ";
+    s << operands[1]->toStr() << " " << operands[2]->toStr();
+    return s.str();
+}
+
+void AshrInstruction::genMachineCode(AsmBuilder* builder) {
+    auto cur_block = builder->getBlock();
+    auto dst = genMachineOperand(operands[0]);
+    auto src = genMachineOperand(operands[1]);
+    auto num = genMachineOperand(operands[2]);
+    // 目前只是立即数
+    assert(num->isImm());
+    if (src->isImm()) {
+        auto temp = genMachineVReg();
+        cur_block->InsertInst(
+            new LoadMInstruction(cur_block, LoadMInstruction::LDR, temp, src));
+        src = new MachineOperand(*temp);
+    }
+    auto cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOVASR, dst,
+                                        src, MachineInstruction::NONE, num);
+    cur_block->InsertInst(cur_inst);
 }

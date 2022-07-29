@@ -36,6 +36,8 @@ class SSAGraphNode {
         ZEXT,
         XOR,
         BITCAST,
+        SHL,
+        ASHR,
     };
     SSAGraphNode(Instruction* ins, int type = -1) : ins(ins), type(type) {}
     SSAGraphNode(int val) : val(val), type(CONST) {}

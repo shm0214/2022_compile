@@ -402,7 +402,8 @@ MovMInstruction::MovMInstruction(MachineBlock* p,
                                  int op,
                                  MachineOperand* dst,
                                  MachineOperand* src,
-                                 int cond) {
+                                 int cond,
+                                 MachineOperand* num) {
     this->parent = p;
     this->type = MachineInstruction::MOV;
     this->op = op;
@@ -411,11 +412,18 @@ MovMInstruction::MovMInstruction(MachineBlock* p,
     this->use_list.push_back(src);
     dst->setParent(this);
     src->setParent(this);
+    if (num) {
+        assert(op == MOVASR || op == MOVLSL);
+        this->use_list.push_back(num);
+        num->setParent(this);
+    }
 }
 
 void MovMInstruction::output() {
     switch (this->op) {
         case MovMInstruction::MOV:
+        case MovMInstruction::MOVLSL:
+        case MovMInstruction::MOVASR:
             fprintf(yyout, "\tmov");
             break;
         case MovMInstruction::MOVT:
@@ -435,6 +443,14 @@ void MovMInstruction::output() {
     this->def_list[0]->output();
     fprintf(yyout, ", ");
     this->use_list[0]->output();
+    if (op == MOVLSL) {
+        fprintf(yyout, ", LSL");
+        this->use_list[1]->output();
+    }
+    if (op == MOVASR) {
+        fprintf(yyout, ", ASR");
+        this->use_list[1]->output();
+    }
     fprintf(yyout, "\n");
 }
 

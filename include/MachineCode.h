@@ -157,12 +157,13 @@ class StoreMInstruction : public MachineInstruction {
 
 class MovMInstruction : public MachineInstruction {
    public:
-    enum opType { MOV, MVN, MOVT, VMOV, VMOVF32 };
+    enum opType { MOV, MVN, MOVT, VMOV, VMOVF32, MOVLSL, MOVASR };
     MovMInstruction(MachineBlock* p,
                     int op,
                     MachineOperand* dst,
                     MachineOperand* src,
-                    int cond = MachineInstruction::NONE);
+                    int cond = MachineInstruction::NONE,
+                    MachineOperand* num = nullptr);
     void output();
 };
 

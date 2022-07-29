@@ -54,6 +54,8 @@ class Instruction {
     virtual bool genNode() { return true; }
     SSAGraphNode* getNode() { return node; }
     virtual std::string getHash() { return ""; }
+    bool isIntMul();
+    bool isIntDiv();
 
    protected:
     unsigned instType;
@@ -80,6 +82,8 @@ class Instruction {
         FPTOSI,  // floating point to signed int
         SITOFP,  // signed int to floating point
         BITCAST,
+        SHL,
+        ASHR,
     };
     SSAGraphNode* node;
 };
@@ -406,6 +410,44 @@ class BitcastInstruction : public Instruction {
         return std::vector<Operand*>({operands[1]});
     }
     bool genNode();
+};
+
+class ShlInstruction : public Instruction {
+   public:
+    ShlInstruction(Operand* dst,
+                   Operand* src,
+                   Operand* num,
+                   BasicBlock* insert_bb = nullptr);
+    ~ShlInstruction();
+    void output() const;
+    void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1], operands[2]});
+    }
+    Operand* getDef() { return operands[0]; }
+    bool genNode();
+    std::string getHash();
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
+};
+
+class AshrInstruction : public Instruction {
+   public:
+    AshrInstruction(Operand* dst,
+                    Operand* src,
+                    Operand* num,
+                    BasicBlock* insert_bb = nullptr);
+    ~AshrInstruction();
+    void output() const;
+    void genMachineCode(AsmBuilder*);
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1], operands[2]});
+    }
+    Operand* getDef() { return operands[0]; }
+    bool genNode();
+    std::string getHash();
+    void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
 };
 
 #endif

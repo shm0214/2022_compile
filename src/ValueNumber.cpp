@@ -69,6 +69,11 @@ void ValueNumber::pass(BasicBlock* block,
                             stores.insert(ope);
                 }
             }
+            // if (in->isRet()) {
+            //     auto src = in->getUse()[0];
+            //     if (valueNumber.count(src))
+            //         in->replaceUse(src, valueNumber[src]);
+            // }
             if (in->getDef()) {
                 if (!in->getHash().length())
                     continue;
@@ -77,6 +82,22 @@ void ValueNumber::pass(BasicBlock* block,
                     if (valueNumber.count(*it))
                         in->replaceUse(*it, valueNumber[*it]);
                 // simplified 是指常量合并与代数恒等式？
+                if (in->isConstExp()) {
+                    // 比较指令需要修改块 先不做
+                    if (!in->isCmp()) {
+                        auto def = in->getDef();
+                        auto type = def->getType();
+                        auto newOpe = new Operand(
+                            new ConstantSymbolEntry(type, in->getConstVal()));
+                        valueNumber[def] = newOpe;
+                        while (def->use_begin() != def->use_end()) {
+                            auto it = def->use_begin();
+                            (*it)->replaceUse(def, newOpe);
+                        }
+                        temp.push_back(in);
+                        continue;
+                    }
+                }
                 // 先改一下乘2和除2 其他用的不多
                 if (in->isIntMul()) {
                     Operand* ope = nullptr;

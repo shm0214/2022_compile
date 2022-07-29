@@ -19,6 +19,7 @@ Instruction::Instruction(unsigned instType, BasicBlock* insert_bb) {
     }
     mark = false;
     node = nullptr;
+    constVal = 0;
 }
 
 Instruction::~Instruction() {
@@ -2371,4 +2372,112 @@ void AshrInstruction::genMachineCode(AsmBuilder* builder) {
     auto cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOVASR, dst,
                                         src, MachineInstruction::NONE, num);
     cur_block->InsertInst(cur_inst);
+}
+
+bool BinaryInstruction::isConstExp() {
+    bool flag = false;
+    auto src1 = operands[1];
+    auto src2 = operands[2];
+    if (src1->isConst() && src2->isConst()) {
+        flag = true;
+        double val1 = src1->getConstVal();
+        double val2 = src2->getConstVal();
+        switch (opcode) {
+            case SUB:
+                constVal = val1 - val2;
+                break;
+            case ADD:
+                constVal = val1 + val2;
+                break;
+            case AND:
+                constVal = val1 && val2;
+                break;
+            case OR:
+                constVal = val1 || val2;
+                break;
+            case MUL:
+                constVal = val1 * val2;
+                break;
+            case DIV:
+                constVal = val1 / val2;
+                break;
+            case MOD:
+                constVal = (int)val1 % (int)val2;
+                break;
+        }
+    }
+    return flag;
+}
+
+bool CmpInstruction::isConstExp() {
+    bool flag = false;
+    auto src1 = operands[1];
+    auto src2 = operands[2];
+    if (src1->isConst() && src2->isConst()) {
+        flag = true;
+        double val1 = src1->getConstVal();
+        double val2 = src2->getConstVal();
+        switch (opcode) {
+            case E:
+                constVal = val1 == val2;
+                break;
+            case NE:
+                constVal = val1 != val2;
+                break;
+            case L:
+                constVal = val1 < val2;
+                break;
+            case LE:
+                constVal = val1 <= val2;
+                break;
+            case G:
+                constVal = val1 > val2;
+                break;
+            case GE:
+                constVal = val1 >= val2;
+                break;
+        }
+    }
+    return flag;
+}
+
+bool XorInstruction::isConstExp() {
+    bool flag = false;
+    auto src = operands[1];
+    if (src->isConst()) {
+        flag = true;
+        double val = src->getConstVal();
+        assert(val == 0 || val == 1);
+        if (val)
+            constVal = 0;
+        else
+            constVal = 1;
+    }
+    return flag;
+}
+
+bool ShlInstruction::isConstExp() {
+    bool flag = false;
+    auto src1 = operands[1];
+    auto src2 = operands[2];
+    if (src1->isConst() && src2->isConst()) {
+        flag = true;
+        int val1 = src1->getConstVal();
+        int val2 = src2->getConstVal();
+        constVal = val1 << val2;
+    }
+    return flag;
+}
+
+bool AshrInstruction::isConstExp() {
+    bool flag = false;
+    auto src1 = operands[1];
+    auto src2 = operands[2];
+    if (src1->isConst() && src2->isConst()) {
+        flag = true;
+        int val1 = src1->getConstVal();
+        int val2 = src2->getConstVal();
+        constVal = val1 >> val2;
+    }
+    return flag;
 }

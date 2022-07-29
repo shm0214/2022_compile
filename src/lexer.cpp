@@ -1223,7 +1223,7 @@ YY_RULE_SETUP
     if(dump_tokens)
         DUMP_TOKEN(string("NUMBER\t") + string(yytext));
     chars += strlen(yytext);
-    yylval.numtype = atoi(yytext);
+    yylval.numtype = std::stol(yytext);
     return INTEGER;
 }
 	YY_BREAK

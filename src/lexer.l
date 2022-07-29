@@ -242,7 +242,7 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     if(dump_tokens)
         DUMP_TOKEN(string("NUMBER\t") + string(yytext));
     chars += strlen(yytext);
-    yylval.numtype = atoi(yytext);
+    yylval.numtype = std::stol(yytext);
     return INTEGER;
 }
 {OCTAL} {

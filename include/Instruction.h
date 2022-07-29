@@ -26,6 +26,7 @@ class Instruction {
     bool isPhi() const { return instType == PHI; };
     bool isBin() const { return instType == BINARY; };
     bool isLoad() const { return instType == LOAD; };
+    bool isCmp() const { return instType == CMP; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
@@ -56,6 +57,8 @@ class Instruction {
     virtual std::string getHash() { return ""; }
     bool isIntMul();
     bool isIntDiv();
+    virtual bool isConstExp() { return false; }
+    double getConstVal() { return constVal; }
 
    protected:
     unsigned instType;
@@ -86,6 +89,7 @@ class Instruction {
         ASHR,
     };
     SSAGraphNode* node;
+    double constVal;
 };
 
 // meaningless instruction, used as the head node of the instruction list.
@@ -166,6 +170,7 @@ class BinaryInstruction : public Instruction {
     }
     bool genNode();
     std::string getHash();
+    bool isConstExp();
 };
 
 class CmpInstruction : public Instruction {
@@ -186,6 +191,7 @@ class CmpInstruction : public Instruction {
     }
     bool genNode();
     std::string getHash();
+    bool isConstExp();
 };
 
 class UncondBrInstruction : public Instruction {
@@ -296,6 +302,7 @@ class XorInstruction : public Instruction {
     }
     bool genNode();
     std::string getHash();
+    bool isConstExp();
 };
 
 class GepInstruction : public Instruction {
@@ -429,6 +436,7 @@ class ShlInstruction : public Instruction {
     std::string getHash();
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
+    bool isConstExp();
 };
 
 class AshrInstruction : public Instruction {
@@ -448,6 +456,7 @@ class AshrInstruction : public Instruction {
     std::string getHash();
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
+    bool isConstExp();
 };
 
 #endif

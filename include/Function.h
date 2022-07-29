@@ -67,6 +67,7 @@ class Function {
     // a function is essential if it is a sysy/memset function or it has a array param or it call a essential function
     int essential = -1;
     std::vector<SSAGraphNode*> nodes;
+    std::set<Operand*> stores;
 
    public:
     Function() {}
@@ -111,6 +112,8 @@ class Function {
     int getEssential();
     BasicBlock* getMarkBranch(BasicBlock* block);
     void genSSAGraph();
+    void computeStores();
+    std::set<Operand*>& getStores() { return stores; }
 };
 
 #endif

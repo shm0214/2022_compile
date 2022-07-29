@@ -18,6 +18,10 @@ class BasicBlock {
     // for phi::changeSrcBlock
     std::map<BasicBlock*, BasicBlock*> phiBlocks;
     bool mark;
+    // 不含这个块内的store
+    std::set<Operand*> stores;
+    // 包含这个块内的store
+    std::set<Operand*> stores1;
 
    public:
     int order;
@@ -61,6 +65,13 @@ class BasicBlock {
     void setMark() { mark = true; }
     void unsetMark() { mark = false; }
     bool isMark() { return mark; }
+    bool isBefore(Instruction* a, Instruction* b);
+    std::set<Operand*>& getStores() { return stores; }
+    std::set<Operand*>& getStores1() { return stores1; }
+    void addStore(Operand* ope) { stores.insert(ope); }
+    void addStore1(Operand* ope) { stores1.insert(ope); }
+    void removeStore(Operand* ope) { stores.erase(ope); }
+    bool inStore(Operand* ope) { return stores.count(ope); }
 };
 
 #endif

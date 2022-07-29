@@ -104,5 +104,23 @@ void DeadCodeElimination::pass(Function* func) {
     while (again) {
         mark(func);
         again = remove(func);
+        adjustBlock(func);
+    }
+}
+
+void DeadCodeElimination::adjustBlock(Function* func) {
+    // 删除没有前驱的块
+    bool again = true;
+    while (again) {
+        again = false;
+        vector<BasicBlock*> temp;
+        for (auto block : func->getBlockList())
+            if (block->getNumOfPred() == 0 && block != func->getEntry())
+                temp.push_back(block);
+        if (temp.size())
+            again = true;
+        for (auto block : temp) {
+            delete block;
+        }
     }
 }

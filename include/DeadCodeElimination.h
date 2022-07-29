@@ -12,6 +12,7 @@ class DeadCodeElimination {
     bool remove(Function* function);
     void pass();
     void pass(Function* function);
+    void adjustBlock(Function* function);
 };
 
 #endif

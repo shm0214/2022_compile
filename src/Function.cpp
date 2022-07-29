@@ -1,5 +1,6 @@
 #include "Function.h"
 #include <list>
+#include <queue>
 #include <vector>
 #include "Type.h"
 #include "Unit.h"
@@ -514,5 +515,23 @@ void Function::genSSAGraph() {
         PhiInstruction* phi = (PhiInstruction*)in;
         bool flag = phi->reGenNode();
         assert(flag);
+    }
+}
+
+void Function::computeStores() {
+    for (auto node : preOrder2dom) {
+        auto block = node->block;
+        for (auto it = block->pred_begin(); it != block->pred_end(); it++)
+            for (auto ope : (*it)->getStores1()) {
+                block->addStore(ope);
+                stores.insert(ope);
+            }
+        for (auto ope : block->getStores())
+            block->addStore1(ope);
+        for (auto in = block->begin(); in != block->end(); in = in->getNext())
+            if (in->isStore()) {
+                block->addStore1(in->getUse()[0]);
+                stores.insert(in->getUse()[0]);
+            }
     }
 }

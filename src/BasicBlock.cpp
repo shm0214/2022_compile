@@ -134,3 +134,16 @@ void BasicBlock::deleteBack(int num) {
         remove(head->getPrev());
     }
 }
+
+bool BasicBlock::isBefore(Instruction* a, Instruction* b) {
+    if (a->getParent() != this)
+        return true;
+    assert(b->getParent() == this);
+    auto temp = a;
+    while (temp != head) {
+        if (temp == b)
+            return true;
+        temp = temp->getNext();
+    }
+    return false;
+}

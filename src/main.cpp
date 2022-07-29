@@ -15,6 +15,7 @@
 #include "SSADestruction.h"
 #include "Starighten.h"
 #include "Unit.h"
+#include "ValueNumber.h"
 using namespace std;
 
 Ast ast;
@@ -87,9 +88,11 @@ int main(int argc, char* argv[]) {
         Mem2reg m(&unit);
         SSADestruction s1(&unit);
         CopyProp c(&unit);
+        ValueNumber vn(&unit);
         m.pass();
         d.pass();
         c.copy_prop();
+        vn.pass();
         e.pass();
         s.pass();
         s1.pass();

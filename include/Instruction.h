@@ -359,6 +359,7 @@ class PhiInstruction : public Instruction {
     bool reGenNode();
     std::string getHash();
     std::map<BasicBlock*, Operand*>& getSrcs() { return srcs; }
+    void cleanUse();
 };
 
 class FptosiInstruction : public Instruction {

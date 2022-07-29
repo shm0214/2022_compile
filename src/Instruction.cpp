@@ -406,9 +406,9 @@ void LoadInstruction::replaceDef(Operand* new_) {
 }
 
 void LoadInstruction::replaceUse(Operand* old, Operand* new_) {
-    if (operands[2] == old) {
-        operands[2]->removeUse(this);
-        operands[2] = new_;
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
         new_->addUse(this);
     }
 }
@@ -1150,9 +1150,11 @@ void CallInstruction::output() const {
 }
 
 CallInstruction::~CallInstruction() {
-    operands[0]->setDef(nullptr);
-    if (operands[0]->usersNum() == 0)
-        delete operands[0];
+    if (operands[0]) {
+        operands[0]->setDef(nullptr);
+        if (operands[0]->usersNum() == 0)
+            delete operands[0];
+    }
     for (long unsigned int i = 1; i < operands.size(); i++)
         operands[i]->removeUse(this);
 }
@@ -1683,6 +1685,11 @@ PhiInstruction::~PhiInstruction() {
         it.second->removeUse(this);
 }
 
+void PhiInstruction::cleanUse() {
+    for (auto it : srcs)
+        it.second->removeUse(this);
+}
+
 void PhiInstruction::output() const {
     fprintf(yyout, "  %s = phi %s", dst->toStr().c_str(),
             dst->getType()->toStr().c_str());
@@ -1969,20 +1976,13 @@ bool ZextInstruction::genNode() {
 bool XorInstruction::genNode() {
     node = new SSAGraphNode(this, SSAGraphNode::XOR);
     auto se1 = operands[1]->getEntry();
-    auto se2 = operands[2]->getEntry();
-    SSAGraphNode *node1, *node2;
+    SSAGraphNode* node1;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
         node1 = new SSAGraphNode(val1);
     } else
         node1 = operands[1]->getDef()->getNode();
-    if (se2->isConstant()) {
-        int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(val2);
-    } else
-        node2 = operands[2]->getDef()->getNode();
     node->addChild(node1);
-    node->addChild(node2);
     return true;
 }
 
@@ -2048,8 +2048,8 @@ bool PhiInstruction::reGenNode() {
 }
 
 std::string LoadInstruction::getHash() {
-    if (operands[1]->getEntry()->isVariable())
-        return "";
+    // if (operands[1]->getEntry()->isVariable())
+    //     return "";
     std::stringstream s;
     s << "load ";
     s << operands[1]->toStr();
@@ -2147,7 +2147,7 @@ std::string CmpInstruction::getHash() {
 std::string XorInstruction::getHash() {
     std::stringstream s;
     s << "xor ";
-    s << operands[1]->toStr() << " " << operands[2]->toStr();
+    s << operands[1]->toStr();
     return s.str();
 }
 

@@ -16,6 +16,7 @@ class SymbolEntry {
    protected:
     enum { CONSTANT, VARIABLE, TEMPORARY };
     Type* type;
+    int label;
 
    public:
     SymbolEntry(Type* type, int kind);
@@ -102,7 +103,6 @@ class IdentifierSymbolEntry : public SymbolEntry {
     std::string name;
     int scope;
     double value;
-    int label;
     bool initial;
     bool sysy;
     double* arrayValue;
@@ -169,7 +169,6 @@ class IdentifierSymbolEntry : public SymbolEntry {
 class TemporarySymbolEntry : public SymbolEntry {
    private:
     int stack_offset;
-    int label;
 
    public:
     TemporarySymbolEntry(Type* type, int label);

@@ -59,6 +59,18 @@ class Instruction {
     bool isIntDiv();
     virtual bool isConstExp() { return false; }
     double getConstVal() { return constVal; }
+    bool isComAndAsso() {
+        if (isBin() && opcode >= 1 && opcode <= 4)
+            return true;
+        return false;
+    }
+    int getOpcode() const { return opcode; }
+    bool hasEqualOp(Instruction* in) const {
+        if ((int)instType == in->getInstType())
+            if ((int)opcode == in->getOpcode())
+                return true;
+        return false;
+    }
 
    protected:
     unsigned instType;

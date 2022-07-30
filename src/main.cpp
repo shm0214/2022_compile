@@ -14,6 +14,7 @@
 #include "Mem2reg.h"
 #include "SSADestruction.h"
 #include "Starighten.h"
+#include "TreeHeightBalance.h"
 #include "Unit.h"
 #include "ValueNumber.h"
 using namespace std;
@@ -89,9 +90,12 @@ int main(int argc, char* argv[]) {
         SSADestruction s1(&unit);
         CopyProp c(&unit);
         ValueNumber vn(&unit);
+        TreeHeightBalance thb(&unit);
         m.pass();
         d.pass();
         c.copy_prop();
+        thb.pass();
+
         vn.pass();
         e.pass();
         s.pass();

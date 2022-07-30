@@ -93,11 +93,11 @@ int main(int argc, char* argv[]) {
         TreeHeightBalance thb(&unit);
         m.pass();
         d.pass();
-        // c.copy_prop();
-        // thb.pass();
+        c.copy_prop();
+        thb.pass();
         vn.pass();
-        // e.pass();
-        // s.pass();
+        e.pass();
+        s.pass();
         s1.pass();
     }
     if (dump_ir) {

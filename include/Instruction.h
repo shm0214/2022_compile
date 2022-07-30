@@ -71,6 +71,7 @@ class Instruction {
                 return true;
         return false;
     }
+    bool isAdd() { return isBin() && opcode == 1; }
 
    protected:
     unsigned instType;

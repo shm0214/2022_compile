@@ -13,25 +13,36 @@ struct cmp {
     }
 };
 
+// class TreeHeightBalance {
+//     Unit* unit;
+//     std::map<Operand*, int> rank;
+//     LVAForIR lva;
+//     std::set<Operand*> rootSet;
+//     std::set<Operand*> params;
+//     std::set<Instruction*> delList;
+
+//    public:
+//     TreeHeightBalance(Unit* unit) : unit(unit){};
+//     void pass();
+//     void pass(Function* func);
+//     void pass(BasicBlock* block);
+//     void balance(Operand* root);
+//     int flatten(Operand* var,
+//                 std::priority_queue<PAIR, std::vector<PAIR>, cmp>& q);
+//     void rebuild(Operand* root,
+//                  std::priority_queue<PAIR, std::vector<PAIR>, cmp>& q,
+//                  Instruction* in);
+// };
+
 class TreeHeightBalance {
     Unit* unit;
-    std::map<Operand*, int> rank;
-    LVAForIR lva;
-    std::set<Operand*> rootSet;
-    std::set<Operand*> params;
-    std::set<Instruction*> delList;
 
    public:
     TreeHeightBalance(Unit* unit) : unit(unit){};
     void pass();
     void pass(Function* func);
     void pass(BasicBlock* block);
-    void balance(Operand* root);
-    int flatten(Operand* var,
-                std::priority_queue<PAIR, std::vector<PAIR>, cmp>& q);
-    void rebuild(Operand* root,
-                 std::priority_queue<PAIR, std::vector<PAIR>, cmp>& q,
-                 Instruction* in);
+    void convert(std::map<Operand*, int> operands, std::vector<Instruction*> addIns);
 };
 
 #endif

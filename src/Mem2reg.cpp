@@ -74,6 +74,7 @@ void Mem2reg::insertPhiInstruction(Function* function) {
                 addZeroIns.push_back(assignIns);
                 (*use)->getParent()->insertBefore(assignIns, *use);
                 assigns.insert((*use)->getParent());
+                (*use)->getUse()[1]->removeUse(*use);
             }
             auto dst = (*use)->getDef();
             (*use)->getParent()->remove(*use);

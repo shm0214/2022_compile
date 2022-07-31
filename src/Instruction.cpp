@@ -501,13 +501,15 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
         else if (id_se->isParam()) {
             // TODO: 这样分配的是虚拟寄存器 能对应到r0-r3嘛
             //  r4之后的参数需要一条load 哪里加 怎么判断是r4之后的参数
-            if (id_se->getParamNo() < 4)
+            auto no = id_se->getParamNo();
+            if (no < 4)
                 mope = new MachineOperand(MachineOperand::REG,
                                           id_se->getParamNo());
             else {
                 // 用r3代表一下
                 mope = new MachineOperand(MachineOperand::REG, 3);
                 mope->setParam();
+                mope->setParamNo(no);
             }
         } else
             exit(0);
@@ -1128,6 +1130,7 @@ CallInstruction::CallInstruction(Operand* dst,
         operands.push_back(param);
         param->addUse(this);
     }
+    insert_bb->getParent()->setHasCall();
 }
 
 void CallInstruction::replaceDef(Operand* new_) {

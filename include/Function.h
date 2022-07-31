@@ -68,6 +68,8 @@ class Function {
     int essential = -1;
     std::vector<SSAGraphNode*> nodes;
     std::set<Operand*> stores;
+    // 用于mem2reg 有调用其他函数的话则为true
+    bool call;
 
    public:
     Function() {}
@@ -114,6 +116,8 @@ class Function {
     void genSSAGraph();
     void computeStores();
     std::set<Operand*>& getStores() { return stores; }
+    bool hasCall() { return call; }
+    void setHasCall() { call = true; }
 };
 
 #endif

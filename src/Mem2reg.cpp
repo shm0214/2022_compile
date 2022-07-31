@@ -164,14 +164,30 @@ Operand* Mem2reg::newName(Operand* old) {
 }
 
 void Mem2reg::cleanAddZeroIns(Function* func) {
+    auto type = (FunctionType*)(func->getSymPtr()->getType());
+    int paramNo = type->getParamsType().size() - 1;
+    int regNum = 4;
+    if (paramNo > 3)
+        regNum--;
     for (auto i : addZeroIns) {
         auto use = i->getUse()[0];
         // if (use->getEntry()->isConstant())
         //     continue;
         if (i->getParent()->begin() == i && i->getNext()->isUncond())
             continue;
-        if (use->getEntry()->isVariable())
-            continue;
+        if (use->getEntry()->isVariable()) {
+            // continue;
+            if (func->hasCall())
+                if (paramNo < regNum) {
+                    paramNo--;
+                    continue;
+                }
+            if (paramNo >= regNum) {
+                paramNo--;
+                continue;
+            }
+            paramNo--;
+        }
         auto def = i->getDef();
         while (def->use_begin() != def->use_end()) {
             auto u = *(def->use_begin());

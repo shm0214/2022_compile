@@ -680,6 +680,7 @@ void MachineBlock::output() {
     int offset =
         (parent->getSavedRegs().size() + parent->getSavedFpRegs().size() + 2) *
         4;
+    int baseOffset = offset;
     int num = parent->getParamsNum();
     int count = 0;
     // if (!inst_list.empty()) {
@@ -701,8 +702,10 @@ void MachineBlock::output() {
                 operand->isParam()) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto r3 = new MachineOperand(MachineOperand::REG, 3);
-                auto off = new MachineOperand(MachineOperand::IMM, offset);
-                offset += 4;
+                int temp = baseOffset + operand->getOffset();
+                auto off = new MachineOperand(MachineOperand::IMM, temp);
+                // auto off = new MachineOperand(MachineOperand::IMM, offset);
+                // offset += 4;
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();
@@ -727,8 +730,10 @@ void MachineBlock::output() {
                 uses[1]->getVal() == 0) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto r3 = new MachineOperand(MachineOperand::REG, 3);
-                auto off = new MachineOperand(MachineOperand::IMM, offset);
-                offset += 4;
+                int temp = baseOffset + uses[0]->getOffset();
+                auto off = new MachineOperand(MachineOperand::IMM, temp);
+                // auto off = new MachineOperand(MachineOperand::IMM, offset);
+                // offset += 4;
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();

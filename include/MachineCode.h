@@ -35,6 +35,8 @@ class MachineOperand {
     bool param = false;
     bool fpu = false;  // floating point
     float fval;
+    // 用于计算栈内偏移
+    int paramNo;
 
    public:
     enum { IMM, VREG, REG, LABEL };
@@ -69,6 +71,8 @@ class MachineOperand {
     bool needColor() { return type == VREG || (type == REG && reg_no < 11); }
     void setParam() { param = true; }
     bool isParam() { return param; }
+    void setParamNo(int no) { paramNo = no; }
+    int getOffset() { return 4 * (paramNo - 4); };
 };
 
 class MachineInstruction {

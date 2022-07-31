@@ -27,6 +27,7 @@ class Instruction {
     bool isBin() const { return instType == BINARY; };
     bool isLoad() const { return instType == LOAD; };
     bool isCmp() const { return instType == CMP; };
+    bool isGep() const { return instType == GEP; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
@@ -325,6 +326,8 @@ class GepInstruction : public Instruction {
     bool last;
     Operand* init;
     int off;
+    // 由于数组初始化使用+4 部分未生成汇编 值编号会重用因此标记
+    bool noAsm;
 
    public:
     GepInstruction(Operand* dst,
@@ -350,6 +353,7 @@ class GepInstruction : public Instruction {
     void replaceUse(Operand* old, Operand* new_);
     bool genNode();
     std::string getHash();
+    bool hasNoAsm() { return noAsm; }
 };
 
 class PhiInstruction : public Instruction {

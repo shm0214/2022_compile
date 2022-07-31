@@ -1265,6 +1265,7 @@ GepInstruction::GepInstruction(Operand* dst,
     first = false;
     init = nullptr;
     last = false;
+    noAsm = false;
 }
 
 void GepInstruction::replaceDef(Operand* new_) {
@@ -1594,8 +1595,10 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
             cur_inst = new BinaryMInstruction(
                 cur_block, BinaryMInstruction::ADD, dst, base, imm);
             cur_block->InsertInst(cur_inst);
+        } else {
+            noAsm = true;
+            return;
         }
-        return;
     }
     MachineOperand* base = nullptr;
     int size;
@@ -1661,6 +1664,14 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
     cur_block->InsertInst(cur_inst);
     if (paramFirst || !first) {
         auto arr = genMachineOperand(operands[1]);
+        auto in = operands[1]->getDef();
+        if (in->isGep()) {
+            auto gep = (GepInstruction*)in;
+            if (gep->hasNoAsm()) {
+                gep->setInit(nullptr, 0);
+                gep->genMachineCode(builder);
+            }
+        }
         cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
                                           dst, arr, off);
         cur_block->InsertInst(cur_inst);

@@ -1600,8 +1600,8 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
             cur_block->InsertInst(cur_inst);
         } else {
             noAsm = true;
-            return;
         }
+        return;
     }
     MachineOperand* base = nullptr;
     int size;

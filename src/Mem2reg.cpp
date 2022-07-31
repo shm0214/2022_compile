@@ -176,17 +176,17 @@ void Mem2reg::cleanAddZeroIns(Function* func) {
         if (i->getParent()->begin() == i && i->getNext()->isUncond())
             continue;
         if (use->getEntry()->isVariable()) {
-            // continue;
-            if (func->hasCall())
-                if (paramNo < regNum) {
-                    paramNo--;
-                    continue;
-                }
-            if (paramNo >= regNum) {
-                paramNo--;
-                continue;
-            }
-            paramNo--;
+            continue;
+            // if (func->hasCall())
+            //     if (paramNo < regNum) {
+            //         paramNo--;
+            //         continue;
+            //     }
+            // if (paramNo >= regNum) {
+            //     paramNo--;
+            //     continue;
+            // }
+            // paramNo--;
         }
         auto def = i->getDef();
         while (def->use_begin() != def->use_end()) {

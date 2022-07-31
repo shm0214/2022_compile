@@ -7,6 +7,7 @@
 #include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
 #include "GraphColor.h"
+#include "InsReorder.h"
 #include "LinearScan.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
@@ -91,6 +92,7 @@ int main(int argc, char* argv[]) {
         CopyProp c(&unit);
         ValueNumber vn(&unit);
         TreeHeightBalance thb(&unit);
+        InsReorder ir(&unit);
         m.pass();
         d.pass();
         c.copy_prop();
@@ -98,7 +100,8 @@ int main(int argc, char* argv[]) {
         vn.pass();
         e.pass();
         s.pass();
-        s1.pass();
+        ir.pass();
+        // s1.pass();
     }
     if (dump_ir) {
         unit.output();

@@ -87,7 +87,18 @@ class MachineInstruction {
     void addUse(MachineOperand* ope) { use_list.push_back(ope); };
     // Print execution code after printing opcode
     void PrintCond();
-    enum instType { BINARY, LOAD, STORE, MOV, BRANCH, CMP, STACK, VCVT, VMRS };
+    enum instType {
+        BINARY,
+        LOAD,
+        STORE,
+        MOV,
+        BRANCH,
+        CMP,
+        STACK,
+        VCVT,
+        VMRS,
+        FUSE
+    };
 
    public:
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
@@ -117,6 +128,18 @@ class MachineInstruction {
     int getCond() const { return cond; }
     void setCond(int cond) { this->cond = cond; }
     void setParent(MachineBlock* block) { this->parent = block; }
+};
+
+class FuseMInstruction : public MachineInstruction {
+   public:
+    enum opType { MLA, MLS };
+    FuseMInstruction(MachineBlock* p,
+                     int op,
+                     MachineOperand* dst,
+                     MachineOperand* src1,
+                     MachineOperand* src2,
+                     MachineOperand* src3);
+    void output();
 };
 
 class BinaryMInstruction : public MachineInstruction {

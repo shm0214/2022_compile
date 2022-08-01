@@ -195,6 +195,47 @@ void MachineInstruction::replaceUse(MachineOperand* old, MachineOperand* new_) {
         }
 }
 
+FuseMInstruction::FuseMInstruction(MachineBlock* p,
+                                   int op,
+                                   MachineOperand* dst,
+                                   MachineOperand* src1,
+                                   MachineOperand* src2,
+                                   MachineOperand* src3) {
+    this->parent = p;
+    this->type = MachineInstruction::FUSE;
+    this->op = op;
+    this->def_list.push_back(dst);
+    this->use_list.push_back(src1);
+    this->use_list.push_back(src2);
+    this->use_list.push_back(src3);
+    dst->setParent(this);
+    src1->setParent(this);
+    src2->setParent(this);
+    src3->setParent(this);
+}
+void FuseMInstruction::output() {
+    switch (this->op) {
+        case FuseMInstruction::MLA:
+            fprintf(yyout, "\tmla ");
+            break;
+        case FuseMInstruction::MLS:
+            fprintf(yyout, "\tmls ");
+            break;
+        default:
+            break;
+    }
+
+    this->PrintCond();
+    this->def_list[0]->output();
+    fprintf(yyout, ", ");
+    this->use_list[0]->output();
+    fprintf(yyout, ", ");
+    this->use_list[1]->output();
+    fprintf(yyout, ", ");
+    this->use_list[2]->output();
+    fprintf(yyout, "\n");
+}
+
 BinaryMInstruction::BinaryMInstruction(MachineBlock* p,
                                        int op,
                                        MachineOperand* dst,

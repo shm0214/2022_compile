@@ -14,6 +14,7 @@
 #include "MachineDeadCodeElimination.h"
 #include "MachineStraighten.h"
 #include "Mem2reg.h"
+#include "PeepholeOptimization.h"
 #include "SSADestruction.h"
 #include "Starighten.h"
 #include "TreeHeightBalance.h"
@@ -85,24 +86,24 @@ int main(int argc, char* argv[]) {
     ast.typeCheck();
     ast.genCode(&unit);
     if (optimize) {
-        ElimUnreachCode e(&unit);
-        DeadCodeElimination d(&unit);
+        ElimUnreachCode euc(&unit);
+        DeadCodeElimination dce(&unit);
         Starighten s(&unit);
-        Mem2reg m(&unit);
-        SSADestruction s1(&unit);
-        CopyProp c(&unit);
+        Mem2reg m2r(&unit);
+        SSADestruction ssad(&unit);
+        CopyProp cp(&unit);
         ValueNumber vn(&unit);
         TreeHeightBalance thb(&unit);
         InsReorder ir(&unit);
-        m.pass();
-        d.pass();
-        c.copy_prop();
+        m2r.pass();
+        dce.pass();
+        cp.copy_prop();
         thb.pass();
         vn.pass();
-        e.pass();
+        euc.pass();
         s.pass();
         ir.pass();
-        s1.pass();
+        ssad.pass();
     }
     if (dump_ir) {
         unit.output();
@@ -113,15 +114,14 @@ int main(int argc, char* argv[]) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         CleanAsmAddZero caaz(&mUnit);
+        ConstAsm ca(&mUnit);
+        PeepholeOptimization po(&mUnit);
         caaz.pass();
+        ca.pass();
         mdce.pass();
         ms.pass();
+        po.pass();
     }
-
-    // if (optimize) {
-    //     ConstAsm const_asm(&mUnit);
-    //     const_asm.pass();
-    // }
 
     if (!optimize) {
         LinearScan linearScan(&mUnit);

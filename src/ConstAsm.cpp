@@ -2,9 +2,6 @@
 #include "ConstAsm.h"
 #include <iostream>
 
-
-// TODO: Add this into peephole optimization
-
 ConstAsm::ConstAsm(MachineUnit* mUnit) {
     this->mUnit = mUnit;
 }

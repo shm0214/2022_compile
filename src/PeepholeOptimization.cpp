@@ -34,18 +34,29 @@ void PeepholeOptimization::pass() {
 
                 // mla/mls rd, rn, rm, ra
                 // https://developer.arm.com/documentation/dui0489/c/arm-and-thumb-instructions/multiply-instructions/mul--mla--and-mls
+                // FIXME: problem at functional/71_full_conn.
 
                 if (curr_inst->isMul() && next_inst->isAdd()) {
                     auto mul_dst = curr_inst->getDef()[0];
-                    auto add_src = next_inst->getUse()[1];
-                    if (mul_dst->getReg() != add_src->getReg()) {
-                        continue;
-                    }
+                    auto add_src1 = next_inst->getUse()[0];
+                    auto add_src2 = next_inst->getUse()[1];
 
                     auto rd = new MachineOperand(*(next_inst->getDef()[0]));
                     auto rn = new MachineOperand(*(curr_inst->getUse()[0]));
                     auto rm = new MachineOperand(*(curr_inst->getUse()[1]));
-                    auto ra = new MachineOperand(*(next_inst->getUse()[0]));
+                    MachineOperand* ra;
+
+                    if (mul_dst->getReg() == add_src1->getReg()) {
+                        ra = new MachineOperand(*add_src2);
+                    } else if (mul_dst->getReg() == add_src2->getReg()) {
+                        ra = new MachineOperand(*add_src1);
+                    } else {
+                        continue;
+                    }
+
+                    if (rn->isImm() || rm->isImm() || ra->isImm()) {
+                        continue;
+                    }
 
                     auto fused_inst = new FuseMInstruction(
                         block, FuseMInstruction::MLA, rd, rn, rm, ra);
@@ -68,6 +79,13 @@ void PeepholeOptimization::pass() {
                     *next_inst_iter = fused_inst;
                     instToRemove.insert(curr_inst);
                 }
+
+                // TODO: continuous function call
+                // 	   mov v, r0
+                //     mov r0, v
+                //     -----
+                //
+                // from performance/fft
             }
 
             for (auto inst : instToRemove) {

@@ -38,28 +38,31 @@ void PeepholeOptimization::pass() {
                 if (curr_inst->isMul() && next_inst->isAdd()) {
                     auto mul_dst = curr_inst->getDef()[0];
                     auto add_src = next_inst->getUse()[1];
-                    if (mul_dst != add_src) {
+                    if (mul_dst->getReg() != add_src->getReg()) {
                         continue;
                     }
 
-                    auto rd = next_inst->getDef()[0];
-                    auto rn = curr_inst->getUse()[0];
-                    auto rm = curr_inst->getUse()[1];
-                    auto ra = next_inst->getUse()[0];
+                    auto rd = new MachineOperand(*(next_inst->getDef()[0]));
+                    auto rn = new MachineOperand(*(curr_inst->getUse()[0]));
+                    auto rm = new MachineOperand(*(curr_inst->getUse()[1]));
+                    auto ra = new MachineOperand(*(next_inst->getUse()[0]));
+
                     auto fused_inst = new FuseMInstruction(
                         block, FuseMInstruction::MLA, rd, rn, rm, ra);
                     *next_inst_iter = fused_inst;
                     instToRemove.insert(curr_inst);
+
                 } else if (curr_inst->isMul() && next_inst->isSub()) {
                     auto mul_dst = curr_inst->getDef()[0];
                     auto sub_src = next_inst->getUse()[1];
-                    if (mul_dst != sub_src) {
+                    if (mul_dst->getReg() != sub_src->getReg()) {
                         continue;
                     }
-                    auto rd = next_inst->getDef()[0];
-                    auto rn = curr_inst->getUse()[0];
-                    auto rm = curr_inst->getUse()[1];
-                    auto ra = next_inst->getUse()[0];
+                    auto rd = new MachineOperand(*(next_inst->getDef()[0]));
+                    auto rn = new MachineOperand(*(curr_inst->getUse()[0]));
+                    auto rm = new MachineOperand(*(curr_inst->getUse()[1]));
+                    auto ra = new MachineOperand(*(next_inst->getUse()[0]));
+
                     auto fused_inst = new FuseMInstruction(
                         block, FuseMInstruction::MLS, rd, rn, rm, ra);
                     *next_inst_iter = fused_inst;

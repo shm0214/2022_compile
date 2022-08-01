@@ -106,15 +106,13 @@ int main(int argc, char* argv[]) {
     if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
+        ConstAsm ca(&mUnit);
+        PeepholeOptimization po(&mUnit);
+
+        ca.pass();
         mdce.pass();
         ms.pass();
-    }
-
-    if (optimize) {
-        ConstAsm const_asm(&mUnit);
-        PeepholeOptimization peephole(&mUnit);
-        const_asm.pass();
-        peephole.pass();
+        po.pass();
     }
 
     if (!optimize) {

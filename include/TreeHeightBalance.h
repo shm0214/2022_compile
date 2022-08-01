@@ -5,13 +5,13 @@
 #include "LVAForIR.h"
 #include "Unit.h"
 
-#define PAIR std::pair<Operand*, int>
+// #define PAIR std::pair<Operand*, int>
 
-struct cmp {
-    bool operator()(const PAIR& a, const PAIR& b) {
-        return a.second > b.second;
-    }
-};
+// struct cmp {
+//     bool operator()(const PAIR& a, const PAIR& b) {
+//         return a.second > b.second;
+//     }
+// };
 
 // class TreeHeightBalance {
 //     Unit* unit;
@@ -34,6 +34,24 @@ struct cmp {
 //                  Instruction* in);
 // };
 
+struct cmp {
+    bool operator()(const Operand* a, const Operand* b) {
+        auto name1 = a->toStr();
+        auto name2 = b->toStr();
+        auto flag1 = a->isConst();
+        auto flag2 = b->isConst();
+        if (!flag1 && !flag2)
+            return a->getLabel() < b->getLabel();
+        if (!flag1 && flag2)
+            return false;
+        if (flag1 && !flag2)
+            return true;
+        if (flag1 && flag2)
+            return a->getConstVal() < b->getConstVal();
+        return true;
+    }
+};
+
 class TreeHeightBalance {
     Unit* unit;
 
@@ -42,7 +60,8 @@ class TreeHeightBalance {
     void pass();
     void pass(Function* func);
     void pass(BasicBlock* block);
-    void convert(std::map<Operand*, int> operands, std::vector<Instruction*> addIns);
+    void convert(std::map<Operand*, int, cmp> operands,
+                 std::vector<Instruction*> addIns);
 };
 
 #endif

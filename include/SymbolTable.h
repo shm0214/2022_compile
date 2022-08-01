@@ -29,6 +29,7 @@ class SymbolEntry {
     virtual std::string toStr() = 0;
     bool setNext(SymbolEntry* se);
     SymbolEntry* getNext() const { return next; };
+    int getLabel() const { return label; }
 
     // You can add any function you need here.
 };

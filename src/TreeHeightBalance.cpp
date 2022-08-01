@@ -263,7 +263,7 @@ void TreeHeightBalance::pass(Function* func) {
 }
 
 void TreeHeightBalance::pass(BasicBlock* block) {
-    map<Operand*, int> operands;
+    map<Operand*, int, cmp> operands;
     vector<Instruction*> addIns;
     Operand* lastDef = nullptr;
     for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
@@ -305,7 +305,7 @@ void TreeHeightBalance::pass(BasicBlock* block) {
     }
 }
 
-void TreeHeightBalance::convert(map<Operand*, int> operands,
+void TreeHeightBalance::convert(map<Operand*, int, cmp> operands,
                                 vector<Instruction*> addIns) {
     // 先不管浮点了
     vector<Instruction*> newIns;

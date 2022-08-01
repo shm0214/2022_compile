@@ -101,7 +101,7 @@ int main(int argc, char* argv[]) {
         e.pass();
         s.pass();
         ir.pass();
-        // s1.pass();
+        s1.pass();
     }
     if (dump_ir) {
         unit.output();

@@ -29,8 +29,18 @@ Instruction::~Instruction() {
 bool Instruction::isEssential() {
     // return value
     if (isRet()) {
-        // 先简单处理，所有return都true
-        return true;
+        if (getUse().empty())
+            return true;
+        auto preds = parent->getParent()->getPreds();
+        if (preds.empty())
+            return true;
+        // 只要有接收ret值的就要返回true
+        for (auto it : preds)
+            for (auto in : it.second)
+                if (in->getDef()->usersNum())
+                    return true;
+
+        return false;
     }
     // input/output
     if (isCall()) {
@@ -1131,6 +1141,9 @@ CallInstruction::CallInstruction(Operand* dst,
         param->addUse(this);
     }
     insert_bb->getParent()->setHasCall();
+    IdentifierSymbolEntry* funcSE = (IdentifierSymbolEntry*)func;
+    if (!funcSE->isSysy() && funcSE->getName() != "llvm.memset.p0.i32")
+        funcSE->getFunction()->addPred(this);
 }
 
 void CallInstruction::replaceDef(Operand* new_) {

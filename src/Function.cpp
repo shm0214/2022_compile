@@ -536,3 +536,12 @@ void Function::computeStores() {
             }
     }
 }
+
+void Function::addPred(Instruction* in) {
+    assert(in->isCall());
+    auto func = in->getParent()->getParent();
+    if (preds.count(func))
+        preds[func].push_back(in);
+    else
+        preds[func] = {in};
+}

@@ -79,6 +79,15 @@ bool DeadCodeElimination::remove(Function* func) {
     for (auto& block : func->getBlockList()) {
         for (auto it = block->begin(); it != block->end(); it = it->getNext()) {
             if (!it->isMark()) {
+                if (it->isRet()) {
+                    auto zero = new Operand(
+                        new ConstantSymbolEntry(TypeSystem::intType, 0));
+                    it->replaceUse(it->getUse()[0], zero);
+                    continue;
+                }
+                if (it->isCall())
+                    if (it->isEssential())
+                        continue;
                 if (!it->isUncond())
                     temp.push_back(it);
                 if (it->isCond()) {

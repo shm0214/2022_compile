@@ -2,6 +2,9 @@
 #include "ConstAsm.h"
 #include <iostream>
 
+
+// TODO: Add this into peephole optimization
+
 ConstAsm::ConstAsm(MachineUnit* mUnit) {
     this->mUnit = mUnit;
 }
@@ -67,6 +70,8 @@ void ConstAsm::simplify(MachineBlock* block) {
 
                         instToRemove.insert(op2inst[src1->getReg()]);
                         instToRemove.insert(op2inst[src2->getReg()]);
+
+                        dst = new MachineOperand(*dst);
 
                         if (val3 < 255 && val3 > -255) {
                             new_inst = new MovMInstruction(

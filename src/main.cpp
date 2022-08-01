@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <iostream>
 #include "Ast.h"
+#include "CleanAsmAddZero.h"
 #include "ConstAsm.h"
 #include "CopyProp.h"
 #include "DeadCodeElimination.h"
@@ -111,6 +112,8 @@ int main(int argc, char* argv[]) {
     if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
+        CleanAsmAddZero caaz(&mUnit);
+        caaz.pass();
         mdce.pass();
         ms.pass();
     }

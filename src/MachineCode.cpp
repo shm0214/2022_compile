@@ -269,6 +269,7 @@ LoadMInstruction::LoadMInstruction(MachineBlock* p,
     this->type = MachineInstruction::LOAD;
     this->op = op;
     this->cond = cond;
+    this->needModify = false;
     this->def_list.push_back(dst);
     this->use_list.push_back(src1);
     if (src2)
@@ -739,6 +740,10 @@ void MachineBlock::output() {
                 cur_inst->output();
             }
         }
+        if ((*it)->isLoad() && ((LoadMInstruction*)(*it))->isNeedModify()) {
+            auto imm = (*it)->getUse()[1];
+            imm->setVal(imm->getVal() + baseOffset);
+        }
         if ((*it)->isAdd()) {
             auto dst = (*it)->getDef()[0];
             auto src1 = (*it)->getUse()[0];
@@ -1039,4 +1044,10 @@ MachineBlock* MachineFunction::getNext(MachineBlock* block) {
         return *(it + 1);
     }
     return nullptr;
+}
+
+void MachineBlock::insertBefore(MachineInstruction* a, MachineInstruction* b) {
+    auto it = find(inst_list.begin(), inst_list.end(), b);
+    if (it != inst_list.end())
+        inst_list.insert(it, a);
 }

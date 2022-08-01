@@ -116,11 +116,15 @@ class MachineInstruction {
     bool isDiv() const { return type == BINARY && op == 3; };
     bool isMov() const { return type == MOV && op == 0; };
     bool isCondMov() const { return type == MOV && op == 0 && cond != NONE; };
+    bool isPush() const { return type == STACK && op == 0; };
     void replaceUse(MachineOperand* old, MachineOperand* new_);
     void replaceDef(MachineOperand* old, MachineOperand* new_);
     int getCond() const { return cond; }
     void setCond(int cond) { this->cond = cond; }
     void setParent(MachineBlock* block) { this->parent = block; }
+    bool isAddZero() const {
+        return isAdd() && use_list[1]->isImm() && use_list[1]->getVal() == 0;
+    }
 };
 
 class BinaryMInstruction : public MachineInstruction {
@@ -136,6 +140,9 @@ class BinaryMInstruction : public MachineInstruction {
 };
 
 class LoadMInstruction : public MachineInstruction {
+   private:
+    bool needModify;
+
    public:
     enum opType { LDR, VLDR };
     LoadMInstruction(MachineBlock* p,
@@ -145,6 +152,8 @@ class LoadMInstruction : public MachineInstruction {
                      MachineOperand* src2 = nullptr,
                      int cond = MachineInstruction::NONE);
     void output();
+    void setNeedModify() { needModify = true; }
+    bool isNeedModify() { return needModify; }
 };
 
 class StoreMInstruction : public MachineInstruction {
@@ -272,6 +281,8 @@ class MachineBlock {
     void removePred(MachineBlock* block);
     void removeSucc(MachineBlock* block);
     int getNo() const { return no; }
+    // insert a before b
+    void insertBefore(MachineInstruction* a, MachineInstruction* b);
 };
 
 class MachineFunction {

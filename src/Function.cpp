@@ -15,6 +15,7 @@ Function::Function(Unit* u, SymbolEntry* s) {
     sym_ptr = s;
     parent = u;
     ((IdentifierSymbolEntry*)s)->setFunction(this);
+    call = false;
 }
 
 int TreeNode::Num = 0;

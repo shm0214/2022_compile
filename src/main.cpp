@@ -2,11 +2,13 @@
 #include <unistd.h>
 #include <iostream>
 #include "Ast.h"
+#include "CleanAsmAddZero.h"
 #include "ConstAsm.h"
 #include "CopyProp.h"
 #include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
 #include "GraphColor.h"
+#include "InsReorder.h"
 #include "LinearScan.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
@@ -15,6 +17,7 @@
 #include "PeepholeOptimization.h"
 #include "SSADestruction.h"
 #include "Starighten.h"
+#include "TreeHeightBalance.h"
 #include "Unit.h"
 #include "ValueNumber.h"
 using namespace std;
@@ -83,20 +86,24 @@ int main(int argc, char* argv[]) {
     ast.typeCheck();
     ast.genCode(&unit);
     if (optimize) {
-        ElimUnreachCode e(&unit);
-        DeadCodeElimination d(&unit);
+        ElimUnreachCode euc(&unit);
+        DeadCodeElimination dce(&unit);
         Starighten s(&unit);
-        Mem2reg m(&unit);
-        SSADestruction s1(&unit);
-        CopyProp c(&unit);
+        Mem2reg m2r(&unit);
+        SSADestruction ssad(&unit);
+        CopyProp cp(&unit);
         ValueNumber vn(&unit);
-        m.pass();
-        d.pass();
-        c.copy_prop();
+        TreeHeightBalance thb(&unit);
+        InsReorder ir(&unit);
+        m2r.pass();
+        dce.pass();
+        cp.copy_prop();
+        thb.pass();
         vn.pass();
-        e.pass();
+        euc.pass();
         s.pass();
-        s1.pass();
+        ir.pass();
+        ssad.pass();
     }
     if (dump_ir) {
         unit.output();
@@ -106,13 +113,14 @@ int main(int argc, char* argv[]) {
     if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
+        CleanAsmAddZero caaz(&mUnit);
         ConstAsm ca(&mUnit);
         PeepholeOptimization po(&mUnit);
-
+        caaz.pass();
         ca.pass();
         mdce.pass();
-        ms.pass();
         po.pass();
+        ms.pass();
     }
 
     if (!optimize) {

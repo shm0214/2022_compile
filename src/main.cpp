@@ -119,8 +119,8 @@ int main(int argc, char* argv[]) {
         caaz.pass();
         ca.pass();
         mdce.pass();
-        ms.pass();
         po.pass();
+        ms.pass();
     }
 
     if (!optimize) {

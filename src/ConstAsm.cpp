@@ -12,6 +12,8 @@ void ConstAsm::pass() {
         auto func = *func_iter;
         for (auto block_iter = func->begin(); block_iter != func->end();
              block_iter++) {
+            op2imm.clear();
+            op2inst.clear();
             auto block = *block_iter;
             simplify(block);
         }

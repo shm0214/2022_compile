@@ -12,6 +12,7 @@
 #include "MachineDeadCodeElimination.h"
 #include "MachineStraighten.h"
 #include "Mem2reg.h"
+#include "PeepholeOptimization.h"
 #include "SSADestruction.h"
 #include "Starighten.h"
 #include "Unit.h"
@@ -109,10 +110,12 @@ int main(int argc, char* argv[]) {
         ms.pass();
     }
 
-    // if (optimize) {
-    //     ConstAsm const_asm(&mUnit);
-    //     const_asm.pass();
-    // }
+    if (optimize) {
+        ConstAsm const_asm(&mUnit);
+        PeepholeOptimization peephole(&mUnit);
+        const_asm.pass();
+        peephole.pass();
+    }
 
     if (!optimize) {
         LinearScan linearScan(&mUnit);

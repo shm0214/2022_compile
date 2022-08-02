@@ -79,13 +79,38 @@ void PeepholeOptimization::pass() {
                     *next_inst_iter = fused_inst;
                     instToRemove.insert(curr_inst);
                 }
-
-                // TODO: continuous function call
-                // 	   mov v, r0
-                //     mov r0, v
+                // merge store and load into move
+                //     str v355, [v11]
+                //     ldr v227, [v11]
                 //     -----
-                //
-                // from performance/fft
+                //     str v355, [v11]
+                //     mov v227, v355
+                else if (curr_inst->isStore() && next_inst->isLoad()) {
+                    auto src = curr_inst->getUse()[0];
+                    auto str_stk_src1 = curr_inst->getUse()[1];
+                    MachineOperand* str_stk_src2 = nullptr;
+                    if (curr_inst->getUse().size() > 2) {
+                        str_stk_src2 = curr_inst->getUse()[2];
+                    }
+
+                    auto dst = next_inst->getDef()[0];
+                    auto ldr_stk_src1 = next_inst->getUse()[0];
+                    MachineOperand* ldr_stk_src2 = nullptr;
+                    if (next_inst->getUse().size() > 1) {
+                        ldr_stk_src2 = next_inst->getUse()[1];
+                    }
+                    if (str_stk_src1->getReg() == ldr_stk_src1->getReg() &&
+                        str_stk_src2 == nullptr && ldr_stk_src2 == nullptr) {
+                        // TODO: add offset support
+                        dst = new MachineOperand(*dst);
+                        src = new MachineOperand(*src);
+                        auto new_inst = new MovMInstruction(
+                            block, MovMInstruction::MOV, dst, src);
+                        // cannot determine whether the stack will be used
+                        // again or not.
+                        *next_inst_iter = new_inst;
+                    }
+                }
             }
 
             for (auto inst : instToRemove) {

@@ -35,7 +35,7 @@
 // };
 
 struct cmp {
-    bool operator()(const Operand* a, const Operand* b) {
+    bool operator()(const Operand* a, const Operand* b) const {
         auto name1 = a->toStr();
         auto name2 = b->toStr();
         auto flag1 = a->isConst();

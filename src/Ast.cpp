@@ -1730,6 +1730,9 @@ bool InitValueListExpr::isFull() {
 }
 
 void InitValueListExpr::fill() {
+    if (allZero) {
+        return;
+    }
     Type* type = ((ArrayType*)(this->getType()))->getElementType();
     if (type->isArray()) {
         while (!isFull()) {

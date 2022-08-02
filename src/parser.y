@@ -516,6 +516,7 @@ VarDef
         ((IdentifierSymbolEntry*)$<se>4)->setNotZeroNum(notZeroNum);
         if ((notZeroNum == 0) || ((InitValueListExpr*)$5)->isEmpty()){
             ((IdentifierSymbolEntry*)$<se>4)->setAllZero();
+            ((InitValueListExpr*)$5)->setAllZero();
         }
         if (!identifiers->install($1, $<se>4))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
@@ -587,8 +588,10 @@ ConstDef
       ConstInitVal {
         ((IdentifierSymbolEntry*)$<se>4)->setArrayValue(arrayValue);
         ((IdentifierSymbolEntry*)$<se>4)->setNotZeroNum(notZeroNum);
-        if ((notZeroNum == 0) || ((InitValueListExpr*)$5)->isEmpty())
+        if ((notZeroNum == 0) || ((InitValueListExpr*)$5)->isEmpty()){
             ((IdentifierSymbolEntry*)$<se>4)->setAllZero();
+            ((InitValueListExpr*)$5)->setAllZero();
+        }
         if (!identifiers->install($1, $<se>4))
             fprintf(stderr, "identifier \"%s\" is already defined\n", (char*)$1);
         identifiers->install($1, $<se>4);
@@ -731,7 +734,7 @@ ConstInitVal
         if (!stk.empty()) {
 
             double val = $1->getValue();
-            if (!val)
+            if (val)
                 notZeroNum++;
             if (declType->isInt() && $1->getType()->isFloat()) {
                 float temp = (float)val;

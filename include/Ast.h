@@ -230,12 +230,14 @@ class InitValueListExpr : public ExprNode {
    private:
     ExprNode* expr;
     int childCnt;
+    bool allZero;
 
    public:
     InitValueListExpr(SymbolEntry* se, ExprNode* expr = nullptr)
         : ExprNode(se, INITVALUELISTEXPR), expr(expr) {
         type = se->getType();
         childCnt = 0;
+        allZero = false;
     };
     void output(int level);
     ExprNode* getExpr() const { return expr; };
@@ -245,6 +247,7 @@ class InitValueListExpr : public ExprNode {
     bool typeCheck(Type* retType = nullptr);
     void genCode();
     void fill();
+    void setAllZero() { allZero = true; }
 };
 
 // int2bool, int2float, float2int
@@ -319,7 +322,6 @@ class DeclStmt : public StmtNode {
     void genCode();
     Id* getId() { return id; };
 };
-
 
 class BlankStmt : public StmtNode {
    public:

@@ -38,8 +38,11 @@ class Operand {
         }
         return false;
     }
-    bool isConst() { return se->isConstant(); }
-    double getConstVal() { return ((ConstantSymbolEntry*)se)->getValue(); }
+    bool isConst() const { return se->isConstant(); }
+    double getConstVal() const {
+        return ((ConstantSymbolEntry*)se)->getValue();
+    }
+    int getLabel() const { return se->getLabel(); }
 };
 
 #endif

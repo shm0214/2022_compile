@@ -7,6 +7,7 @@
 class AutoInline {
     Unit* unit;
     std::map<CallInstruction*, Function*> workList;
+    std::map<Function*, int> instNum;
 
    public:
     AutoInline(Unit* unit) : unit(unit){};
@@ -15,6 +16,7 @@ class AutoInline {
     void decide(CallInstruction* in);
     void deal(CallInstruction* in);
     void calRecursion();
+    void calInstNum();
 };
 
 #endif

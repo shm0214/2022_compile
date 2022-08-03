@@ -12,6 +12,7 @@ Operand* getTempOperand(Operand* ope) {
 
 void AutoInline::pass() {
     // calRecursion();
+    calInstNum();
     auto iter = unit->begin();
     while (iter != unit->end())
         pass(*iter++);
@@ -38,9 +39,30 @@ void AutoInline::decide(CallInstruction* in) {
     if (funcSE->isSysy() || funcSE->getName() == "llvm.memset.p0.i32")
         return;
     auto func = funcSE->getFunction();
+    // // 无意义的函数不内联 便于dce删除
+    // auto preds = func->getPreds();
+    // bool flag = true;
+    // for (auto it : preds)
+    //     for (auto in : it.second) {
+    //         auto def = in->getDef();
+    //         if (def && def->usersNum())
+    //             flag = false;
+    //     }
+    // if (flag)
+    //     return;
+    // 递归不内联
     if (func->hasRecur())
         return;
-
+    // 参数 >= 10 内联
+    auto type = (FunctionType*)(func->getSymPtr()->getType());
+    int size = type->getParamsType().size();
+    if (size >= 10) {
+        workList[in] = func;
+        return;
+    }
+    int num = func->getInstNum();
+    if (num >= 50)
+        return;
     // if inline
     workList[in] = func;
 }
@@ -125,6 +147,9 @@ void AutoInline::deal(CallInstruction* in) {
                 new UncondBrInstruction(exit, newBlock);
             } else {
                 newIn = in1->copy();
+                newIn->setParent(newBlock);
+                if (newIn->isCall())
+                    ((CallInstruction*)newIn)->addPred();
                 switch (newIn->getInstType()) {
                     case Instruction::PHI: {
                         phis.insert({newIn, in1});
@@ -169,7 +194,6 @@ void AutoInline::deal(CallInstruction* in) {
                         }
                     }
                 }
-                newIn->setParent(newBlock);
                 newBlock->insertBack(newIn);
             }
         }
@@ -278,4 +302,17 @@ void AutoInline::calRecursion() {
     //             stk.push(it.first);
     //     }
     // }
+}
+
+void AutoInline::calInstNum() {
+    for (auto it = unit->begin(); it != unit->end(); it++) {
+        int num = 0;
+        auto func = *it;
+        for (auto block : func->getBlockList())
+            for (auto in = block->begin(); in != block->end();
+                 in = in->getNext())
+                if (!in->isAlloc() && !in->isUncond() && !in->isCond())
+                    num++;
+        func->setInstNum(num);
+    }
 }

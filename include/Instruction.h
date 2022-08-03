@@ -325,6 +325,8 @@ class CallInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    // used for auto inline
+    void addPred();
 };
 
 class ZextInstruction : public Instruction {

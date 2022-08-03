@@ -1151,6 +1151,12 @@ CallInstruction::CallInstruction(Operand* dst,
         funcSE->getFunction()->addPred(this);
 }
 
+void CallInstruction::addPred() {
+    IdentifierSymbolEntry* funcSE = (IdentifierSymbolEntry*)func;
+    if (!funcSE->isSysy() && funcSE->getName() != "llvm.memset.p0.i32")
+        funcSE->getFunction()->addPred(this);
+}
+
 void CallInstruction::replaceDef(Operand* new_) {
     if (dst) {
         operands[0]->removeDef(this);

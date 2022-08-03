@@ -98,14 +98,15 @@ int main(int argc, char* argv[]) {
         InsReorder ir(&unit);
         AutoInline ai(&unit);
         m2r.pass();
+        dce.pass();
         ai.pass();
-        // dce.pass();
-        // cp.copy_prop();
-        // vn.pass();
-        // thb.pass();
-        // euc.pass();
-        // s.pass();
-        // ir.pass();
+        dce.pass();
+        cp.copy_prop();
+        vn.pass();
+        thb.pass();
+        euc.pass();
+        s.pass();
+        ir.pass();
         // ssad.pass();
     }
     if (dump_ir) {

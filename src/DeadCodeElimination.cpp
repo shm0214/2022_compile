@@ -103,6 +103,9 @@ bool DeadCodeElimination::remove(Function* func) {
                     temp.push_back(it);
                 if (it->isCond()) {
                     BasicBlock* b = func->getMarkBranch(block);
+                    if (!b)
+                        // 这种情况只能是整个函数都没用 所以不处理了
+                        return false;
                     new UncondBrInstruction(b, block);
                     block->cleanSucc();
                     block->addSucc(b);

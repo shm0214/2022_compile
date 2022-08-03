@@ -72,6 +72,8 @@ class Function {
     bool call;
     std::map<Function*, std::vector<Instruction*>> preds;
     bool recur;
+    // used for auto inline
+    int instNum;
 
    public:
     Function() {}
@@ -126,6 +128,8 @@ class Function {
     void addPred(Instruction* in);
     void removePred(Instruction* in);
     bool hasRecur() { return recur; }
+    void setInstNum(int num) { instNum = num; }
+    int getInstNum() { return instNum; }
 };
 
 #endif

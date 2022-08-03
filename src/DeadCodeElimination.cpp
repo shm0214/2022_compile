@@ -85,9 +85,20 @@ bool DeadCodeElimination::remove(Function* func) {
                     it->replaceUse(it->getUse()[0], zero);
                     continue;
                 }
-                if (it->isCall())
+                if (it->isCall()) {
                     if (it->isEssential())
                         continue;
+                    else {
+                        IdentifierSymbolEntry* funcSE =
+                            (IdentifierSymbolEntry*)(((CallInstruction*)it)
+                                                         ->getFuncSE());
+                        if (!funcSE->isSysy() &&
+                            funcSE->getName() != "llvm.memset.p0.i32") {
+                            auto func1 = funcSE->getFunction();
+                            func1->removePred(it);
+                        }
+                    }
+                }
                 if (!it->isUncond())
                     temp.push_back(it);
                 if (it->isCond()) {

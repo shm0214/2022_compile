@@ -336,7 +336,7 @@ void TreeHeightBalance::convert(map<Operand*, int, cmp> operands,
     }
     Operand* res;
     if (dsts.size() == 1) {
-        assert(dsts[0]->isConst());
+        // assert(dsts[0]->isConst());
         res = dsts[0];
     } else {
         res = new Operand(new TemporarySymbolEntry(TypeSystem::intType,

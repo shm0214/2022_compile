@@ -11,6 +11,7 @@ void Starighten::pass() {
         pass3(*iter);
         pass4(*iter);
         checkPhi(*iter);
+        checkAllocAndPhi(*iter);
         iter++;
     }
 }
@@ -142,4 +143,9 @@ void Starighten::pass4(Function* func) {
     }
     for (auto b : temp)
         func->remove(b);
+}
+
+
+void Starighten::checkAllocAndPhi(Function* func){
+    // 解决由于内联导致的alloc 和 phi不在块的开始
 }

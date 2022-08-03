@@ -16,6 +16,7 @@ Function::Function(Unit* u, SymbolEntry* s) {
     parent = u;
     ((IdentifierSymbolEntry*)s)->setFunction(this);
     call = false;
+    recur = false;
 }
 
 int TreeNode::Num = 0;
@@ -540,8 +541,18 @@ void Function::computeStores() {
 void Function::addPred(Instruction* in) {
     assert(in->isCall());
     auto func = in->getParent()->getParent();
+    if (func == this)
+        recur = true;
     if (preds.count(func))
         preds[func].push_back(in);
     else
         preds[func] = {in};
+}
+
+void Function::removePred(Instruction* in) {
+    assert(in->isCall());
+    auto func = in->getParent()->getParent();
+    auto it = find(preds[func].begin(), preds[func].end(), in);
+    assert(it != preds[func].end());
+    preds[func].erase(it);
 }

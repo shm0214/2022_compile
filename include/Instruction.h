@@ -73,15 +73,9 @@ class Instruction {
         return false;
     }
     bool isAdd() { return isBin() && opcode == 1; }
-
-   protected:
-    unsigned instType;
-    unsigned opcode;
-    Instruction* prev;
-    Instruction* next;
-    BasicBlock* parent;
-    std::vector<Operand*> operands;
-    bool mark;
+    // shallow copy
+    virtual Instruction* copy() = 0;
+    virtual void setDef(Operand* def) {}
     enum {
         BINARY,
         COND,
@@ -102,6 +96,15 @@ class Instruction {
         SHL,
         ASHR,
     };
+
+   protected:
+    unsigned instType;
+    unsigned opcode;
+    Instruction* prev;
+    Instruction* next;
+    BasicBlock* parent;
+    std::vector<Operand*> operands;
+    bool mark;
     SSAGraphNode* node;
     double constVal;
 };
@@ -112,6 +115,7 @@ class DummyInstruction : public Instruction {
     DummyInstruction() : Instruction(-1, nullptr){};
     void output() const {};
     void genMachineCode(AsmBuilder*){};
+    Instruction* copy() { return nullptr; }
 };
 
 class AllocaInstruction : public Instruction {
@@ -126,6 +130,11 @@ class AllocaInstruction : public Instruction {
     void replaceDef(Operand* new_);
     bool isArray() { return se->getType()->isArray(); }
     bool genNode();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 
    private:
     SymbolEntry* se;
@@ -147,6 +156,11 @@ class LoadInstruction : public Instruction {
     }
     bool genNode();
     std::string getHash();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class StoreInstruction : public Instruction {
@@ -163,6 +177,7 @@ class StoreInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[0], operands[1]});
     }
+    Instruction* copy();
 };
 
 class BinaryInstruction : public Instruction {
@@ -185,6 +200,11 @@ class BinaryInstruction : public Instruction {
     bool genNode();
     std::string getHash();
     bool isConstExp();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class CmpInstruction : public Instruction {
@@ -200,12 +220,18 @@ class CmpInstruction : public Instruction {
     enum { E, NE, L, LE, G, GE };
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
+    Operand* getDef() { return operands[0]; }
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
     bool genNode();
     std::string getHash();
     bool isConstExp();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class UncondBrInstruction : public Instruction {
@@ -215,6 +241,7 @@ class UncondBrInstruction : public Instruction {
     void setBranch(BasicBlock*);
     BasicBlock* getBranch();
     void genMachineCode(AsmBuilder*);
+    Instruction* copy();
 
    protected:
     BasicBlock* branch;
@@ -222,6 +249,10 @@ class UncondBrInstruction : public Instruction {
 
 // conditional branch
 class CondBrInstruction : public Instruction {
+   private:
+    BasicBlock* originTrue;
+    BasicBlock* originFalse;
+
    public:
     CondBrInstruction(BasicBlock*,
                       BasicBlock*,
@@ -238,6 +269,11 @@ class CondBrInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[0]});
     }
+    Instruction* copy();
+    BasicBlock* getOriginTrue() { return originTrue; }
+    BasicBlock* getOriginFalse() { return originFalse; }
+    void cleanOriginTrue() { originTrue = nullptr; }
+    void cleanOriginFalse() { originFalse = nullptr; }
 
    protected:
     BasicBlock* true_branch;
@@ -257,6 +293,7 @@ class RetInstruction : public Instruction {
             return std::vector<Operand*>({operands[0]});
         return std::vector<Operand*>();
     }
+    Instruction* copy();
 };
 
 class CallInstruction : public Instruction {
@@ -283,6 +320,11 @@ class CallInstruction : public Instruction {
     }
     SymbolEntry* getFuncSE() { return func; }
     bool genNode();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class ZextInstruction : public Instruction {
@@ -300,6 +342,11 @@ class ZextInstruction : public Instruction {
         return std::vector<Operand*>({operands[1]});
     }
     bool genNode();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class XorInstruction : public Instruction {
@@ -317,6 +364,11 @@ class XorInstruction : public Instruction {
     bool genNode();
     std::string getHash();
     bool isConstExp();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class GepInstruction : public Instruction {
@@ -354,6 +406,11 @@ class GepInstruction : public Instruction {
     bool genNode();
     std::string getHash();
     bool hasNoAsm() { return noAsm; }
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class PhiInstruction : public Instruction {
@@ -388,6 +445,12 @@ class PhiInstruction : public Instruction {
     std::string getHash();
     std::map<BasicBlock*, Operand*>& getSrcs() { return srcs; }
     void cleanUse();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        dst = def;
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class FptosiInstruction : public Instruction {
@@ -402,6 +465,11 @@ class FptosiInstruction : public Instruction {
     ~FptosiInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class SitofpInstruction : public Instruction {
@@ -416,6 +484,11 @@ class SitofpInstruction : public Instruction {
     ~SitofpInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class BitcastInstruction : public Instruction {
@@ -434,6 +507,13 @@ class BitcastInstruction : public Instruction {
         return std::vector<Operand*>({operands[1]});
     }
     bool genNode();
+    Instruction* copy();
+    Operand* getDef() { return operands[0]; }
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
+    void replaceUse(Operand* old, Operand* new_);
 };
 
 class ShlInstruction : public Instruction {
@@ -454,6 +534,11 @@ class ShlInstruction : public Instruction {
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
     bool isConstExp();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 class AshrInstruction : public Instruction {
@@ -474,6 +559,11 @@ class AshrInstruction : public Instruction {
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
     bool isConstExp();
+    Instruction* copy();
+    void setDef(Operand* def) {
+        operands[0] = def;
+        def->setDef(this);
+    }
 };
 
 #endif

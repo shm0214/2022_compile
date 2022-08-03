@@ -71,6 +71,7 @@ class Function {
     // 用于mem2reg 有调用其他函数的话则为true
     bool call;
     std::map<Function*, std::vector<Instruction*>> preds;
+    bool recur;
 
    public:
     Function() {}
@@ -123,6 +124,8 @@ class Function {
         return preds;
     };
     void addPred(Instruction* in);
+    void removePred(Instruction* in);
+    bool hasRecur() { return recur; }
 };
 
 #endif

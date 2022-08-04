@@ -12,7 +12,9 @@ void Unit::insertFunc(Function* f) {
 }
 
 void Unit::removeFunc(Function* func) {
-    func_list.erase(std::find(func_list.begin(), func_list.end(), func));
+    auto it = std::find(func_list.begin(), func_list.end(), func);
+    if (it != func_list.end())
+        func_list.erase(it);
 }
 
 void Unit::insertGlobal(SymbolEntry* se) {

@@ -2,6 +2,7 @@
 #include <unistd.h>
 #include <iostream>
 #include "Ast.h"
+#include "AutoInline.h"
 #include "CleanAsmAddZero.h"
 #include "ConstAsm.h"
 #include "CopyProp.h"
@@ -95,11 +96,14 @@ int main(int argc, char* argv[]) {
         ValueNumber vn(&unit);
         TreeHeightBalance thb(&unit);
         InsReorder ir(&unit);
+        AutoInline ai(&unit);
         m2r.pass();
         dce.pass();
+        ai.pass();
+        dce.pass();
         cp.copy_prop();
-        thb.pass();
         vn.pass();
+        thb.pass();
         euc.pass();
         s.pass();
         ir.pass();

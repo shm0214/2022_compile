@@ -70,6 +70,10 @@ class Function {
     std::set<Operand*> stores;
     // 用于mem2reg 有调用其他函数的话则为true
     bool call;
+    std::map<Function*, std::vector<Instruction*>> preds;
+    bool recur;
+    // used for auto inline
+    int instNum;
 
    public:
     Function() {}
@@ -118,6 +122,14 @@ class Function {
     std::set<Operand*>& getStores() { return stores; }
     bool hasCall() { return call; }
     void setHasCall() { call = true; }
+    std::map<Function*, std::vector<Instruction*>>& getPreds() {
+        return preds;
+    };
+    void addPred(Instruction* in);
+    void removePred(Instruction* in);
+    bool hasRecur() { return recur; }
+    void setInstNum(int num) { instNum = num; }
+    int getInstNum() { return instNum; }
 };
 
 #endif

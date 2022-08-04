@@ -79,10 +79,33 @@ bool DeadCodeElimination::remove(Function* func) {
     for (auto& block : func->getBlockList()) {
         for (auto it = block->begin(); it != block->end(); it = it->getNext()) {
             if (!it->isMark()) {
+                if (it->isRet()) {
+                    auto zero = new Operand(
+                        new ConstantSymbolEntry(TypeSystem::intType, 0));
+                    it->replaceUse(it->getUse()[0], zero);
+                    continue;
+                }
+                if (it->isCall()) {
+                    if (it->isEssential())
+                        continue;
+                    else {
+                        IdentifierSymbolEntry* funcSE =
+                            (IdentifierSymbolEntry*)(((CallInstruction*)it)
+                                                         ->getFuncSE());
+                        if (!funcSE->isSysy() &&
+                            funcSE->getName() != "llvm.memset.p0.i32") {
+                            auto func1 = funcSE->getFunction();
+                            func1->removePred(it);
+                        }
+                    }
+                }
                 if (!it->isUncond())
                     temp.push_back(it);
                 if (it->isCond()) {
                     BasicBlock* b = func->getMarkBranch(block);
+                    if (!b)
+                        // 这种情况只能是整个函数都没用 所以不处理了
+                        return false;
                     new UncondBrInstruction(b, block);
                     block->cleanSucc();
                     block->addSucc(b);

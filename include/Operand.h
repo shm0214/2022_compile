@@ -43,6 +43,19 @@ class Operand {
         return ((ConstantSymbolEntry*)se)->getValue();
     }
     int getLabel() const { return se->getLabel(); }
+    bool isParam() const {
+        if (se->isVariable())
+            return ((IdentifierSymbolEntry*)se)->isParam();
+        return false;
+    }
+    int getParamNo() const {
+        return ((IdentifierSymbolEntry*)se)->getParamNo();
+    }
+    bool isGlobal() const {
+        if (se->isVariable())
+            return ((IdentifierSymbolEntry*)se)->isGlobal();
+        return false;
+    }
 };
 
 #endif

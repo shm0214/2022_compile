@@ -192,6 +192,20 @@ void AutoInline::deal(CallInstruction* in) {
                             }
                             newIn->replaceUse(use, src);
                         }
+                        if (newIn->isGep()) {
+                            auto gep = (GepInstruction*)newIn;
+                            auto init = gep->getInit();
+                            if (init) {
+                                Operand* src;
+                                if (ope2ope.count(init))
+                                    src = ope2ope[init];
+                                else {
+                                    src = getTempOperand(init);
+                                    ope2ope[init] = src;
+                                }
+                                gep->setInit(src);
+                            }
+                        }
                     }
                 }
                 newBlock->insertBack(newIn);

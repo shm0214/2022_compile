@@ -396,7 +396,7 @@ class GepInstruction : public Instruction {
     void setFirst() { first = true; };
     void setLast() { last = true; };
     Operand* getInit() const { return init; };
-    void setInit(Operand* init, int off) {
+    void setInit(Operand* init, int off = 0) {
         this->init = init;
         this->off = off;
     };

@@ -7,7 +7,7 @@
 class AutoInline {
     Unit* unit;
     std::map<CallInstruction*, Function*> workList;
-    std::map<Function*, int> instNum;
+    std::set<Operand*> allocaDefs;
 
    public:
     AutoInline(Unit* unit) : unit(unit){};
@@ -17,6 +17,7 @@ class AutoInline {
     void deal(CallInstruction* in);
     void calRecursion();
     void calInstNum();
+    void dealAlloc(Function* func);
 };
 
 #endif

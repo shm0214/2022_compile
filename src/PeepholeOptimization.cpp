@@ -121,25 +121,25 @@ void PeepholeOptimization::pass() {
                 // this is found in performance/conv
                 // occurs when there is a mod 2 operation
                 // FIXME: not always correct
-                else if (curr_inst->isLoad() && next_inst->isDiv()) {
-                    auto maybe_imm = curr_inst->getUse()[0];
-                    if (!maybe_imm->isImm()) {
-                        continue;
-                    }
-                    auto ldr_dst = curr_inst->getDef()[0];
-                    auto div_src = next_inst->getUse()[1];
-                    if (ldr_dst->getReg() != div_src->getReg()) {
-                        continue;
-                    }
-                    if (maybe_imm->getVal() == 2) {
-                        auto new_inst = new MovMInstruction(
-                            block, MovMInstruction::MOVASR,
-                            next_inst->getDef()[0], next_inst->getUse()[0],
-                            MovMInstruction::NONE,
-                            new MachineOperand(MachineOperand::IMM, 1));
-                        *next_inst_iter = new_inst;
-                    }
-                }
+                // else if (curr_inst->isLoad() && next_inst->isDiv()) {
+                //     auto maybe_imm = curr_inst->getUse()[0];
+                //     if (!maybe_imm->isImm()) {
+                //         continue;
+                //     }
+                //     auto ldr_dst = curr_inst->getDef()[0];
+                //     auto div_src = next_inst->getUse()[1];
+                //     if (ldr_dst->getReg() != div_src->getReg()) {
+                //         continue;
+                //     }
+                //     if (maybe_imm->getVal() == 2) {
+                //         auto new_inst = new MovMInstruction(
+                //             block, MovMInstruction::MOVASR,
+                //             next_inst->getDef()[0], next_inst->getUse()[0],
+                //             MovMInstruction::NONE,
+                //             new MachineOperand(MachineOperand::IMM, 1));
+                //         *next_inst_iter = new_inst;
+                //     }
+                // }
 
                 for (auto inst : instToRemove) {
                     block->remove(inst);

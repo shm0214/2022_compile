@@ -16,11 +16,13 @@ void AutoInline::pass() {
     auto iter = unit->begin();
     while (iter != unit->end())
         pass(*iter++);
+    for (auto func : inlineFuncs)
+        unit->removeFunc(func);
 }
 
 void AutoInline::pass(Function* func) {
     workList.clear();
-    allocaDefs.clear();
+    // allocaDefs.clear();
     for (auto block : func->getBlockList()) {
         for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
             if (in->isCall()) {
@@ -30,6 +32,7 @@ void AutoInline::pass(Function* func) {
         }
     }
     for (auto it : workList) {
+        inlineFuncs.push_back(it.second);
         deal(it.first);
     }
     // if (allocaDefs.size())
@@ -185,8 +188,8 @@ void AutoInline::deal(CallInstruction* in) {
                                 ope2ope[def] = dst;
                             }
                             newIn->setDef(dst);
-                            if (in1->isAlloc())
-                                allocaDefs.insert(dst);
+                            // if (in1->isAlloc())
+                            //     allocaDefs.insert(dst);
                         }
                         auto uses = in1->getUse();
                         for (auto use : uses) {
@@ -347,27 +350,27 @@ void AutoInline::calInstNum() {
     }
 }
 
-void AutoInline::dealAlloc(Function* func) {
-    vector<Instruction*> rmvList;
-    map<Operand*, Operand*> ope2ope;
-    map<Operand*, Operand*> def2use;
-    for (auto it : allocaDefs)
-        rmvList.push_back(it->getDef());
-    for (auto block : func->getBlockList())
-        for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
-            auto uses = in->getUse();
-            for (auto use : uses)
-                if (ope2ope.count(use))
-                    in->replaceUse(use, ope2ope[use]);
-            if (uses.size())
-                if (allocaDefs.count(uses[0])) {
-                    if (in->isStore())
-                        def2use[uses[0]] = uses[1];
-                    if (in->isLoad())
-                        ope2ope[in->getDef()] = def2use[uses[0]];
-                    rmvList.push_back(in);
-                }
-        }
-    for (auto in : rmvList)
-        in->getParent()->remove(in);
-}
+// void AutoInline::dealAlloc(Function* func) {
+//     vector<Instruction*> rmvList;
+//     map<Operand*, Operand*> ope2ope;
+//     map<Operand*, Operand*> def2use;
+//     for (auto it : allocaDefs)
+//         rmvList.push_back(it->getDef());
+//     for (auto block : func->getBlockList())
+//         for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+//             auto uses = in->getUse();
+//             for (auto use : uses)
+//                 if (ope2ope.count(use))
+//                     in->replaceUse(use, ope2ope[use]);
+//             if (uses.size())
+//                 if (allocaDefs.count(uses[0])) {
+//                     if (in->isStore())
+//                         def2use[uses[0]] = uses[1];
+//                     if (in->isLoad())
+//                         ope2ope[in->getDef()] = def2use[uses[0]];
+//                     rmvList.push_back(in);
+//                 }
+//         }
+//     for (auto in : rmvList)
+//         in->getParent()->remove(in);
+// }

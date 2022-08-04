@@ -323,6 +323,7 @@ class CallInstruction : public Instruction {
     Instruction* copy();
     void setDef(Operand* def) {
         operands[0] = def;
+        dst = def;
         def->setDef(this);
     }
     // used for auto inline

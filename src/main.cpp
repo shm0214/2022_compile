@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
         euc.pass();
         s.pass();
         ir.pass();
-        // ssad.pass();
+        ssad.pass();
     }
     if (dump_ir) {
         unit.output();

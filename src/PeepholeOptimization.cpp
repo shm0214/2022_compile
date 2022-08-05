@@ -34,22 +34,22 @@ void PeepholeOptimization::pass() {
                     }
                 }
 
-                // fuse mul and add/sub
-                //     mul v0, v1, v2
-                //     add v3, v4, v0
-                //     -----
-                //     mla v3, v1, v2, v4
-                //
-                //     mul v0, v1, v2
-                //     sub v3, v4, v0
-                //     -----
-                //     mls v3, v1, v2, v4
-
-                // mla/mls rd, rn, rm, ra
-                // https://developer.arm.com/documentation/dui0489/c/arm-and-thumb-instructions/multiply-instructions/mul--mla--and-mls
-                // FIXME: problem at functional/71_full_conn.
-
                 if (curr_inst->isMul() && next_inst->isAdd()) {
+                    // fuse mul and add/sub
+                    //     mul v0, v1, v2
+                    //     add v3, v4, v0
+                    //     -----
+                    //     mla v3, v1, v2, v4
+                    //
+                    //     mul v0, v1, v2
+                    //     sub v3, v4, v0
+                    //     -----
+                    //     mls v3, v1, v2, v4
+
+                    // mla/mls rd, rn, rm, ra
+                    // https://developer.arm.com/documentation/dui0489/c/arm-and-thumb-instructions/multiply-instructions/mul--mla--and-mls
+                    // FIXME: problem at functional/71_full_conn.
+
                     auto mul_dst = curr_inst->getDef()[0];
                     auto add_src1 = next_inst->getUse()[0];
                     auto add_src2 = next_inst->getUse()[1];
@@ -91,14 +91,14 @@ void PeepholeOptimization::pass() {
                         block, FuseMInstruction::MLS, rd, rn, rm, ra);
                     *next_inst_iter = fused_inst;
                     instToRemove.insert(curr_inst);
-                }
-                // merge store and load into move
-                //     str v355, [v11]
-                //     ldr v227, [v11]
-                //     -----
-                //     str v355, [v11]
-                //     mov v227, v355
-                else if (curr_inst->isStore() && next_inst->isLoad()) {
+                } else if (curr_inst->isStore() && next_inst->isLoad()) {
+                    // convert store and load into store and move
+                    //     str v355, [v11]
+                    //     ldr v227, [v11]
+                    //     -----
+                    //     str v355, [v11]
+                    //     mov v227, v355
+
                     auto src = curr_inst->getUse()[0];
                     auto str_stk_src1 = curr_inst->getUse()[1];
                     MachineOperand* str_stk_src2 = nullptr;
@@ -135,36 +135,54 @@ void PeepholeOptimization::pass() {
                             *next_inst_iter = new_inst;
                         }
                     }
+                } else if (curr_inst->isLoad() && next_inst->isLoad()) {
+                    // convert same loads to load and move
+                    // 	   ldr r0, [fp, #-12]
+                    //     ldr r1, [fp, #-12]
+                    //     -----
+                    // 	   ldr r0, [fp, #-12]
+                    //     mov r1, r0
+                    // in performance/fft
+
+                    auto curr_src1 = curr_inst->getUse()[0];
+                    MachineOperand* curr_src2 = nullptr;
+                    if (curr_inst->getUse().size() > 1) {
+                        curr_src2 = curr_inst->getUse()[1];
+                    }
+                    auto next_src1 = next_inst->getUse()[0];
+                    MachineOperand* next_src2 = nullptr;
+                    if (next_inst->getUse().size() > 1) {
+                        next_src2 = next_inst->getUse()[1];
+                    }
+
+                    if (*curr_src1 == *next_src1 &&
+                        ((curr_src2 == nullptr && next_src2 == nullptr) ||
+                         (curr_src2 != nullptr && next_src2 != nullptr &&
+                          *curr_src2 == *next_src2))) {
+                        auto src = curr_inst->getDef()[0];
+                        auto dst = next_inst->getDef()[0];
+                        src = new MachineOperand(*src);
+                        dst = new MachineOperand(*dst);
+                        auto new_inst = new MovMInstruction(
+                            block, MovMInstruction::MOV, dst, src);
+                        *next_inst_iter = new_inst;
+                    }
+                } else if (curr_inst->isMov() && next_inst->isAdd()) {
+                    // array optimization after constant eval in asm
+                    // 	   mov r0, #-120
+                    //     add r0, fp, r0
+                    //     -----
+                    //     (mov r0, #-120)
+                    //     add r0, fp, #-120
+                    // TODO
+                    auto mov_dst = curr_inst->getDef()[0];
+                    auto mov_src = curr_inst->getUse()[0];
+
+                    auto add_dst = next_inst->getDef()[0];
+                    auto add_src1 = next_inst->getUse()[0];
+                    auto add_src2 = next_inst->getUse()[1];
+
                 }
-                // merge ldr 2 and sidv
-                //     ldr v0, #2
-                //     sdiv v2, v1, v0
-                //     -----
-                //     ldr v0, #2
-                //     mov v2, v1, ASR#1
-                //
-                // this is found in performance/conv
-                // occurs when there is a mod 2 operation
-                // FIXME: not always correct
-                // else if (curr_inst->isLoad() && next_inst->isDiv()) {
-                //     auto maybe_imm = curr_inst->getUse()[0];
-                //     if (!maybe_imm->isImm()) {
-                //         continue;
-                //     }
-                //     auto ldr_dst = curr_inst->getDef()[0];
-                //     auto div_src = next_inst->getUse()[1];
-                //     if (ldr_dst->getReg() != div_src->getReg()) {
-                //         continue;
-                //     }
-                //     if (maybe_imm->getVal() == 2) {
-                //         auto new_inst = new MovMInstruction(
-                //             block, MovMInstruction::MOVASR,
-                //             next_inst->getDef()[0], next_inst->getUse()[0],
-                //             MovMInstruction::NONE,
-                //             new MachineOperand(MachineOperand::IMM, 1));
-                //         *next_inst_iter = new_inst;
-                //     }
-                // }
 
                 for (auto inst : instToRemove) {
                     block->remove(inst);

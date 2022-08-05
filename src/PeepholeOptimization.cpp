@@ -172,9 +172,8 @@ void PeepholeOptimization::pass() {
                     // 	   mov r0, #-120
                     //     add r0, fp, r0
                     //     -----
-                    //     (mov r0, #-120)
                     //     add r0, fp, #-120
-                    // TODO
+
                     auto mov_dst = curr_inst->getDef()[0];
                     auto mov_src = curr_inst->getUse()[0];
 
@@ -182,6 +181,16 @@ void PeepholeOptimization::pass() {
                     auto add_src1 = next_inst->getUse()[0];
                     auto add_src2 = next_inst->getUse()[1];
 
+                    if (*mov_dst == *add_dst && *mov_dst == *add_src2 &&
+                        mov_src->isImm()) {
+                        auto dst = new MachineOperand(*mov_dst);
+                        auto src1 = new MachineOperand(*add_src1);
+                        auto src2 = new MachineOperand(*mov_src);
+                        auto new_inst = new BinaryMInstruction(
+                            block, BinaryMInstruction::ADD, dst, src1, src2);
+                        *next_inst_iter = new_inst;
+                        instToRemove.insert(curr_inst);
+                    }
                 }
 
                 for (auto inst : instToRemove) {

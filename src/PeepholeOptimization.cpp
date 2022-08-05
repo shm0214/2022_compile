@@ -11,6 +11,9 @@ void PeepholeOptimization::pass() {
         for (auto block_iter = func->begin(); block_iter != func->end();
              block_iter++) {
             auto block = *block_iter;
+            if (block->getInsts().empty()) {
+                continue;
+            }
             auto curr_inst_iter = block->begin();
             auto next_inst_iter = next(curr_inst_iter, 1);
 
@@ -20,6 +23,16 @@ void PeepholeOptimization::pass() {
                  curr_inst_iter++, next_inst_iter++) {
                 auto curr_inst = *curr_inst_iter;
                 auto next_inst = *next_inst_iter;
+                if (curr_inst->isMov()) {
+                    // mov r1, r1
+                    // occurs after register allocation and peephole in
+                    // performance/sort
+                    auto dst = curr_inst->getDef()[0];
+                    auto src = curr_inst->getUse()[0];
+                    if (*dst == *src) {
+                        instToRemove.insert(curr_inst);
+                    }
+                }
 
                 // fuse mul and add/sub
                 //     mul v0, v1, v2
@@ -99,16 +112,28 @@ void PeepholeOptimization::pass() {
                     if (next_inst->getUse().size() > 1) {
                         ldr_stk_src2 = next_inst->getUse()[1];
                     }
-                    if (str_stk_src1->getReg() == ldr_stk_src1->getReg() &&
-                        str_stk_src2 == nullptr && ldr_stk_src2 == nullptr) {
-                        // TODO: add offset support
-                        dst = new MachineOperand(*dst);
-                        src = new MachineOperand(*src);
-                        auto new_inst = new MovMInstruction(
-                            block, MovMInstruction::MOV, dst, src);
-                        // cannot determine whether the stack will be used
-                        // again or not.
-                        *next_inst_iter = new_inst;
+                    if (*str_stk_src1 == *ldr_stk_src1) {
+                        if (str_stk_src2 == nullptr &&
+                            ldr_stk_src2 == nullptr) {
+                            dst = new MachineOperand(*dst);
+                            src = new MachineOperand(*src);
+                            auto new_inst = new MovMInstruction(
+                                block, MovMInstruction::MOV, dst, src);
+                            // cannot determine whether the stack will be used
+                            // again or not.
+                            *next_inst_iter = new_inst;
+                        } else if (str_stk_src2 != nullptr &&
+                                   ldr_stk_src2 != nullptr &&
+                                   *str_stk_src2 == *ldr_stk_src2) {
+                            // for offset
+                            dst = new MachineOperand(*dst);
+                            src = new MachineOperand(*src);
+                            auto new_inst = new MovMInstruction(
+                                block, MovMInstruction::MOV, dst, src);
+                            // cannot determine whether the stack will be
+                            // used again or not.
+                            *next_inst_iter = new_inst;
+                        }
                     }
                 }
                 // merge ldr 2 and sidv

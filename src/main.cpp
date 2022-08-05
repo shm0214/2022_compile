@@ -133,7 +133,9 @@ int main(int argc, char* argv[]) {
     if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
+        PeepholeOptimization po(&mUnit);
         mdce.pass();
+        po.pass();
         ms.pass();
     }
     if (dump_asm)

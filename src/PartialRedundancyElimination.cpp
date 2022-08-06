@@ -105,14 +105,16 @@ void PartialRedundancyElimination::computeExpression(MachineFunction* func) {
     for (auto block : func->getBlocks())
         for (auto in : block->getInsts()) {
             auto type = in->getType();
-            // 感觉load还是不太行 全局变量可以做局部化 因为store有可能出错 
+            // 感觉load还是不太行 全局变量可以做局部化 因为store有可能出错
             // 如果不好做的话这里单独判断下 只对全局地址取吧
             if (type != MachineInstruction::BINARY &&
                 type != MachineInstruction::LOAD)
-            // if (type != MachineInstruction::BINARY)
                 continue;
             ins.push_back(in);
             auto uses = in->getUse();
+            // if (in->isLoad())
+            //     if (uses.size() != 1 || !uses[0]->isLabel())
+            //         continue;
             Expression expr;
             get<0>(expr) = type;
             get<1>(expr) = in->getOp();
@@ -129,8 +131,8 @@ void PartialRedundancyElimination::computeUseKill(MachineFunction* func) {
     for (auto block : func->getBlocks())
         for (auto in : block->getInsts()) {
             auto type = in->getType();
-            if (type != MachineInstruction::BINARY ||
-                type != MachineInstruction::LOAD) {
+            if (type == MachineInstruction::BINARY ||
+                type == MachineInstruction::LOAD) {
                 auto uses = in->getUse();
                 Expression expr;
                 get<0>(expr) = type;

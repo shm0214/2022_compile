@@ -53,7 +53,8 @@ bool MachineOperand::operator==(const MachineOperand& a) const {
         } else {
             return this->val == a.val;
         }
-    }
+    } else if (this->type == LABEL)
+        return this->label == a.label;
     return this->reg_no == a.reg_no;
 }
 
@@ -69,6 +70,8 @@ bool MachineOperand::operator<(const MachineOperand& a) const {
             } else if (!this->fpu && a.fpu) {
                 return this->val < a.fval;
             }
+        } else if (this->type == LABEL) {
+            return this->label < a.label;
         }
         return this->reg_no < a.reg_no;
     }
@@ -1091,4 +1094,16 @@ void MachineBlock::insertBefore(MachineInstruction* a, MachineInstruction* b) {
     auto it = find(inst_list.begin(), inst_list.end(), b);
     if (it != inst_list.end())
         inst_list.insert(it, a);
+}
+
+void MachineFunction::InsertAfter(MachineBlock* a, MachineBlock* b) {
+    auto it = find(block_list.begin(), block_list.end(), a);
+    if (it != block_list.end()) {
+        block_list.insert(it + 1, b);
+        no2Block[b->getNo()] = b;
+    }
+}
+
+void MachineBlock::insertFront(MachineInstruction* in) {
+    inst_list.insert(inst_list.begin(), in);
 }

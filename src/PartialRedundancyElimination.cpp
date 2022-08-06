@@ -107,9 +107,9 @@ void PartialRedundancyElimination::computeExpression(MachineFunction* func) {
             auto type = in->getType();
             // 感觉load还是不太行 全局变量可以做局部化 因为store有可能出错 
             // 如果不好做的话这里单独判断下 只对全局地址取吧
-            // if (type != MachineInstruction::BINARY &&
-            //     type != MachineInstruction::LOAD)
-            if (type != MachineInstruction::BINARY)
+            if (type != MachineInstruction::BINARY &&
+                type != MachineInstruction::LOAD)
+            // if (type != MachineInstruction::BINARY)
                 continue;
             ins.push_back(in);
             auto uses = in->getUse();

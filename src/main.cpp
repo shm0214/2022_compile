@@ -124,6 +124,7 @@ int main(int argc, char* argv[]) {
         PartialRedundancyElimination pre(&mUnit);
         caaz.pass();
         ca.pass();
+        // 效果一般 而且会导致编译时间长一些
         pre.pass();
         mdce.pass();
         po.pass();

@@ -788,24 +788,31 @@ void MachineBlock::output() {
             auto imm = (*it)->getUse()[1];
             imm->setVal(imm->getVal() + baseOffset);
         }
+        auto flag = true;
         if ((*it)->isAdd()) {
             auto dst = (*it)->getDef()[0];
             auto src1 = (*it)->getUse()[0];
             if (dst->isReg() && dst->getReg() == 13 && src1->isReg() &&
                 src1->getReg() == 13 && (*(it + 1))->isBX()) {
                 int size = parent->AllocSpace(0);
-                if (size < -255 || size > 255) {
-                    auto r1 = new MachineOperand(MachineOperand::REG, 1);
-                    auto off = new MachineOperand(MachineOperand::IMM, size);
-                    (new LoadMInstruction(nullptr, LoadMInstruction::LDR, r1,
-                                          off))
-                        ->output();
-                    (*it)->getUse()[1]->setReg(1);
-                } else
-                    (*it)->getUse()[1]->setVal(size);
+                if (!size) {
+                    flag = false;
+                } else {
+                    if (size < -255 || size > 255) {
+                        auto r1 = new MachineOperand(MachineOperand::REG, 1);
+                        auto off =
+                            new MachineOperand(MachineOperand::IMM, size);
+                        (new LoadMInstruction(nullptr, LoadMInstruction::LDR,
+                                              r1, off))
+                            ->output();
+                        (*it)->getUse()[1]->setReg(1);
+                    } else
+                        (*it)->getUse()[1]->setVal(size);
+                }
             }
         }
-        (*it)->output();
+        if (flag)
+            (*it)->output();
         count++;
         if (count % 500 == 0) {
             fprintf(yyout, "\tb .B%d\n", label);
@@ -842,16 +849,20 @@ void MachineFunction::output() {
     if (off % 8 != 0) {
         off = AllocSpace(4);
     }
-    auto size = new MachineOperand(MachineOperand::IMM, off);
-    if (off < -255 || off > 255) {
-        auto r4 = new MachineOperand(MachineOperand::REG, 4);
-        (new LoadMInstruction(nullptr, LoadMInstruction::LDR, r4, size))
-            ->output();
-        (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp, r4))
-            ->output();
-    } else {
-        (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp, size))
-            ->output();
+    if (off) {
+        auto size = new MachineOperand(MachineOperand::IMM, off);
+        if (off < -255 || off > 255) {
+            auto r4 = new MachineOperand(MachineOperand::REG, 4);
+            (new LoadMInstruction(nullptr, LoadMInstruction::LDR, r4, size))
+                ->output();
+            (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp,
+                                    r4))
+                ->output();
+        } else {
+            (new BinaryMInstruction(nullptr, BinaryMInstruction::SUB, sp, sp,
+                                    size))
+                ->output();
+        }
     }
     int count = 0;
     for (auto iter : block_list) {
@@ -886,6 +897,9 @@ void MachineFunction::addSavedRegs(int regno) {
 std::vector<MachineOperand*> MachineFunction::getSavedRegs() {
     std::vector<MachineOperand*> regs;
     for (auto it = saved_regs.begin(); it != saved_regs.end(); it++) {
+        // remove r3..
+        if (*it < 4)
+            continue;
         auto reg = new MachineOperand(MachineOperand::REG, *it);
         regs.push_back(reg);
     }

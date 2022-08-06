@@ -11,6 +11,9 @@ void PeepholeOptimization::pass() {
         for (auto block_iter = func->begin(); block_iter != func->end();
              block_iter++) {
             auto block = *block_iter;
+            if (block->getInsts().empty()) {
+                continue;
+            }
             auto curr_inst_iter = block->begin();
             auto next_inst_iter = next(curr_inst_iter, 1);
 
@@ -20,23 +23,33 @@ void PeepholeOptimization::pass() {
                  curr_inst_iter++, next_inst_iter++) {
                 auto curr_inst = *curr_inst_iter;
                 auto next_inst = *next_inst_iter;
-
-                // fuse mul and add/sub
-                //     mul v0, v1, v2
-                //     add v3, v4, v0
-                //     -----
-                //     mla v3, v1, v2, v4
-                //
-                //     mul v0, v1, v2
-                //     sub v3, v4, v0
-                //     -----
-                //     mls v3, v1, v2, v4
-
-                // mla/mls rd, rn, rm, ra
-                // https://developer.arm.com/documentation/dui0489/c/arm-and-thumb-instructions/multiply-instructions/mul--mla--and-mls
-                // FIXME: problem at functional/71_full_conn.
+                if (curr_inst->isMov()) {
+                    // mov r1, r1
+                    // occurs after register allocation and peephole in
+                    // performance/sort
+                    auto dst = curr_inst->getDef()[0];
+                    auto src = curr_inst->getUse()[0];
+                    if (*dst == *src) {
+                        instToRemove.insert(curr_inst);
+                    }
+                }
 
                 if (curr_inst->isMul() && next_inst->isAdd()) {
+                    // fuse mul and add/sub
+                    //     mul v0, v1, v2
+                    //     add v3, v4, v0
+                    //     -----
+                    //     mla v3, v1, v2, v4
+                    //
+                    //     mul v0, v1, v2
+                    //     sub v3, v4, v0
+                    //     -----
+                    //     mls v3, v1, v2, v4
+
+                    // mla/mls rd, rn, rm, ra
+                    // https://developer.arm.com/documentation/dui0489/c/arm-and-thumb-instructions/multiply-instructions/mul--mla--and-mls
+                    // FIXME: problem at functional/71_full_conn.
+
                     auto mul_dst = curr_inst->getDef()[0];
                     auto add_src1 = next_inst->getUse()[0];
                     auto add_src2 = next_inst->getUse()[1];
@@ -78,14 +91,14 @@ void PeepholeOptimization::pass() {
                         block, FuseMInstruction::MLS, rd, rn, rm, ra);
                     *next_inst_iter = fused_inst;
                     instToRemove.insert(curr_inst);
-                }
-                // merge store and load into move
-                //     str v355, [v11]
-                //     ldr v227, [v11]
-                //     -----
-                //     str v355, [v11]
-                //     mov v227, v355
-                else if (curr_inst->isStore() && next_inst->isLoad()) {
+                } else if (curr_inst->isStore() && next_inst->isLoad()) {
+                    // convert store and load into store and move
+                    //     str v355, [v11]
+                    //     ldr v227, [v11]
+                    //     -----
+                    //     str v355, [v11]
+                    //     mov v227, v355
+
                     auto src = curr_inst->getUse()[0];
                     auto str_stk_src1 = curr_inst->getUse()[1];
                     MachineOperand* str_stk_src2 = nullptr;
@@ -99,22 +112,89 @@ void PeepholeOptimization::pass() {
                     if (next_inst->getUse().size() > 1) {
                         ldr_stk_src2 = next_inst->getUse()[1];
                     }
-                    if (str_stk_src1->getReg() == ldr_stk_src1->getReg() &&
-                        str_stk_src2 == nullptr && ldr_stk_src2 == nullptr) {
-                        // TODO: add offset support
-                        dst = new MachineOperand(*dst);
+                    if (*str_stk_src1 == *ldr_stk_src1) {
+                        if (str_stk_src2 == nullptr &&
+                            ldr_stk_src2 == nullptr) {
+                            dst = new MachineOperand(*dst);
+                            src = new MachineOperand(*src);
+                            auto new_inst = new MovMInstruction(
+                                block, MovMInstruction::MOV, dst, src);
+                            // cannot determine whether the stack will be used
+                            // again or not.
+                            *next_inst_iter = new_inst;
+                        } else if (str_stk_src2 != nullptr &&
+                                   ldr_stk_src2 != nullptr &&
+                                   *str_stk_src2 == *ldr_stk_src2) {
+                            // for offset
+                            dst = new MachineOperand(*dst);
+                            src = new MachineOperand(*src);
+                            auto new_inst = new MovMInstruction(
+                                block, MovMInstruction::MOV, dst, src);
+                            // cannot determine whether the stack will be
+                            // used again or not.
+                            *next_inst_iter = new_inst;
+                        }
+                    }
+                } else if (curr_inst->isLoad() && next_inst->isLoad()) {
+                    // convert same loads to load and move
+                    // 	   ldr r0, [fp, #-12]
+                    //     ldr r1, [fp, #-12]
+                    //     -----
+                    // 	   ldr r0, [fp, #-12]
+                    //     mov r1, r0
+                    // in performance/fft
+
+                    auto curr_src1 = curr_inst->getUse()[0];
+                    MachineOperand* curr_src2 = nullptr;
+                    if (curr_inst->getUse().size() > 1) {
+                        curr_src2 = curr_inst->getUse()[1];
+                    }
+                    auto next_src1 = next_inst->getUse()[0];
+                    MachineOperand* next_src2 = nullptr;
+                    if (next_inst->getUse().size() > 1) {
+                        next_src2 = next_inst->getUse()[1];
+                    }
+
+                    if (*curr_src1 == *next_src1 &&
+                        ((curr_src2 == nullptr && next_src2 == nullptr) ||
+                         (curr_src2 != nullptr && next_src2 != nullptr &&
+                          *curr_src2 == *next_src2))) {
+                        auto src = curr_inst->getDef()[0];
+                        auto dst = next_inst->getDef()[0];
                         src = new MachineOperand(*src);
+                        dst = new MachineOperand(*dst);
                         auto new_inst = new MovMInstruction(
                             block, MovMInstruction::MOV, dst, src);
-                        // cannot determine whether the stack will be used
-                        // again or not.
+                        *next_inst_iter = new_inst;
+                    }
+                } else if (curr_inst->isMov() && next_inst->isAdd()) {
+                    // array optimization after constant eval in asm
+                    // 	   mov v1, #-120
+                    //     add v0, fp, v1
+                    //     -----
+                    //     mov v1, #-120 (might be eliminated as dead code)
+                    //     add v0, fp, #-120
+
+                    auto mov_dst = curr_inst->getDef()[0];
+                    auto mov_src = curr_inst->getUse()[0];
+
+                    auto add_dst = next_inst->getDef()[0];
+                    auto add_src1 = next_inst->getUse()[0];
+                    auto add_src2 = next_inst->getUse()[1];
+
+                    if (*mov_dst == *add_src2 && mov_src->isImm()) {
+                        auto dst = new MachineOperand(*add_dst);
+                        auto src1 = new MachineOperand(*add_src1);
+                        auto src2 = new MachineOperand(*mov_src);
+                        auto new_inst = new BinaryMInstruction(
+                            block, BinaryMInstruction::ADD, dst, src1, src2);
                         *next_inst_iter = new_inst;
                     }
                 }
-            }
 
-            for (auto inst : instToRemove) {
-                block->remove(inst);
+                for (auto inst : instToRemove) {
+                    block->remove(inst);
+                }
             }
         }
     }

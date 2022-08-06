@@ -15,6 +15,7 @@
 #include "MachineDeadCodeElimination.h"
 #include "MachineStraighten.h"
 #include "Mem2reg.h"
+#include "PartialRedundancyElimination.h"
 #include "PeepholeOptimization.h"
 #include "SSADestruction.h"
 #include "Starighten.h"
@@ -120,8 +121,11 @@ int main(int argc, char* argv[]) {
         CleanAsmAddZero caaz(&mUnit);
         ConstAsm ca(&mUnit);
         PeepholeOptimization po(&mUnit);
+        PartialRedundancyElimination pre(&mUnit);
         caaz.pass();
         ca.pass();
+        // 效果一般 而且会导致编译时间长一些
+        pre.pass();
         mdce.pass();
         po.pass();
         ms.pass();

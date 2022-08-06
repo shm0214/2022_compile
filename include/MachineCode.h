@@ -91,6 +91,8 @@ class MachineInstruction {
     void addUse(MachineOperand* ope) { use_list.push_back(ope); };
     // Print execution code after printing opcode
     void PrintCond();
+
+   public:
     enum instType {
         BINARY,
         LOAD,
@@ -103,8 +105,6 @@ class MachineInstruction {
         VMRS,
         FUSE
     };
-
-   public:
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
     virtual void output() = 0;
     void setNo(int no) { this->no = no; };
@@ -136,6 +136,8 @@ class MachineInstruction {
     bool isAddZero() const {
         return isAdd() && use_list[1]->isImm() && use_list[1]->getVal() == 0;
     }
+    int getType() { return type; }
+    int getOp() { return op; }
 };
 
 class FuseMInstruction : public MachineInstruction {
@@ -306,6 +308,7 @@ class MachineBlock {
     int getNo() const { return no; }
     // insert a before b
     void insertBefore(MachineInstruction* a, MachineInstruction* b);
+    void insertFront(MachineInstruction* in);
 };
 
 class MachineFunction {
@@ -357,6 +360,8 @@ class MachineFunction {
     void removeBlock(MachineBlock* block);
     MachineBlock* getBlock(int no) { return no2Block[no]; }
     MachineBlock* getNext(MachineBlock* block);
+    // insert b after a
+    void InsertAfter(MachineBlock* a, MachineBlock* b);
 };
 
 class MachineUnit {

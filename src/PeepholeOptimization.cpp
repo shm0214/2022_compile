@@ -201,5 +201,79 @@ void PeepholeOptimization::pass() {
                 block->remove(inst);
             }
         }
+        for (auto block_iter = func->begin(); block_iter != func->end();
+             block_iter++) {
+            auto block = *block_iter;
+            if (block->getInsts().empty()) {
+                continue;
+            }
+            auto curr_inst_iter = block->begin();
+            auto next_inst_iter = next(curr_inst_iter, 1);
+
+            std::set<MachineInstruction*> instToRemove;
+
+            for (; next_inst_iter != block->end();
+                 curr_inst_iter++, next_inst_iter++) {
+                auto curr_inst = *curr_inst_iter;
+                auto next_inst = *next_inst_iter;
+
+                if (curr_inst->isAdd() && next_inst->isStore()) {
+                    // array or overflow
+                    //   add v11, fp, #-128
+                    //   str v0, [v11]
+                    //  -----
+                    //   str v0, [fp, #-128]
+
+                    if (next_inst->getUse().size() > 2)
+                        continue;
+
+                    auto add_dst = curr_inst->getDef()[0];
+                    auto add_src1 = curr_inst->getUse()[0];
+                    auto add_src2 = curr_inst->getUse()[1];
+
+                    auto store_src1 = next_inst->getUse()[0];
+                    auto store_src2 = next_inst->getUse()[1];
+
+                    if (*add_dst == *store_src2) {
+                        auto src1 = new MachineOperand(*store_src1);
+                        auto src2 = new MachineOperand(*add_src1);
+                        auto src3 = new MachineOperand(*add_src2);
+                        auto new_inst = new StoreMInstruction(
+                            block, StoreMInstruction::STR, src1, src2, src3);
+                        *next_inst_iter = new_inst;
+                    }
+                } else if (curr_inst->isAdd() && next_inst->isLoad()) {
+                    // array or overflow
+                    //   add v11, fp, #-128
+                    //   ldr v0, [v11]
+                    //  -----
+                    //   ldr v0, [fp, #-128]
+
+                    if (next_inst->getUse().size() > 1)
+                        continue;
+
+                    auto add_dst = curr_inst->getDef()[0];
+                    auto add_src1 = curr_inst->getUse()[0];
+                    auto add_src2 = curr_inst->getUse()[1];
+
+                    auto load_dst = next_inst->getDef()[0];
+                    auto load_src1 = next_inst->getUse()[0];
+
+                    if (*add_dst == *load_src1) {
+                        auto src1 = new MachineOperand(*load_dst);
+                        auto src2 = new MachineOperand(*add_src1);
+                        auto src3 = new MachineOperand(*add_src2);
+                        auto new_inst = new LoadMInstruction(
+                            block, LoadMInstruction::LDR, src1, src2, src3);
+                        *next_inst_iter = new_inst;
+                        if (add_dst->isReg() && *add_dst == *load_dst)
+                            instToRemove.insert(curr_inst);
+                    }
+                }
+            }
+            for (auto inst : instToRemove) {
+                block->remove(inst);
+            }
+        }
     }
 }

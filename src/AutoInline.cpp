@@ -118,7 +118,7 @@ void AutoInline::deal(CallInstruction* in) {
             if (!in1->isPhi())
                 break;
             auto phi = (PhiInstruction*)in1;
-            phi->changeSrcBlock(temp);
+            phi->changeSrcBlock(temp, true);
         }
     }
     // copy func
@@ -262,6 +262,7 @@ void AutoInline::deal(CallInstruction* in) {
         auto oldPhi = (PhiInstruction*)(it.second);
         auto newPhi = (PhiInstruction*)(it.first);
         newPhi->getSrcs().clear();
+        newPhi->cleanUseInOperands();
         for (auto it : oldPhi->getSrcs()) {
             Operand* src;
             auto use = it.second;

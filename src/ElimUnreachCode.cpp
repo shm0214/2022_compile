@@ -4,11 +4,14 @@ using namespace std;
 
 void ElimUnreachCode::pass() {
     auto iter = unit->begin();
-    while (iter != unit->end())
-        pass(*iter++);
+    while (iter != unit->end()) {
+        pass1(*iter);
+        pass2(*iter);
+        iter++;
+    }
 }
 
-void ElimUnreachCode::pass(Function* func) {
+void ElimUnreachCode::pass1(Function* func) {
     auto blocks = getReachBlocks(func, 0);
     auto& blockList = func->getBlockList();
     int len = blockList.size();
@@ -27,7 +30,7 @@ void ElimUnreachCode::pass(Function* func) {
         for (auto iter = block->succ_begin(); iter != block->succ_end(); iter++)
             (*iter)->removePred(block);
         blockList.erase(blockList.begin() + i);
-        pass(func);
+        pass1(func);
     }
 }
 
@@ -52,4 +55,67 @@ vector<int> ElimUnreachCode::getReachBlocks(Function* func, int idx) {
         if (visited[i] && i != idx)
             ret.push_back(i);
     return ret;
+}
+
+void ElimUnreachCode::pass2(Function* func) {
+    // 删除由于常量传播等造成的常数条件if/while
+    map<Instruction*, bool> cmpIns;
+    for (auto block : func->getBlockList()) {
+        for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+            if (in->isCmp()) {
+                auto uses = in->getUse();
+                if (uses[0]->isConst() && uses[1]->isConst()) {
+                    auto val1 = uses[0]->getConstVal();
+                    auto val2 = uses[1]->getConstVal();
+                    bool result;
+                    switch (in->getOpcode()) {
+                        case CmpInstruction::E:
+                            result = val1 == val2;
+                            break;
+                        case CmpInstruction::NE:
+                            result = val1 != val2;
+                            break;
+                        case CmpInstruction::L:
+                            result = val1 < val2;
+                            break;
+                        case CmpInstruction::LE:
+                            result = val1 <= val2;
+                            break;
+                        case CmpInstruction::G:
+                            result = val1 > val2;
+                            break;
+                        case CmpInstruction::GE:
+                            result = val1 >= val2;
+                            break;
+                    }
+                    cmpIns[in] = result;
+                }
+            }
+        }
+    }
+    for (auto it : cmpIns) {
+        auto in = it.first;
+        auto parent = in->getParent();
+        auto def = in->getDef();
+        // 应该只有一个use吧
+        // assert(def->usersNum() == 1);
+        auto useIn = *(def->use_begin());
+        // 还需要xor的先不管了  性能里面应该不多
+        if (!useIn->isCond())
+            continue;
+        auto branch = (CondBrInstruction*)(*(def->use_begin()));
+        BasicBlock *dstBlock, *otherBlock;
+        if (it.second) {
+            dstBlock = branch->getTrueBranch();
+            otherBlock = branch->getFalseBranch();
+        } else {
+            dstBlock = branch->getFalseBranch();
+            otherBlock = branch->getTrueBranch();
+        }
+        new UncondBrInstruction(dstBlock, parent);
+        parent->removeSucc(otherBlock);
+        otherBlock->removePred(parent);
+        parent->remove(in);
+        parent->remove(branch);
+    }
 }

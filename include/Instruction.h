@@ -235,6 +235,9 @@ class CmpInstruction : public Instruction {
 };
 
 class UncondBrInstruction : public Instruction {
+   private:
+    bool noStraighten;
+
    public:
     UncondBrInstruction(BasicBlock*, BasicBlock* insert_bb = nullptr);
     void output() const;
@@ -242,6 +245,8 @@ class UncondBrInstruction : public Instruction {
     BasicBlock* getBranch();
     void genMachineCode(AsmBuilder*);
     Instruction* copy();
+    void setNoStraighten() { noStraighten = true; }
+    bool isNoStraighten() { return noStraighten; }
 
    protected:
     BasicBlock* branch;
@@ -274,6 +279,8 @@ class CondBrInstruction : public Instruction {
     BasicBlock* getOriginFalse() { return originFalse; }
     void cleanOriginTrue() { originTrue = nullptr; }
     void cleanOriginFalse() { originFalse = nullptr; }
+    void setOriginTrue(BasicBlock* block) { originTrue = block; }
+    void setOriginFalse(BasicBlock* block) { originFalse = block; }
 
    protected:
     BasicBlock* true_branch;
@@ -434,8 +441,8 @@ class PhiInstruction : public Instruction {
     void replaceDef(Operand* new_);
     Operand* getOriginDef() { return originDef; }
     void replaceOriginDef(Operand* new_);
-    void changeSrcBlock(
-        std::map<BasicBlock*, std::vector<BasicBlock*>> changes);
+    void changeSrcBlock(std::map<BasicBlock*, std::vector<BasicBlock*>> changes,
+                        bool flag = false);
     std::vector<Operand*> getUse() {
         std::vector<Operand*> ret;
         for (auto ope : operands)
@@ -454,6 +461,12 @@ class PhiInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    // only remove use in operands
+    // used for starighten::checkphi
+    void removeUse(Operand* use);
+    // remove all use operands
+    // used for auto inline
+    void cleanUseInOperands();
 };
 
 class FptosiInstruction : public Instruction {

@@ -259,6 +259,9 @@ void PeepholeOptimization::pass() {
                     auto load_dst = next_inst->getDef()[0];
                     auto load_src1 = next_inst->getUse()[0];
 
+                    if (add_dst->isReg() && !(*add_dst == *load_dst))
+                        continue;
+
                     if (*add_dst == *load_src1) {
                         auto src1 = new MachineOperand(*load_dst);
                         auto src2 = new MachineOperand(*add_src1);

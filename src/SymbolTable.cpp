@@ -56,9 +56,12 @@ std::string ConstantSymbolEntry::getStrValue() const {
 
 std::string ConstantSymbolEntry::toStr() {
     std::ostringstream buffer;
-    if (type->isInt())
-        buffer << (int)value;
-    else if (type->isFloat())
+    if (type->isInt()) {
+        if (value == 2147483648)
+            buffer << "2147483648";
+        else
+            buffer << (int)value;
+    } else if (type->isFloat())
         buffer << value;
     else if (type->isString())
         buffer << strValue;
@@ -78,7 +81,8 @@ IdentifierSymbolEntry::IdentifierSymbolEntry(Type* type,
     this->initial = false;
     this->label = -1;
     this->allZero = false;
-    this->constant = false;    
+    this->constant = false;
+    this->notZeroNum = 0;
 }
 
 void IdentifierSymbolEntry::setValue(double value) {

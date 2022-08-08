@@ -5,9 +5,12 @@ using namespace std;
 void Starighten::pass() {
     auto iter = unit->begin();
     while (iter != unit->end()) {
+        changes.clear();
         pass1(*iter);
         //pass2(*iter);
         pass3(*iter);
+        pass4(*iter);
+        checkPhi(*iter);
         iter++;
     }
 }
@@ -20,6 +23,9 @@ void Starighten::pass1(Function* func) {
             assert(*((*(i->succ_begin()))->pred_begin()) == i);
             auto j = *(i->succ_begin());
             fuseBlock(func, i, j);
+            if (changes.find(j) == changes.end())
+                changes.insert(make_pair(j, vector<BasicBlock*>()));
+            changes[j].push_back(i);
             pass1(func);
         }
     }
@@ -45,8 +51,14 @@ void Starighten::pass3(Function* func) {
     auto& blocklist = func->getBlockList();
     for (auto it = blocklist.begin(); it != blocklist.end();) {
         if ((*it)->begin() == (*it)->rbegin() && (*it)->begin()->isUncond()) {
+            if ((*it) == (*it)->getParent()->getEntry()) {
+                it++;
+                continue;
+            }
             auto block = ((UncondBrInstruction*)((*it)->begin()))->getBranch();
             block->removePred(*it);
+            if ((*it)->getNumOfPred())
+                changes.insert(make_pair(*it, vector<BasicBlock*>()));
             for (auto it1 = (*it)->pred_begin(); it1 != (*it)->pred_end();
                  it1++) {
                 auto ins = (*it1)->rbegin();
@@ -61,9 +73,12 @@ void Starighten::pass3(Function* func) {
                     if (unCondIns->getBranch() == *it)
                         unCondIns->setBranch(block);
                 }
+                auto succs = (*it1)->getSucc();
+                bool first = succs[0] == *it;
                 (*it1)->removeSucc(*it);
-                (*it1)->addSucc(block);
+                (*it1)->addSucc(block, first);
                 block->addPred(*it1);
+                changes[*it].push_back(*it1);
             }
             it = blocklist.erase(it);
         } else {
@@ -98,4 +113,33 @@ void Starighten::fuseBlock(Function* func, BasicBlock* i, BasicBlock* j) {
         (*it)->addPred(i);
     }
     func->remove(j);
+}
+
+void Starighten::checkPhi(Function* func) {
+    auto& blocklist = func->getBlockList();
+    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
+        (*it)->cleanPhiBlocks();
+        for (auto i = (*it)->begin(); i != (*it)->end(); i = i->getNext())
+            if (i->isPhi())
+                ((PhiInstruction*)i)->changeSrcBlock(changes);
+            else
+                break;
+    }
+}
+
+void Starighten::pass4(Function* func) {
+    // 解决由于DCE带来的无前驱块
+    auto& blocklist = func->getBlockList();
+    vector<BasicBlock*> temp;
+    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
+        if ((*it)->getNumOfPred() == 0 && *it != func->getEntry()) {
+            for (auto it1 = (*it)->pred_begin(); it1 != (*it)->pred_end();
+                 it1++) {
+                (*it1)->removePred(*it);
+            }
+            temp.push_back(*it);
+        }
+    }
+    for (auto b : temp)
+        func->remove(b);
 }

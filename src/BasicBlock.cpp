@@ -1,7 +1,7 @@
 #include "BasicBlock.h"
 #include <algorithm>
-#include "Function.h"
 #include <vector>
+#include "Function.h"
 
 using namespace std;
 extern FILE* yyout;
@@ -47,13 +47,20 @@ void BasicBlock::output() const {
         i->output();
 }
 
-void BasicBlock::addSucc(BasicBlock* bb) {
-    succ.push_back(bb);
+void BasicBlock::addSucc(BasicBlock* bb, bool first) {
+    if (first)
+        succ.insert(succ.begin(), bb);
+    else
+        succ.push_back(bb);
 }
 
 // remove the successor basicclock bb.
 void BasicBlock::removeSucc(BasicBlock* bb) {
     succ.erase(std::find(succ.begin(), succ.end(), bb));
+}
+
+void BasicBlock::removeSuccFromEnd(BasicBlock* bb) {
+    succ.erase((std::find(succ.rbegin(), succ.rend(), bb) + 1).base());
 }
 
 void BasicBlock::addPred(BasicBlock* bb) {
@@ -64,6 +71,11 @@ void BasicBlock::addPred(BasicBlock* bb) {
 void BasicBlock::removePred(BasicBlock* bb) {
     pred.erase(std::find(pred.begin(), pred.end(), bb));
 }
+
+void BasicBlock::removePredFromEnd(BasicBlock* bb) {
+    pred.erase((std::find(pred.rbegin(), pred.rend(), bb) + 1).base());
+}
+
 void BasicBlock::genMachineCode(AsmBuilder* builder) {
     auto cur_func = builder->getFunction();
     auto cur_block = new MachineBlock(cur_func, no);
@@ -80,6 +92,7 @@ BasicBlock::BasicBlock(Function* f) {
     parent = f;
     head = new DummyInstruction();
     head->setParent(this);
+    mark = false;
 }
 
 BasicBlock::~BasicBlock() {
@@ -102,4 +115,42 @@ void BasicBlock::cleanSucc() {
     for (auto i : succ)
         i->removePred(this);
     vector<BasicBlock*>().swap(succ);
+}
+
+void BasicBlock::cleanMark() {
+    auto inst = head->getNext();
+    while (inst != head) {
+        inst->unsetMark();
+        inst = inst->getNext();
+    }
+}
+void BasicBlock::insertPhiInstruction(Operand* dst) {
+    Instruction* i = new PhiInstruction(dst);
+    insertFront(i);
+}
+
+void BasicBlock::deleteBack(int num) {
+    while (num--) {
+        remove(head->getPrev());
+    }
+}
+
+bool BasicBlock::isBefore(Instruction* a, Instruction* b) {
+    if (a->getParent() != this)
+        return true;
+    assert(b->getParent() == this);
+    auto temp = a;
+    while (temp != head) {
+        if (temp == b)
+            return true;
+        temp = temp->getNext();
+    }
+    return false;
+}
+
+void BasicBlock::replaceIns(Instruction* old, Instruction* new_) {
+    old->getPrev()->setNext(new_);
+    new_->setPrev(old->getPrev());
+    old->getNext()->setPrev(new_);
+    new_->setNext(old->getNext());
 }

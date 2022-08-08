@@ -36,6 +36,7 @@ class Node {
     void setNext(Node* node);
     void setAdjNext(Node* node) { next = node; }
     Node* getNext() { return next; }
+    void cleanNext() { next = nullptr; }
     virtual bool typeCheck(Type* retType = nullptr) = 0;
     virtual void genCode() = 0;
     std::vector<Instruction*>& trueList() { return true_list; }
@@ -49,13 +50,24 @@ class ExprNode : public Node {
     int kind;
 
    protected:
-    enum { EXPR, INITVALUELISTEXPR, IMPLICITCASTEXPR, UNARYEXPR, BINARYEXPR};
+    enum {
+        EXPR,
+        INITVALUELISTEXPR,
+        IMPLICITCASTEXPR,
+        UNARYEXPR,
+        BINARYEXPR,
+        CALLEXPR,
+        CONSTANT,
+        ID,
+        INITVALUEEXPR
+    };
     Type* type;
     SymbolEntry* symbolEntry;
     Operand* dst;  // The result of the subtree is stored into dst.
    public:
     ExprNode(SymbolEntry* symbolEntry, int kind = EXPR)
         : kind(kind), symbolEntry(symbolEntry){};
+    // ExprNode(const ExprNode& e);
     Operand* getOperand() { return dst; };
     void output(int level);
     virtual double getValue() { return -1; };
@@ -69,8 +81,9 @@ class ExprNode : public Node {
     void genCode();
     virtual Type* getType() { return type; };
     Type* getOriginType() { return type; };
+    ExprNode* copy();
     ExprNode* const_fold();
-    int fold_const(bool &flag);
+    int fold_const(bool& flag);
     ExprNode* alge_simple(int depth);
 };
 
@@ -96,6 +109,7 @@ class BinaryExpr : public ExprNode {
         NOTEQUAL
     };
     BinaryExpr(SymbolEntry* se, int op, ExprNode* expr1, ExprNode* expr2);
+    BinaryExpr(const BinaryExpr& b);
     void output(int level);
     double getValue();
     bool typeCheck(Type* retType = nullptr);
@@ -113,6 +127,7 @@ class UnaryExpr : public ExprNode {
    public:
     enum { NOT, SUB };
     UnaryExpr(SymbolEntry* se, int op, ExprNode* expr);
+    UnaryExpr(const UnaryExpr& u);
     void output(int level);
     double getValue();
     bool typeCheck(Type* retType = nullptr);
@@ -128,6 +143,7 @@ class CallExpr : public ExprNode {
 
    public:
     CallExpr(SymbolEntry* se, ExprNode* param = nullptr);
+    CallExpr(const CallExpr& c);
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
@@ -135,10 +151,14 @@ class CallExpr : public ExprNode {
 
 class Constant : public ExprNode {
    public:
-    Constant(SymbolEntry* se) : ExprNode(se) {
+    Constant(SymbolEntry* se) : ExprNode(se, CONSTANT) {
         dst = new Operand(se);
         type = se->getType();
     };
+    Constant(const Constant& c) : ExprNode(c) {
+        symbolEntry = c.symbolEntry;
+        dst = new Operand(symbolEntry);
+    }
     void output(int level);
     double getValue();
     bool typeCheck(Type* retType = nullptr);
@@ -152,7 +172,7 @@ class Id : public ExprNode {
 
    public:
     Id(SymbolEntry* se, ExprNode* arrIdx = nullptr)
-        : ExprNode(se), arrIdx(arrIdx) {
+        : ExprNode(se, ID), arrIdx(arrIdx) {
         if (se) {
             type = se->getType();
             if (type->isInt()) {
@@ -171,6 +191,25 @@ class Id : public ExprNode {
             }
         }
     };
+    Id(const Id& i) : ExprNode(i) {
+        if (i.arrIdx)
+            arrIdx = i.arrIdx->copy();
+        auto se = i.symbolEntry;
+        if (se) {
+            symbolEntry = se;
+            type = se->getType();
+            if (type->isInt()) {
+                SymbolEntry* temp = new TemporarySymbolEntry(
+                    TypeSystem::intType, SymbolTable::getLabel());
+                dst = new Operand(temp);
+            } else if (type->isArray()) {
+                SymbolEntry* temp = new TemporarySymbolEntry(
+                    new PointerType(((ArrayType*)type)->getElementType()),
+                    SymbolTable::getLabel());
+                dst = new Operand(temp);
+            }
+        }
+    }
     void output(int level);
     bool typeCheck(Type* retType = nullptr);
     void genCode();
@@ -183,7 +222,7 @@ class Id : public ExprNode {
 
 class ImplicitValueInitExpr : public ExprNode {
    public:
-    ImplicitValueInitExpr(SymbolEntry* se) : ExprNode(se){};
+    ImplicitValueInitExpr(SymbolEntry* se) : ExprNode(se, IMPLICITCASTEXPR){};
     void output(int level);
 };
 
@@ -220,6 +259,12 @@ class ImplicitCastExpr : public ExprNode {
         symbolEntry = new TemporarySymbolEntry(type, SymbolTable::getLabel());
         dst = new Operand(symbolEntry);
     };
+    ImplicitCastExpr(const ImplicitCastExpr& i) : ExprNode(i) {
+        expr = i.expr->copy();
+        symbolEntry = new TemporarySymbolEntry(TypeSystem::boolType,
+                                               SymbolTable::getLabel());
+        dst = new Operand(symbolEntry);
+    }
     void output(int level);
     ExprNode* getExpr() const { return expr; };
     bool typeCheck(Type* retType = nullptr) { return false; };
@@ -265,6 +310,7 @@ class DeclStmt : public StmtNode {
    private:
     Id* id;
     ExprNode* expr;
+    static bool hasMemset;
 
    public:
     DeclStmt(Id* id, ExprNode* expr = nullptr);
@@ -273,6 +319,7 @@ class DeclStmt : public StmtNode {
     void genCode();
     Id* getId() { return id; };
 };
+
 
 class BlankStmt : public StmtNode {
    public:
@@ -425,7 +472,7 @@ class Ast {
    public:
     Ast() { root = nullptr; }
     void setRoot(Node* n) { root = n; }
-    Node* getRoot() { return root;}
+    Node* getRoot() { return root; }
     void output();
     bool typeCheck(Type* retType = nullptr);
     void genCode(Unit* unit);

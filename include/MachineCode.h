@@ -32,11 +32,13 @@ class MachineOperand {
     int val;            // value of immediate number
     int reg_no;         // register no
     std::string label;  // address label
-    bool is_float = false;
+    bool param = false;
+    bool fpu = false;  // floating point
     float fval;
+
    public:
     enum { IMM, VREG, REG, LABEL };
-    MachineOperand(int tp, int val);
+    MachineOperand(int tp, int val, bool fpu = false);
     MachineOperand(std::string label);
     MachineOperand(int tp, float fval);
     bool operator==(const MachineOperand&) const;
@@ -48,8 +50,12 @@ class MachineOperand {
     int getVal() { return this->val; };
     void setVal(int val) { this->val = val; };
     float getFVal() { return this->fval; }
-    void setFVal(float val) { this->fval = fval; is_float = true; }
-    bool isFloat() { return this->is_float; }
+    void setFVal(float fval) {
+        this->fval = fval;
+        this->fpu = true;
+    }
+    uint32_t getBinVal();
+    bool isFloat() { return this->fpu; }
     int getReg() { return this->reg_no; };
     void setReg(int regno) {
         this->type = REG;
@@ -60,6 +66,9 @@ class MachineOperand {
     MachineInstruction* getParent() { return this->parent; };
     void PrintReg();
     void output();
+    bool needColor() { return type == VREG || (type == REG && reg_no < 11); }
+    void setParam() { param = true; }
+    bool isParam() { return param; }
 };
 
 class MachineInstruction {
@@ -78,7 +87,7 @@ class MachineInstruction {
     void addUse(MachineOperand* ope) { use_list.push_back(ope); };
     // Print execution code after printing opcode
     void PrintCond();
-    enum instType { BINARY, LOAD, STORE, MOV, BRANCH, CMP, STACK };
+    enum instType { BINARY, LOAD, STORE, MOV, BRANCH, CMP, STACK, VCVT, VMRS };
 
    public:
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
@@ -92,13 +101,27 @@ class MachineInstruction {
     MachineBlock* getParent() const { return parent; };
     // 简单起见这样写了
     bool isBX() const { return type == BRANCH && op == 2; };
+    bool isBL() const { return type == BRANCH && op == 1; };
+    bool isB() const { return type == BRANCH && op == 0; };
+    bool isLoad() const { return type == LOAD; }
     bool isStore() const { return type == STORE; };
+    bool isBinary() const { return type == BINARY; }
     bool isAdd() const { return type == BINARY && op == 0; };
+    bool isSub() const { return type == BINARY && op == 1; };
+    bool isMul() const { return type == BINARY && op == 2; };
+    bool isDiv() const { return type == BINARY && op == 3; };
+    bool isMov() const { return type == MOV && op == 0; };
+    bool isCondMov() const { return type == MOV && op == 0 && cond != NONE; };
+    void replaceUse(MachineOperand* old, MachineOperand* new_);
+    void replaceDef(MachineOperand* old, MachineOperand* new_);
+    int getCond() const { return cond; }
+    void setCond(int cond) { this->cond = cond; }
+    void setParent(MachineBlock* block) { this->parent = block; }
 };
 
 class BinaryMInstruction : public MachineInstruction {
    public:
-    enum opType { ADD, SUB, MUL, DIV, AND, OR };
+    enum opType { ADD, SUB, MUL, DIV, AND, OR, VADD, VSUB, VMUL, VDIV };
     BinaryMInstruction(MachineBlock* p,
                        int op,
                        MachineOperand* dst,
@@ -110,7 +133,9 @@ class BinaryMInstruction : public MachineInstruction {
 
 class LoadMInstruction : public MachineInstruction {
    public:
+    enum opType { LDR, VLDR };
     LoadMInstruction(MachineBlock* p,
+                     int op,
                      MachineOperand* dst,
                      MachineOperand* src1,
                      MachineOperand* src2 = nullptr,
@@ -120,7 +145,9 @@ class LoadMInstruction : public MachineInstruction {
 
 class StoreMInstruction : public MachineInstruction {
    public:
+    enum opType { STR, VSTR };
     StoreMInstruction(MachineBlock* p,
+                      int op,
                       MachineOperand* src1,
                       MachineOperand* src2,
                       MachineOperand* src3 = nullptr,
@@ -130,12 +157,13 @@ class StoreMInstruction : public MachineInstruction {
 
 class MovMInstruction : public MachineInstruction {
    public:
-    enum opType { MOV, MVN };
+    enum opType { MOV, MVN, MOVT, VMOV, VMOVF32, MOVLSL, MOVASR };
     MovMInstruction(MachineBlock* p,
                     int op,
                     MachineOperand* dst,
                     MachineOperand* src,
-                    int cond = MachineInstruction::NONE);
+                    int cond = MachineInstruction::NONE,
+                    MachineOperand* num = nullptr);
     void output();
 };
 
@@ -151,23 +179,41 @@ class BranchMInstruction : public MachineInstruction {
 
 class CmpMInstruction : public MachineInstruction {
    public:
-    enum opType { CMP };
+    enum opType { CMP, VCMP };
     CmpMInstruction(MachineBlock* p,
+                    int op,
                     MachineOperand* src1,
                     MachineOperand* src2,
                     int cond = MachineInstruction::NONE);
     void output();
 };
 
-class StackMInstrcuton : public MachineInstruction {
+class StackMInstruction : public MachineInstruction {
    public:
-    enum opType { PUSH, POP };
-    StackMInstrcuton(MachineBlock* p,
+    enum opType { PUSH, POP, VPUSH, VPOP };
+    StackMInstruction(MachineBlock* p,
+                      int op,
+                      std::vector<MachineOperand*> srcs,
+                      MachineOperand* src = nullptr,
+                      MachineOperand* src1 = nullptr,
+                      int cond = MachineInstruction::NONE);
+    void output();
+};
+
+class VcvtMInstruction : public MachineInstruction {
+   public:
+    enum opType { S2F, F2S };
+    VcvtMInstruction(MachineBlock* p,
                      int op,
-                     std::vector<MachineOperand*> srcs,
+                     MachineOperand* dst,
                      MachineOperand* src,
-                     MachineOperand* src1 = nullptr,
                      int cond = MachineInstruction::NONE);
+    void output();
+};
+
+class VmrsMInstruction : public MachineInstruction {
+   public:
+    VmrsMInstruction(MachineBlock* p);
     void output();
 };
 
@@ -179,6 +225,8 @@ class MachineBlock {
     std::vector<MachineInstruction*> inst_list;
     std::set<MachineOperand*> live_in;
     std::set<MachineOperand*> live_out;
+    std::set<MachineOperand*> def_in;
+    std::set<MachineOperand*> def_out;
     int cmpCond;
     static int label;
 
@@ -196,11 +244,14 @@ class MachineBlock {
     };
     void InsertInst(MachineInstruction* inst) {
         this->inst_list.push_back(inst);
+        inst->setParent(this);
     };
     void addPred(MachineBlock* p) { this->pred.push_back(p); };
     void addSucc(MachineBlock* s) { this->succ.push_back(s); };
     std::set<MachineOperand*>& getLiveIn() { return live_in; };
     std::set<MachineOperand*>& getLiveOut() { return live_out; };
+    std::set<MachineOperand*>& getDefIn() { return def_in; };
+    std::set<MachineOperand*>& getDefOut() { return def_out; };
     std::vector<MachineBlock*>& getPreds() { return pred; };
     std::vector<MachineBlock*>& getSuccs() { return succ; };
     void output();
@@ -208,6 +259,15 @@ class MachineBlock {
     void setCmpCond(int cond) { cmpCond = cond; };
     int getSize() const { return inst_list.size(); };
     MachineFunction* getParent() const { return parent; };
+    bool isBefore(MachineInstruction* a, MachineInstruction* b);
+    void replace(MachineInstruction* before, MachineInstruction* after);
+    void remove(MachineInstruction* ins);
+    MachineInstruction* getNext(MachineInstruction* in);
+    std::string getLabel();
+    void cleanSucc();
+    void removePred(MachineBlock* block);
+    void removeSucc(MachineBlock* block);
+    int getNo() const { return no; }
 };
 
 class MachineFunction {
@@ -216,8 +276,11 @@ class MachineFunction {
     std::vector<MachineBlock*> block_list;
     int stack_size;
     std::set<int> saved_regs;
+    std::set<int> saved_fpregs;
     SymbolEntry* sym_ptr;
     int paramsNum;
+    MachineBlock* entry;
+    std::map<int, MachineBlock*> no2Block;
 
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };
@@ -236,12 +299,26 @@ class MachineFunction {
     };
     void InsertBlock(MachineBlock* block) {
         this->block_list.push_back(block);
+        no2Block[block->getNo()] = block;
     };
-    void addSavedRegs(int regno) { saved_regs.insert(regno); };
+    void addSavedRegs(int regno);
     void output();
     std::vector<MachineOperand*> getSavedRegs();
+    std::vector<MachineOperand*> getSavedFpRegs();
     int getParamsNum() const { return paramsNum; };
     MachineUnit* getParent() const { return parent; };
+    void setEntry(MachineBlock* entry) { this->entry = entry; }
+    MachineBlock* getEntry() { return entry; };
+    SymbolEntry* getSymbolEntry() { return sym_ptr; };
+    int getSize() const {
+        int res = 0;
+        for (auto block : block_list)
+            res += block->getSize();
+        return res;
+    };
+    void removeBlock(MachineBlock* block);
+    MachineBlock* getBlock(int no) { return no2Block[no]; }
+    MachineBlock* getNext(MachineBlock* block);
 };
 
 class MachineUnit {

@@ -131,6 +131,42 @@ void FunctionDef::genCode() {
             }
         }
     }
+    // 如果已经有ret了，删除后面的指令
+    for (auto it = func->begin(); it != func->end(); it++) {
+        auto block = *it;
+        bool flag = false;
+        for (auto i = block->begin(); i != block->end(); i = i->getNext()) {
+            if (flag) {
+                block->remove(i);
+                delete i;
+                continue;
+            }
+            if (i->isRet())
+                flag = true;
+        }
+        if (flag) {
+            while (block->succ_begin() != block->succ_end()) {
+                auto b = *(block->succ_begin());
+                block->removeSucc(b);
+                b->removePred(block);
+            }
+        }
+    }
+    while (true) {
+        bool flag = false;
+        for (auto it = func->begin(); it != func->end(); it++) {
+            auto block = *it;
+            if (block == func->getEntry())
+                continue;
+            if (block->getNumOfPred() == 0) {
+                delete block;
+                flag = true;
+                break;
+            }
+        }
+        if (!flag)
+            break;
+    }
 }
 
 BinaryExpr::BinaryExpr(SymbolEntry* se,
@@ -259,6 +295,15 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
     }
 };
 
+BinaryExpr::BinaryExpr(const BinaryExpr& b) : ExprNode(b) {
+    op = b.op;
+    expr1 = b.expr1->copy();
+    expr2 = b.expr2->copy();
+    symbolEntry = new TemporarySymbolEntry(b.symbolEntry->getType(),
+                                           SymbolTable::getLabel());
+    dst = new Operand(symbolEntry);
+}
+
 void BinaryExpr::genCode() {
     BasicBlock* bb = builder->getInsertBB();
     Function* func = bb->getParent();
@@ -359,15 +404,15 @@ void BinaryExpr::genCode() {
     }
 }
 
-ExprNode* BinaryExpr::getLeft(){
+ExprNode* BinaryExpr::getLeft() {
     return this->expr1;
 }
 
-ExprNode* BinaryExpr::getRight(){
+ExprNode* BinaryExpr::getRight() {
     return this->expr2;
 }
 
-ExprNode* UnaryExpr::getSubExpr(){
+ExprNode* UnaryExpr::getSubExpr() {
     return this->expr;
 }
 void Constant::genCode() {
@@ -378,10 +423,9 @@ void Id::genCode() {
     BasicBlock* bb = builder->getInsertBB();
     Operand* addr =
         dynamic_cast<IdentifierSymbolEntry*>(symbolEntry)->getAddr();
-    if (type->isInt() || type->isFloat()){
+    if (type->isInt() || type->isFloat()) {
         new LoadInstruction(dst, addr, bb);
-    }
-    else if (type->isArray()) {
+    } else if (type->isArray()) {
         if (arrIdx) {
             Type* type = ((ArrayType*)(this->type))->getElementType();
             Type* type1 = this->type;
@@ -524,6 +568,8 @@ void SeqNode::genCode() {
     stmt2->genCode();
 }
 
+bool DeclStmt::hasMemset = false;
+
 void DeclStmt::genCode() {
     IdentifierSymbolEntry* se =
         dynamic_cast<IdentifierSymbolEntry*>(id->getSymbolEntry());
@@ -546,8 +592,8 @@ void DeclStmt::genCode() {
         // if (se->isParam() && se->getType()->isArray())
         //     type = new PointerType(TypeSystem::intType);
         // else
-        type = new PointerType(se->getType()); //yr
-        addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel()); //yr
+        type = new PointerType(se->getType());                              //yr
+        addr_se = new TemporarySymbolEntry(type, SymbolTable::getLabel());  //yr
         // addr_se = se; //yr
         addr = new Operand(addr_se);
         alloca = new AllocaInstruction(addr, se);
@@ -560,9 +606,56 @@ void DeclStmt::genCode() {
         se->setAddr(addr);  // set the addr operand in symbol entry so that
                             // we can use it in subsequent code generation.
                             // can use it in subsequent code generation.
+        bool useMemset = false;
+        if (expr && se->getType()->isArray()) {
+            int notZeroNum = se->getNotZeroNum();
+            int size = se->getType()->getSize() / 8;
+            int length = size / 4;
+            if (notZeroNum < length / 2) {
+                useMemset = true;
+                auto int8PtrType = new PointerType(TypeSystem::int8Type);
+                Operand* int8Ptr = new Operand(new TemporarySymbolEntry(
+                    int8PtrType, SymbolTable::getLabel()));
+                auto bb = builder->getInsertBB();
+                new BitcastInstruction(int8Ptr, addr, bb);
+                std::string name = "llvm.memset.p0.i32";
+                SymbolEntry* funcSE;
+                if (!hasMemset) {
+                    hasMemset = true;
+                    std::vector<Type*> vec;
+                    vec.push_back(int8PtrType);
+                    vec.push_back(TypeSystem::int8Type);
+                    vec.push_back(TypeSystem::intType);
+                    vec.push_back(TypeSystem::boolType);
+                    std::vector<SymbolEntry*> vec1;
+                    auto funcType =
+                        new FunctionType(TypeSystem::voidType, vec, vec1);
+                    SymbolTable* st = identifiers;
+                    while (st->getPrev())
+                        st = st->getPrev();
+                    funcSE = new IdentifierSymbolEntry(funcType, name,
+                                                       st->getLevel());
+                    st->install(name, funcSE);
+                    unit.insertDeclare(funcSE);
+                } else {
+                    funcSE = identifiers->lookup(name);
+                    assert(funcSE);
+                }
+                std::vector<Operand*> params;
+                params.push_back(int8Ptr);
+                params.push_back(new Operand(
+                    new ConstantSymbolEntry(TypeSystem::int8Type, 0)));
+                params.push_back(new Operand(
+                    new ConstantSymbolEntry(TypeSystem::intType, size)));
+                params.push_back(new Operand(
+                    new ConstantSymbolEntry(TypeSystem::boolType, 0)));
+                new CallInstruction(nullptr, funcSE, params, bb);
+            }
+        }
         if (expr) {
             if (expr->isInitValueListExpr()) {
                 Operand* init = nullptr;
+                int off = 0;
                 BasicBlock* bb = builder->getInsertBB();
                 ExprNode* temp = expr;
                 std::stack<ExprNode*> stk;
@@ -592,7 +685,8 @@ void DeclStmt::genCode() {
                                         ->getOperand();
                             auto gep =
                                 new GepInstruction(tempDst, tempSrc, index, bb);
-                            gep->setInit(init);
+                            // if (!useMemset)
+                            gep->setInit(init, off);
                             if (flag) {
                                 gep->setFirst();
                                 flag = false;
@@ -602,13 +696,24 @@ void DeclStmt::genCode() {
                                 type == TypeSystem::floatType ||
                                 type == TypeSystem::constFloatType) {
                                 gep->setLast();
-                                init = tempDst;
                                 break;
                             }
                             type = ((ArrayType*)type)->getElementType();
                             tempSrc = tempDst;
                         }
-                        new StoreInstruction(tempDst, temp->getOperand(), bb);
+                        if (useMemset &&
+                            temp->getOperand()->getEntry()->isConstant() &&
+                            ((ConstantSymbolEntry*)(temp->getOperand()
+                                                        ->getEntry()))
+                                    ->getValue() == 0) {
+                            bb->deleteBack(idx.size() - 1);
+                            off += 4;
+                        } else {
+                            init = tempDst;
+                            off = 0;
+                            new StoreInstruction(tempDst, temp->getOperand(),
+                                                 bb);
+                        }
                     }
                     while (true) {
                         if (temp->getNext()) {
@@ -674,34 +779,6 @@ void BreakStmt::genCode() {
     builder->setInsertBB(break_next_bb);
 }
 void WhileStmt::genCode() {
-    // Function* func;
-    // BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
-    // bb = builder->getInsertBB();
-    // func = builder->getInsertBB()->getParent();
-    // cond_bb = new BasicBlock(func);
-    // while_bb = new BasicBlock(func);
-    // end_bb = new BasicBlock(func);
-
-    // this->cond_bb = cond_bb;
-    // this->end_bb = end_bb;
-
-    // new UncondBrInstruction(cond_bb, bb);
-
-    // builder->setInsertBB(cond_bb);
-    // cond->genCode();
-    // backPatch(cond->trueList(), while_bb);
-    // backPatch(cond->falseList(), end_bb);
-    // // Operand* condoperand= cond->getOperand();
-    // // new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
-
-    // builder->setInsertBB(while_bb);
-    // stmt->genCode();
-
-    // while_bb = builder->getInsertBB();
-    // new UncondBrInstruction(cond_bb, while_bb);
-
-    // builder->setInsertBB(end_bb);
-
     Function* func;
     BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
     bb = builder->getInsertBB();
@@ -719,22 +796,52 @@ void WhileStmt::genCode() {
     cond->genCode();
     backPatch(cond->trueList(), while_bb);
     backPatch(cond->falseList(), end_bb);
+    // Operand* condoperand= cond->getOperand();
+    // new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
 
     builder->setInsertBB(while_bb);
     stmt->genCode();
-    cond->genCode();
-    backPatch(cond->trueList(), while_bb);
-    backPatch(cond->falseList(), end_bb);
 
-    // Operand* condoperand = cond->getOperand();
-    // auto end = ((CondBrInstruction*)(cond_bb->rbegin()))->getFalseBranch();
-    // new CondBrInstruction(while_bb, end, condoperand,
-    //                       builder->getInsertBB());
-    // std::vector<Instruction*>().swap(cond->trueList());
-    // cond-
+    while_bb = builder->getInsertBB();
+    new UncondBrInstruction(cond_bb, while_bb);
 
-    // while_bb = builder->getInsertBB();
-    // new UncondBrInstruction(cond_bb, while_bb);
+    // builder->setInsertBB(end_bb);
+
+    // Function* func;
+    // BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
+    // bb = builder->getInsertBB();
+    // func = builder->getInsertBB()->getParent();
+    // cond_bb = new BasicBlock(func);
+    // while_bb = new BasicBlock(func);
+    // end_bb = new BasicBlock(func);
+
+    // this->cond_bb = cond_bb;
+    // this->end_bb = end_bb;
+
+    // new UncondBrInstruction(cond_bb, bb);
+
+    // builder->setInsertBB(cond_bb);
+    // cond->genCode();
+    // backPatch(cond->trueList(), while_bb);
+    // backPatch(cond->falseList(), end_bb);
+
+    // builder->setInsertBB(while_bb);
+    // stmt->genCode();
+    // ExprNode* cond1 = cond->copy();
+    // // ExprNode* cond1 = cond;
+    // cond1->genCode();
+    // // backPatch(cond1->trueList(), while_bb);
+    // // backPatch(cond1->falseList(), end_bb);
+
+    // // Operand* condoperand = cond->getOperand();
+    // // auto end = ((CondBrInstruction*)(cond_bb->rbegin()))->getFalseBranch();
+    // // new CondBrInstruction(while_bb, end, condoperand,
+    // //                       builder->getInsertBB());
+    // // std::vector<Instruction*>().swap(cond->trueList());
+    // // cond-
+
+    // // while_bb = builder->getInsertBB();
+    // // new UncondBrInstruction(cond_bb, while_bb);
 
     builder->setInsertBB(end_bb);
 }
@@ -761,7 +868,8 @@ void UnaryExpr::genCode() {
     if (op == NOT) {
         BasicBlock* bb = builder->getInsertBB();
         Operand* src = expr->getOperand();
-        if (expr->getType()->getSize() == 32) {
+        if (expr->getType()->isFloat() ||
+            expr->getType()->isInt()) {  // FIXME: not i1
             Operand* temp = new Operand(new TemporarySymbolEntry(
                 TypeSystem::boolType, SymbolTable::getLabel()));
             new CmpInstruction(
@@ -789,91 +897,101 @@ void ExprNode::genCode() {
     // Todo
 }
 
-ExprNode* ExprNode::alge_simple(int depth){
+ExprNode* ExprNode::alge_simple(int depth) {
     /* simplification rules:
     a*1=a, a*0=0, a/1=a, a+0=a, a-0=a, b||false=b, b&&true=b
     */
     int op;
     ExprNode* res = this;
-    if(this->isBinaryExpr()){
+    if (this->isBinaryExpr()) {
         enum {
-        ADD,
-        SUB,
-        MUL,
-        DIV,
-        MOD,
-        AND,
-        OR,
-        LESS,
-        LESSEQUAL,
-        GREATER,
-        GREATEREQUAL,
-        EQUAL,
-        NOTEQUAL
+            ADD,
+            SUB,
+            MUL,
+            DIV,
+            MOD,
+            AND,
+            OR,
+            LESS,
+            LESSEQUAL,
+            GREATER,
+            GREATEREQUAL,
+            EQUAL,
+            NOTEQUAL
         };
         op = ((BinaryExpr*)this)->getOp();
-        ExprNode *lhs = ((BinaryExpr*)this)->getLeft(), *rhs = ((BinaryExpr*)this)->getRight();
-        if(depth && lhs->isBinaryExpr()){
-            lhs = lhs->alge_simple(depth-1);
+        ExprNode *lhs = ((BinaryExpr*)this)->getLeft(),
+                 *rhs = ((BinaryExpr*)this)->getRight();
+        if (depth && lhs->isBinaryExpr()) {
+            lhs = lhs->alge_simple(depth - 1);
         }
-        if(depth &&rhs->isBinaryExpr()){
-            rhs = rhs->alge_simple(depth-1);
+        if (depth && rhs->isBinaryExpr()) {
+            rhs = rhs->alge_simple(depth - 1);
         }
-        switch (op)
-        {
-        case ADD:
-            if(lhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==0){
-                res = rhs;
-            }   
-            else if(rhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==0){
-                res = lhs;
-            }
-            else{
-                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-                res = new BinaryExpr(se, ADD, lhs, rhs);
-            }
-            break;
-        case SUB:
-            if(rhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==0){
-                res = lhs;
-            }
-            else{
-                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-                res = new BinaryExpr(se, SUB, lhs, rhs);
-            }
-            break;
-        case MUL:
-            if(lhs->getSymbolEntry()->isConstant()){
-                if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==0){
-                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 0);
-                    res = new Constant(se);
-                }else if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==1){
+        switch (op) {
+            case ADD:
+                if (lhs->getSymbolEntry()->isConstant() &&
+                    ((ConstantSymbolEntry*)(lhs->getSymbolEntry()))
+                            ->getValue() == 0) {
                     res = rhs;
-                }
-            }   
-            else if(rhs->getSymbolEntry()->isConstant()){
-                if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==0){
-                    SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, 0);
-                    res = new Constant(se);
-                }else if(((ConstantSymbolEntry*)(rhs->getSymbolEntry()))->getValue()==1){
+                } else if (rhs->getSymbolEntry()->isConstant() &&
+                           ((ConstantSymbolEntry*)(rhs->getSymbolEntry()))
+                                   ->getValue() == 0) {
                     res = lhs;
+                } else {
+                    SymbolEntry* se =
+                        new TemporarySymbolEntry(type, SymbolTable::getLabel());
+                    res = new BinaryExpr(se, ADD, lhs, rhs);
                 }
-            }   
-            else{
-                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-                res = new BinaryExpr(se, MUL, lhs, rhs);
-            }
-            break;
-        case DIV:
-            if(rhs->getSymbolEntry()->isConstant() && ((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==1){
-                res = lhs;
-            } 
-            else{
-                SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
-                res = new BinaryExpr(se, DIV, lhs, rhs);
-            }
-            break;
-        /*
+                break;
+            case SUB:
+                if (rhs->getSymbolEntry()->isConstant() &&
+                    ((ConstantSymbolEntry*)(rhs->getSymbolEntry()))
+                            ->getValue() == 0) {
+                    res = lhs;
+                } else {
+                    SymbolEntry* se =
+                        new TemporarySymbolEntry(type, SymbolTable::getLabel());
+                    res = new BinaryExpr(se, SUB, lhs, rhs);
+                }
+                break;
+            case MUL:
+                if (lhs->getSymbolEntry()->isConstant()) {
+                    if (((ConstantSymbolEntry*)(lhs->getSymbolEntry()))
+                            ->getValue() == 0) {
+                        SymbolEntry* se = new ConstantSymbolEntry(type, 0);
+                        res = new Constant(se);
+                    } else if (((ConstantSymbolEntry*)(lhs->getSymbolEntry()))
+                                   ->getValue() == 1) {
+                        res = rhs;
+                    }
+                } else if (rhs->getSymbolEntry()->isConstant()) {
+                    if (((ConstantSymbolEntry*)(rhs->getSymbolEntry()))
+                            ->getValue() == 0) {
+                        SymbolEntry* se = new ConstantSymbolEntry(type, 0);
+                        res = new Constant(se);
+                    } else if (((ConstantSymbolEntry*)(rhs->getSymbolEntry()))
+                                   ->getValue() == 1) {
+                        res = lhs;
+                    }
+                } else {
+                    SymbolEntry* se =
+                        new TemporarySymbolEntry(type, SymbolTable::getLabel());
+                    res = new BinaryExpr(se, MUL, lhs, rhs);
+                }
+                break;
+            case DIV:
+                if (rhs->getSymbolEntry()->isConstant() &&
+                    ((ConstantSymbolEntry*)(lhs->getSymbolEntry()))
+                            ->getValue() == 1) {
+                    res = lhs;
+                } else {
+                    SymbolEntry* se =
+                        new TemporarySymbolEntry(type, SymbolTable::getLabel());
+                    res = new BinaryExpr(se, DIV, lhs, rhs);
+                }
+                break;
+                /*
         case AND:
             if(lhs->getSymbolEntry()->isConstant()){
                 if(((ConstantSymbolEntry*)(lhs->getSymbolEntry()))->getValue()==true){
@@ -923,33 +1041,33 @@ ExprNode* ExprNode::alge_simple(int depth){
     return res;
 }
 
-ExprNode* ExprNode::const_fold(){
+ExprNode* ExprNode::const_fold() {
     ExprNode* res = this;
-    res = this->alge_simple(5); // 代数化简
+    res = this->alge_simple(5);  // 代数化简
     bool flag = true;
     int fconst = res->fold_const(flag);
-    if(flag){
-        SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
+    if (flag) {
+        SymbolEntry* se = new ConstantSymbolEntry(type, fconst);
         res = new Constant(se);
-    } 
+    }
     return res;
 }
 
-int ExprNode::fold_const(bool &flag){
-    if(this->isBinaryExpr()){
-        ExprNode *lhs = ((BinaryExpr*)this)->getLeft(), *rhs = ((BinaryExpr*)this)->getRight();
+int ExprNode::fold_const(bool& flag) {
+    if (this->isBinaryExpr()) {
+        ExprNode *lhs = ((BinaryExpr*)this)->getLeft(),
+                 *rhs = ((BinaryExpr*)this)->getRight();
         lhs->fold_const(flag);
-        if(flag)
+        if (flag)
             rhs->fold_const(flag);
-        if(flag){
+        if (flag) {
             return ((BinaryExpr*)this)->getValue();
-        }
-        else return 0;
-    }
-    else if(this->isUnaryExpr()){
-        ExprNode *hs = ((UnaryExpr*)this)->getSubExpr();
+        } else
+            return 0;
+    } else if (this->isUnaryExpr()) {
+        ExprNode* hs = ((UnaryExpr*)this)->getSubExpr();
         hs->fold_const(flag);
-        if(flag){
+        if (flag) {
             return ((UnaryExpr*)this)->getValue();
         }
         else return 0;
@@ -964,7 +1082,6 @@ int ExprNode::fold_const(bool &flag){
     flag = 0;
     return 0;
 }
-
 
 bool ContinueStmt::typeCheck(Type* retType) {
     return false;
@@ -1109,17 +1226,17 @@ bool ReturnStmt::typeCheck(Type* retType) {
             "return-statement with a value, in function returning \'void\'\n");
         return true;
     }
-    if (!retValue || !retValue->getSymbolEntry()) {
-        fprintf(stderr, "retValue or its symbol entry error\n");
-        return true;
-    }
-    Type* type = retValue->getType();
-    if (type != retType) {
-        fprintf(stderr,
+
+    if (!retType->isVoid()) {
+        Type* type = retValue->getType();
+        if (type != retType) {
+            fprintf(
+                stderr,
                 "cannot initialize return object of type \'%s\' with an rvalue "
                 "of type \'%s\'\n",
                 retType->toStr().c_str(), type->toStr().c_str());
-        return true;
+            return true;
+        }
     }
     return false;
 }
@@ -1129,7 +1246,7 @@ bool AssignStmt::typeCheck(Type* retType) {
 }
 
 CallExpr::CallExpr(SymbolEntry* se, ExprNode* param)
-    : ExprNode(se), param(param) {
+    : ExprNode(se, CALLEXPR), param(param) {
     // 做参数的检查
     dst = nullptr;
     SymbolEntry* s = se;
@@ -1196,6 +1313,21 @@ CallExpr::CallExpr(SymbolEntry* se, ExprNode* param)
     }
     if (((IdentifierSymbolEntry*)se)->isSysy()) {
         unit.insertDeclare(se);
+    }
+}
+
+CallExpr::CallExpr(const CallExpr& c) : ExprNode(c) {
+    if (c.param)
+        param = c.param->copy();
+    symbolEntry = c.symbolEntry;
+    if (symbolEntry) {
+        Type* type = symbolEntry->getType();
+        this->type = ((FunctionType*)type)->getRetType();
+        if (this->type != TypeSystem::voidType) {
+            SymbolEntry* se =
+                new TemporarySymbolEntry(this->type, SymbolTable::getLabel());
+            dst = new Operand(se);
+        }
     }
 }
 
@@ -1485,6 +1617,14 @@ UnaryExpr::UnaryExpr(SymbolEntry* se, int op, ExprNode* expr)
     }
 };
 
+UnaryExpr::UnaryExpr(const UnaryExpr& u) : ExprNode(u) {
+    op = u.op;
+    expr = u.expr->copy();
+    symbolEntry = new TemporarySymbolEntry(u.symbolEntry->getType(),
+                                           SymbolTable::getLabel());
+    dst = new Operand(symbolEntry);
+}
+
 void UnaryExpr::output(int level) {
     std::string op_str;
     switch (op) {
@@ -1744,7 +1884,6 @@ void FunctionDef::output(int level) {
 void ImplicitCastExpr::genCode() {
     expr->genCode();
     BasicBlock* bb = builder->getInsertBB();
-
     if (type == TypeSystem::boolType) {  // comparing ptr, should be ok here.
         Function* func = bb->getParent();
         BasicBlock* trueBB = new BasicBlock(func);
@@ -1788,4 +1927,35 @@ double ImplicitCastExpr::getValue() {
     } else {
         return -1;  // error
     }
+}
+
+ExprNode* ExprNode::copy() {
+    ExprNode* ret;
+    switch (kind) {
+        case BINARYEXPR:
+            ret = new BinaryExpr(*(BinaryExpr*)this);
+            break;
+        case UNARYEXPR:
+            ret = new UnaryExpr(*(UnaryExpr*)this);
+            break;
+        case CALLEXPR:
+            ret = new CallExpr(*(CallExpr*)this);
+            break;
+        case CONSTANT:
+            ret = new Constant(*(Constant*)this);
+            break;
+        case ID:
+            ret = new Id(*(Id*)this);
+            break;
+        case IMPLICITCASTEXPR:
+            ret = new ImplicitCastExpr(*(ImplicitCastExpr*)this);
+            break;
+    }
+    ExprNode* temp = this;
+    if (temp->getNext()) {
+        ret->cleanNext();
+        temp = (ExprNode*)(temp->getNext());
+        ret->setNext(temp->copy());
+    }
+    return ret;
 }

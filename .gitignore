@@ -7,7 +7,6 @@ build
 *.log
 *.res
 example.*
-!example.sy
 example
 *.ast
 *.toks
@@ -17,3 +16,6 @@ test1
 test
 .VSCodeCounter/
 sysyruntimelibrary
+
+perf.*
+Makefile

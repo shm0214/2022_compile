@@ -27,7 +27,7 @@ class ElimComSubexpr {
    public:
     ElimComSubexpr(Unit* unit) : unit(unit){};
     ~ElimComSubexpr();
-    void elim_cse();
+    void pass();
     void local_elim_cse(BasicBlock* bb, vector<struct aeb> AEB);
 };
 

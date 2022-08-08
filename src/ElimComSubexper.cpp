@@ -5,7 +5,7 @@
 typedef vector<BasicBlock*>::iterator bb_iterator;
 typedef vector<struct aeb> VAEB;
 using namespace std;
-const int N = 2000100;
+const int N = 100000;
 bool ste[N]; // 标记基本块是否已遍历过
 unordered_map<int, VAEB> AEin, AEout;
 
@@ -71,7 +71,7 @@ VAEB vintersection(BasicBlock* bb){
     return res;
 }
 
-void ElimComSubexpr::elim_cse(){
+void ElimComSubexpr::pass(){
     auto iter = unit->begin();
     VAEB AEB;
     while (iter != unit->end()){
@@ -102,27 +102,24 @@ void ElimComSubexpr::elim_cse(){
         iter++;
     }
     // global
-    cout<<"global"<<endl;
-    // iter = unit->begin();
-    // AEB.clear();
-    // while (iter != unit->end()){
-    //     vector<BasicBlock*> block_list = (*iter)->getBlockList();
-    //     for(auto bb: block_list){
-    //         AEB = AEin[bb->getNo()];
-    //         local_elim_cse(bb, AEB);
-    //     }
-    //     iter++;
-    // }
+    iter = unit->begin();
+    AEB.clear();
+    while (iter != unit->end()){
+        vector<BasicBlock*> block_list = (*iter)->getBlockList();
+        for(auto bb: block_list){
+            AEB = AEin[bb->getNo()];
+            local_elim_cse(bb, AEB);
+        }
+        iter++;
+    }
 }
 
 void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
     int no = bb->getNo();
     for(auto iter = bb->begin();iter!=bb->end();iter=iter->getNext()){
         vector<Operand*> operands(iter->getOperands());
-        // if(iter->isLoad()) cout<<"load "<<operands[0]->getEntry()->toStr()<<", "<<operands[1]->getEntry()->toStr()<<endl; 
         if (iter->isBin())
         {
-            cout<<"bin"<<endl;
             int op = ((BinaryInstruction*)iter)->getOp();
             Instruction* p = iter;
             bool found = false;
@@ -144,8 +141,6 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                 }
             }
             int len = AEB.size();
-            // cout<<"len:"<<len<<", op:"<<op<<", opd1:"<<sym1->toStr()<<", opd2:"<<sym2->toStr()<<endl;
-            // cout<<"len:"<<len<<", op:"<<op<<", opd0:"<<operands[0]->getEntry()->toStr()<<", opd1:"<<operands[1]->getEntry()->toStr()<<", opd2:"<<operands[2]->getEntry()->toStr()<<endl;
             int i = 0;
             for(; i<len; i++){
                 if(op == AEB[i].opr && sym1->toStr() == AEB[i].opd1->toStr() && sym2->toStr() == AEB[i].opd2->toStr()){
@@ -154,7 +149,6 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                 }
             }
             if(found){
-                // cout<<"found"<<endl;
                 p = AEB[i].inst;
                 Operand* dst = AEB[i].tmp;
                 if(dst == nullptr){
@@ -162,21 +156,17 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                     TypeSystem::intType, SymbolTable::getLabel()));
                     vector<Operand*> pOperands(p->getOperands());
                     Instruction* inst = new BinaryInstruction(op, dst, pOperands[1], pOperands[2], nullptr);
-                    // cout<<"add a binInst "<<dst->getEntry()->toStr()<<", "<<pOperands[1]->getEntry()->toStr()<<", "<<pOperands[2]->getEntry()->toStr()<<endl;
                     AEB[i].tmp = dst;
                     bb->insertBefore(inst, p);
                     Instruction* inst1 = new LoadInstruction(pOperands[0], dst, nullptr);
-                    // cout<<"revise p to load "<<pOperands[0]->getEntry()->toStr()<<", "<<dst->getEntry()->toStr()<<endl; 
                     bb->insertBefore(inst1, p);
                     bb->remove(p);
                 }
                 Instruction* inst2 = new LoadInstruction(operands[0], dst, nullptr);
-                // cout<<"revise iter to load "<<operands[0]->getEntry()->toStr()<<", "<<dst->getEntry()->toStr()<<endl; 
                 bb->insertBefore(inst2, iter);
                 bb->remove(iter);
             } else {
                 // insert
-                // cout<<"not found"<<endl;
                 struct aeb tmp;
                 tmp.inst = (BinaryInstruction*)iter, tmp.opd1 = sym1, tmp.opr = op, tmp.opd2 = sym2;
                 AEB.push_back(tmp);
@@ -189,7 +179,6 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                 delAEB(sym, AEB);
                 delAEB(sym, AEin[no]);
             }
-            cout<<"aeb size:"<< AEB.size() << "  bin end"<<endl;
         }
     }
     AEout[no] = vec_union(AEB, AEin[no]);

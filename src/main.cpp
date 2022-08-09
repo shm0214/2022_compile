@@ -10,6 +10,7 @@
 #include "ElimUnreachCode.h"
 #include "GraphColor.h"
 #include "InsReorder.h"
+#include "InstructionScheduling.h"
 #include "LinearScan.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
@@ -142,9 +143,11 @@ int main(int argc, char* argv[]) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);
+        InstructionScheduling is(&mUnit);
         po.pass();
         mdce.pass();
         ms.pass();
+        is.pass();
     }
     if (dump_asm)
         mUnit.output();

@@ -1068,11 +1068,11 @@ void MachineBlock::remove(MachineInstruction* ins) {
 }
 
 std::vector<MachineInstruction*>::iterator MachineBlock::nonbranch_end() {
-    for (auto inst : inst_list) {
-        if (inst->isBranch() || inst->isCmp()) {
+    for (auto it = inst_list.rbegin(); it != inst_list.rend(); it++) {
+        if ((*it)->isBranch() || (*it)->isCmp()) {
             continue;
         }
-        return std::find(inst_list.begin(), inst_list.end(), inst);
+        return std::find(inst_list.begin(), inst_list.end(), *it);
     }
     return inst_list.end();
 }

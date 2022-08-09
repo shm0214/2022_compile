@@ -131,6 +131,7 @@ class MachineInstruction {
     bool isMov() const { return type == MOV && op == 0; };
     bool isCondMov() const { return type == MOV && op == 0 && cond != NONE; };
     bool isPush() const { return type == STACK && op == 0; };
+    bool isStack() const { return type == STACK; }
     void replaceUse(MachineOperand* old, MachineOperand* new_);
     void replaceDef(MachineOperand* old, MachineOperand* new_);
     int getCond() const { return cond; }
@@ -138,6 +139,19 @@ class MachineInstruction {
     void setParent(MachineBlock* block) { this->parent = block; }
     bool isAddZero() const {
         return isAdd() && use_list[1]->isImm() && use_list[1]->getVal() == 0;
+    }
+    bool isSpecial() const {
+        for (auto& ope : def_list) {
+            if (ope->isReg() && ope->getReg() >= 11 && ope->getReg() <= 15) {
+                return true;
+            }
+        }
+        for (auto& ope : use_list) {
+            if (ope->isReg() && ope->getReg() >= 11 && ope->getReg() <= 15) {
+                return true;
+            }
+        }
+        return false;
     }
 };
 

@@ -16,15 +16,14 @@ class InstructionScheduling {
     MachineBlock* block;
 
     std::vector<std::vector<int>> dep;
-    std::vector<std::vector<int>> anti;
     std::vector<std::vector<int>> succs;
     std::vector<std::vector<int>> preds;
     std::vector<int> degree;  // counts of operands not ready yet
 
     std::vector<MachineInstruction*> insts;
     std::vector<int> priority;
-    std::list<int> ready;
-    std::list<int> active;
+    std::vector<int> ready;
+    std::vector<int> active;
 
     std::vector<int> sched;
     std::vector<int> time;

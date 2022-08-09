@@ -59,6 +59,11 @@ void PeepholeOptimization::pass() {
                     auto rm = new MachineOperand(*(curr_inst->getUse()[1]));
                     MachineOperand* ra;
 
+                    // fix:  mul r0, r1, r0
+                    //       add sp, sp, #0
+                    if (add_src1->isImm() || add_src2->isImm())
+                        continue;
+
                     if (mul_dst->getReg() == add_src1->getReg()) {
                         ra = new MachineOperand(*add_src2);
                     } else if (mul_dst->getReg() == add_src2->getReg()) {

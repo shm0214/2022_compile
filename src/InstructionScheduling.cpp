@@ -11,6 +11,9 @@ void InstructionScheduling::pass() {
         for (auto block_iter = func->begin(); block_iter != func->end();
              block_iter++) {
             block = *block_iter;
+            if (block->getInsts().empty()) {
+                continue;
+            }
             init();
             if (insts.size() <= 1) {
                 continue;
@@ -29,6 +32,7 @@ void InstructionScheduling::init() {
         insts.clear();
         return;
     }
+    inst_end++;
     insts =
         std::vector<MachineInstruction*>(block->getInsts().begin(), inst_end);
     if (insts.size() <= 1) {
@@ -36,14 +40,6 @@ void InstructionScheduling::init() {
     }
     dep.resize(insts.size());
     for (auto& it : dep) {
-        it.resize(insts.size());
-        for (size_t i = 0; i < it.size(); i++) {
-            it[i] = 0;
-        }
-    }
-
-    anti.resize(insts.size());
-    for (auto& it : anti) {
         it.resize(insts.size());
         for (size_t i = 0; i < it.size(); i++) {
             it[i] = 0;
@@ -78,10 +74,20 @@ void InstructionScheduling::init() {
 void InstructionScheduling::build() {
     for (size_t i = 0; i < insts.size(); i++) {
         int latency = insts[i]->latency();
-        if (insts[i]->isBranch()) {
+        if (insts[i]->isStack()) {
+            for (size_t j = i + 1; j < insts.size(); j++) {
+                dep[i][j] = latency;
+                if (insts[j]->isBranch()) {
+                    break;
+                }
+            }
+            continue;
+        }
+        if (insts[i]->isBranch() || insts[i]->isSpecial()) {
             for (size_t j = i + 1; j < insts.size(); j++) {
                 dep[i][j] = latency;
             }
+            continue;
         }
 
         for (size_t j = i + 1; j < insts.size(); j++) {
@@ -105,9 +111,31 @@ void InstructionScheduling::build() {
                     // anti edges
                     // W-A-R
                     if (*prev_use == *curr_def) {
-                        anti[i][j] = latency;
+                        dep[i][j] = latency;
                     }
                 }
+            }
+
+            for (auto prev_def : prev_defs) {
+                for (auto curr_def : curr_defs) {
+                    if (*prev_def == *curr_def) {
+                        dep[i][j] = latency;
+                    }
+                }
+            }
+
+            if ((insts[i]->isLoad() && insts[j]->isStore()) ||
+                (insts[i]->isStore() && insts[j]->isLoad()) ||
+                (insts[i]->isStore() && insts[j]->isStore())) {
+                dep[i][j] = latency;
+            }
+
+            if (insts[i]->isCmp() && insts[j]->isCondMov()) {
+                dep[i][j] = latency;
+            }
+
+            if (insts[j]->isBranch() || insts[j]->isSpecial()) {
+                dep[i][j] = latency;
             }
         }
     }
@@ -151,30 +179,22 @@ void InstructionScheduling::schedule() {
     auto cmp = [&](int x, int y) -> bool { return priority[x] > priority[y]; };
     for (size_t i = 0; i < preds.size(); i++) {
         if (preds[i].empty()) {
-            ready.insert(std::lower_bound(ready.begin(), ready.end(), i, cmp),
-                         i);
+            ready.push_back(i);
         }
     }
     active.clear();
-    while (!ready.empty() && !active.empty()) {
+    while (!ready.empty() || !active.empty()) {
         std::set<int> toInsert;
+        std::sort(ready.begin(), ready.end(), cmp);
         for (auto it = ready.begin(); it != ready.end();) {
             sched.push_back(*it);
             time[*it] = cycles;
             active.push_back(*it);
-
-            if (!anti[*it].empty()) {
-                for (auto i : anti[*it]) {
-                    toInsert.insert(i);
-                }
-            }
-
             it = ready.erase(it);
         }
 
         for (auto i : toInsert) {
-            ready.insert(std::lower_bound(ready.begin(), ready.end(), i, cmp),
-                         i);
+            ready.push_back(i);
         }
         cycles++;
 
@@ -183,9 +203,7 @@ void InstructionScheduling::schedule() {
                 for (auto i : succs[*it]) {
                     degree[i]--;
                     if (degree[i] == 0) {
-                        ready.insert(std::lower_bound(ready.begin(),
-                                                      ready.end(), i, cmp),
-                                     i);
+                        ready.push_back(i);
                     }
                 }
                 it = active.erase(it);
@@ -200,6 +218,11 @@ void InstructionScheduling::modify() {
     std::vector<MachineInstruction*> new_insts;
     for (auto i : sched) {
         new_insts.push_back(insts[i]);
+    }
+    auto it = block->nonbranch_end();
+    it++;
+    for (; it != block->getInsts().end(); it++) {
+        new_insts.push_back(*it);
     }
     block->getInsts() = new_insts;
 }

@@ -898,8 +898,8 @@ std::vector<MachineOperand*> MachineFunction::getSavedRegs() {
     std::vector<MachineOperand*> regs;
     for (auto it = saved_regs.begin(); it != saved_regs.end(); it++) {
         // remove r3..
-        if (*it < 4)
-            continue;
+        // if (*it < 4)
+        //     continue;
         auto reg = new MachineOperand(MachineOperand::REG, *it);
         regs.push_back(reg);
     }

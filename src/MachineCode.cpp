@@ -1084,6 +1084,16 @@ void MachineBlock::remove(MachineInstruction* ins) {
         inst_list.erase(it);
 }
 
+std::vector<MachineInstruction*>::iterator MachineBlock::nonbranch_end() {
+    for (auto it = inst_list.rbegin(); it != inst_list.rend(); it++) {
+        if ((*it)->isBranch() || (*it)->isCmp()) {
+            continue;
+        }
+        return std::find(inst_list.begin(), inst_list.end(), *it);
+    }
+    return inst_list.end();
+}
+
 MachineInstruction* MachineBlock::getNext(MachineInstruction* in) {
     auto it = find(inst_list.begin(), inst_list.end(), in);
     if (it != inst_list.end() && (it + 1) != inst_list.end()) {
@@ -1120,4 +1130,107 @@ void MachineFunction::InsertAfter(MachineBlock* a, MachineBlock* b) {
 
 void MachineBlock::insertFront(MachineInstruction* in) {
     inst_list.insert(inst_list.begin(), in);
+}
+
+int FuseMInstruction::latency() {
+    return 3;
+}
+
+int BinaryMInstruction::latency() {
+    switch (this->op) {
+        case BinaryMInstruction::ADD:
+            return 1;
+
+        case BinaryMInstruction::SUB:
+            return 1;
+
+        case BinaryMInstruction::MUL:
+            return 3;
+
+        case BinaryMInstruction::DIV:
+            // execution latency of `sdiv` is between 4 and 12 according to
+            // Cortex-A72 Software Optimization Guide. "Integer divides are
+            // performed using a iterative algorithm and block any subsequent
+            // divide operations until complete. Early termination is possible,
+            // depending upon the data values."
+            return 4;
+
+        case BinaryMInstruction::AND:
+            return 1;
+
+        case BinaryMInstruction::OR:
+            return 1;
+
+        case BinaryMInstruction::VADD:
+            return 4;
+
+        case BinaryMInstruction::VSUB:
+            return 4;
+
+        case BinaryMInstruction::VMUL:
+            return 4;
+
+        case BinaryMInstruction::VDIV:
+            return 6;
+
+        default:
+            return 4;
+    }
+}
+
+int LoadMInstruction::latency() {
+    return 4;
+}
+
+int StoreMInstruction::latency() {
+    return 1;
+}
+
+int MovMInstruction::latency() {
+    switch (this->op) {
+        case MOV:
+            return 1;
+        case MVN:
+            return 1;
+        case VMOV:
+            return 5;
+        case VMOVF32:
+            return 3;
+        case MOVASR:
+            return 1;
+        case MOVLSL:
+            return 1;
+        default:
+            return 1;
+    }
+}
+
+int BranchMInstruction::latency() {
+    return 1;
+}
+
+int CmpMInstruction::latency() {
+    if (this->op==CmpMInstruction::VCMP) {
+        return 3;
+    }
+    return 1;
+}
+
+int StackMInstruction::latency() {
+    if (this->op == StackMInstruction::PUSH ||
+        this->op == StackMInstruction::VPUSH) {
+        return this->use_list.size();
+    } else if (this->op == StackMInstruction::POP) {
+        return 3 + this->use_list.size();
+    } else {
+        return 4 + this->use_list.size();  // VPOP
+    }
+}
+
+int VcvtMInstruction::latency() {
+    return 3;
+}
+
+int VmrsMInstruction::latency() {
+    return 1;
 }

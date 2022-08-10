@@ -598,8 +598,8 @@ void DeclStmt::genCode() {
         addr = new Operand(addr_se);
         alloca = new AllocaInstruction(addr, se);
         // allocate space for local id in function stack.
-        entry->insertFront(alloca);  // allocate instructions should be inserted
-                                     // into the begin of the entry block.
+        entry->addAlloc(alloca);  // allocate instructions should be inserted
+                                  // into the begin of the entry block.
         Operand* temp = nullptr;
         if (se->isParam())
             temp = se->getAddr();
@@ -1743,6 +1743,9 @@ bool InitValueListExpr::isFull() {
 }
 
 void InitValueListExpr::fill() {
+    if (allZero) {
+        return;
+    }
     Type* type = ((ArrayType*)(this->getType()))->getElementType();
     if (type->isArray()) {
         while (!isFull()) {

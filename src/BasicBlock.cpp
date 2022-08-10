@@ -28,6 +28,17 @@ void BasicBlock::insertBefore(Instruction* dst, Instruction* src) {
     dst->setParent(this);
 }
 
+// insert the instruction dst after src.
+void BasicBlock::insertAfter(Instruction* dst, Instruction* src) {
+    dst->setNext(src->getNext());
+    src->getNext()->setPrev(dst);
+
+    dst->setPrev(src);
+    src->setNext(dst);
+
+    dst->setParent(this);
+}
+
 // remove the instruction from intruction list.
 void BasicBlock::remove(Instruction* inst) {
     inst->getPrev()->setNext(inst->getNext());
@@ -93,6 +104,7 @@ BasicBlock::BasicBlock(Function* f) {
     head = new DummyInstruction();
     head->setParent(this);
     mark = false;
+    lastAlloc = nullptr;
 }
 
 BasicBlock::~BasicBlock() {
@@ -153,4 +165,15 @@ void BasicBlock::replaceIns(Instruction* old, Instruction* new_) {
     new_->setPrev(old->getPrev());
     old->getNext()->setPrev(new_);
     new_->setNext(old->getNext());
+}
+
+void BasicBlock::addAlloc(Instruction* alloc) {
+    assert(alloc->isAlloc());
+    if (!lastAlloc) {
+        insertFront(alloc);
+        lastAlloc = alloc;
+    } else {
+        insertAfter(alloc, lastAlloc);
+        lastAlloc = alloc;
+    }
 }

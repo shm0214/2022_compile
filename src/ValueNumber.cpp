@@ -29,6 +29,8 @@ void ValueNumber::pass(BasicBlock* block,
         // auto str = in->getHash();
         // if (str.length())
         //     cout << str << endl;
+        if (in->isCmp())
+            continue;
         if (in->isPhi()) {
             set<Operand*> s;
             auto operands = in->getOperands();

@@ -477,6 +477,8 @@ void GraphColor::genSpillCode() {
     for (auto web : webs) {
         if (!web->spill)
             continue;
+        // auto ope = *(web->defs.begin());
+        // cout << ope->getReg() << " ";
         web->disp = -func->AllocSpace(4);
         auto off = new MachineOperand(MachineOperand::IMM, web->disp);
         auto fp = new MachineOperand(MachineOperand::REG, 11);
@@ -531,4 +533,5 @@ void GraphColor::genSpillCode() {
                 def->getParent()->insertAfter(inst);
         }
     }
+    // cout << endl;
 }

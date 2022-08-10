@@ -29,8 +29,18 @@ Instruction::~Instruction() {
 bool Instruction::isEssential() {
     // return value
     if (isRet()) {
-        // 先简单处理，所有return都true
-        return true;
+        if (getUse().empty())
+            return true;
+        auto preds = parent->getParent()->getPreds();
+        if (preds.empty())
+            return true;
+        // 只要有接收ret值的就要返回true
+        for (auto it : preds)
+            for (auto in : it.second)
+                if (in->getDef()->usersNum())
+                    return true;
+
+        return false;
     }
     // input/output
     if (isCall()) {
@@ -288,6 +298,7 @@ CondBrInstruction::CondBrInstruction(BasicBlock* true_branch,
     this->false_branch = false_branch;
     cond->addUse(this);
     operands.push_back(cond);
+    originTrue = originFalse = nullptr;
 }
 
 void CondBrInstruction::replaceUse(Operand* old, Operand* new_) {
@@ -314,6 +325,8 @@ void CondBrInstruction::output() const {
 
 void CondBrInstruction::setFalseBranch(BasicBlock* bb) {
     false_branch = bb;
+    if (!originFalse)
+        originFalse = false_branch;
 }
 
 BasicBlock* CondBrInstruction::getFalseBranch() {
@@ -322,6 +335,8 @@ BasicBlock* CondBrInstruction::getFalseBranch() {
 
 void CondBrInstruction::setTrueBranch(BasicBlock* bb) {
     true_branch = bb;
+    if (!originTrue)
+        originTrue = true_branch;
 }
 
 BasicBlock* CondBrInstruction::getTrueBranch() {
@@ -501,13 +516,15 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
         else if (id_se->isParam()) {
             // TODO: 这样分配的是虚拟寄存器 能对应到r0-r3嘛
             //  r4之后的参数需要一条load 哪里加 怎么判断是r4之后的参数
-            if (id_se->getParamNo() < 4)
+            auto no = id_se->getParamNo();
+            if (no < 4)
                 mope = new MachineOperand(MachineOperand::REG,
                                           id_se->getParamNo());
             else {
                 // 用r3代表一下
                 mope = new MachineOperand(MachineOperand::REG, 3);
                 mope->setParam();
+                mope->setParamNo(no);
             }
         } else
             exit(0);
@@ -1128,6 +1145,16 @@ CallInstruction::CallInstruction(Operand* dst,
         operands.push_back(param);
         param->addUse(this);
     }
+    insert_bb->getParent()->setHasCall();
+    IdentifierSymbolEntry* funcSE = (IdentifierSymbolEntry*)func;
+    if (!funcSE->isSysy() && funcSE->getName() != "llvm.memset.p0.i32")
+        funcSE->getFunction()->addPred(this);
+}
+
+void CallInstruction::addPred() {
+    IdentifierSymbolEntry* funcSE = (IdentifierSymbolEntry*)func;
+    if (!funcSE->isSysy() && funcSE->getName() != "llvm.memset.p0.i32")
+        funcSE->getFunction()->addPred(this);
 }
 
 void CallInstruction::replaceDef(Operand* new_) {
@@ -1265,6 +1292,7 @@ GepInstruction::GepInstruction(Operand* dst,
     first = false;
     init = nullptr;
     last = false;
+    noAsm = false;
 }
 
 void GepInstruction::replaceDef(Operand* new_) {
@@ -1594,6 +1622,8 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
             cur_inst = new BinaryMInstruction(
                 cur_block, BinaryMInstruction::ADD, dst, base, imm);
             cur_block->InsertInst(cur_inst);
+        } else {
+            noAsm = true;
         }
         return;
     }
@@ -1661,6 +1691,14 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
     cur_block->InsertInst(cur_inst);
     if (paramFirst || !first) {
         auto arr = genMachineOperand(operands[1]);
+        auto in = operands[1]->getDef();
+        if (in->isGep()) {
+            auto gep = (GepInstruction*)in;
+            if (gep->hasNoAsm()) {
+                gep->setInit(nullptr, 0);
+                gep->genMachineCode(builder);
+            }
+        }
         cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
                                           dst, arr, off);
         cur_block->InsertInst(cur_inst);
@@ -1751,6 +1789,9 @@ void PhiInstruction::replaceOriginDef(Operand* new_) {
 
 void PhiInstruction::changeSrcBlock(
     std::map<BasicBlock*, std::vector<BasicBlock*>> changes) {
+    std::map<Operand*, BasicBlock*> originBlocks;
+    for (auto it : srcs)
+        originBlocks[it.second] = it.first;
     bool flag;
     while (true) {
         flag = false;
@@ -1772,7 +1813,19 @@ void PhiInstruction::changeSrcBlock(
                             b->addSucc(b1);
                             b->removeSuccFromEnd(this->getParent());
                             auto i = (CondBrInstruction*)(b->rbegin());
-                            i->setFalseBranch(b1);
+                            auto nowSrc = srcs[b];
+                            auto originBlock = originBlocks[nowSrc];
+                            while (true) {
+                                if (i->getOriginFalse() == originBlock) {
+                                    i->setTrueBranch(b1);
+                                    break;
+                                } else if (i->getOriginTrue() == originBlock) {
+                                    i->setFalseBranch(b1);
+                                    break;
+                                }
+                                if (changes.count(originBlock))
+                                    originBlock = changes[originBlock][0];
+                            }
                             b1->addPred(b);
                             new UncondBrInstruction(this->getParent(), b1);
                             this->getParent()->removePredFromEnd(b);
@@ -1783,6 +1836,10 @@ void PhiInstruction::changeSrcBlock(
                     } else
                         addSrc(b, src);
                 }
+                auto operand = it.second;
+                operand->removeUse(this);
+                operands.erase(
+                    find(operands.begin() + 1, operands.end(), operand));
                 srcs.erase(it.first);
                 flag = true;
                 break;
@@ -2187,8 +2244,14 @@ std::string PhiInstruction::getHash() {
     std::stringstream s;
     s << "phi";
     std::vector<std::string> strs;
-    for (auto it = operands.begin() + 1; it != operands.end(); it++) {
-        strs.push_back((*it)->toStr());
+    // for (auto it = operands.begin() + 1; it != operands.end(); it++) {
+    //     strs.push_back((*it)->toStr());
+    // }
+    for (auto it : srcs) {
+        std::stringstream ss;
+        auto block = it.first;
+        ss << "B" << block->getNo() << " " << it.second->toStr();
+        strs.push_back(ss.str());
     }
     std::sort(strs.begin(), strs.end());
     for (auto str : strs)
@@ -2490,4 +2553,87 @@ bool AshrInstruction::isConstExp() {
         constVal = val1 >> val2;
     }
     return flag;
+}
+
+Instruction* AllocaInstruction::copy() {
+    return new AllocaInstruction(*this);
+}
+
+Instruction* LoadInstruction::copy() {
+    return new LoadInstruction(*this);
+}
+
+Instruction* StoreInstruction::copy() {
+    return new StoreInstruction(*this);
+}
+
+Instruction* BinaryInstruction::copy() {
+    return new BinaryInstruction(*this);
+}
+
+Instruction* CmpInstruction::copy() {
+    return new CmpInstruction(*this);
+}
+
+Instruction* UncondBrInstruction::copy() {
+    return new UncondBrInstruction(*this);
+}
+
+Instruction* CondBrInstruction::copy() {
+    auto ret = new CondBrInstruction(*this);
+    ret->cleanOriginFalse();
+    ret->cleanOriginTrue();
+    return ret;
+}
+
+Instruction* RetInstruction::copy() {
+    return new RetInstruction(*this);
+}
+
+Instruction* CallInstruction::copy() {
+    return new CallInstruction(*this);
+}
+
+Instruction* ZextInstruction::copy() {
+    return new ZextInstruction(*this);
+}
+
+Instruction* XorInstruction::copy() {
+    return new XorInstruction(*this);
+}
+
+Instruction* GepInstruction::copy() {
+    return new GepInstruction(*this);
+}
+
+Instruction* PhiInstruction::copy() {
+    return new PhiInstruction(*this);
+}
+
+Instruction* FptosiInstruction::copy() {
+    return new FptosiInstruction(*this);
+}
+
+Instruction* SitofpInstruction::copy() {
+    return new SitofpInstruction(*this);
+}
+
+Instruction* BitcastInstruction::copy() {
+    return new BitcastInstruction(*this);
+}
+
+Instruction* ShlInstruction::copy() {
+    return new ShlInstruction(*this);
+}
+
+Instruction* AshrInstruction::copy() {
+    return new AshrInstruction(*this);
+}
+
+void BitcastInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+    }
 }

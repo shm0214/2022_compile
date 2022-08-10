@@ -68,7 +68,16 @@ class Function {
     int essential = -1;
     std::vector<SSAGraphNode*> nodes;
     std::set<Operand*> stores;
+<<<<<<< HEAD
     MinSSAGraph* ssa;
+=======
+    // 用于mem2reg 有调用其他函数的话则为true
+    bool call;
+    std::map<Function*, std::vector<Instruction*>> preds;
+    bool recur;
+    // used for auto inline
+    int instNum;
+>>>>>>> f46f62c3da744a75af7818879e6b830480054c7f
 
    public:
     Function() {}
@@ -115,9 +124,22 @@ class Function {
     void genSSAGraph();
     void computeStores();
     std::set<Operand*>& getStores() { return stores; }
+<<<<<<< HEAD
     std::vector<SSAGraphNode*> getNodes() {return nodes; }
     void setMinSSA(SSAGraphNode* node) { ssa = new MinSSAGraph(node); }
     MinSSAGraph* getMinSSA() { return ssa; }
+=======
+    bool hasCall() { return call; }
+    void setHasCall() { call = true; }
+    std::map<Function*, std::vector<Instruction*>>& getPreds() {
+        return preds;
+    };
+    void addPred(Instruction* in);
+    void removePred(Instruction* in);
+    bool hasRecur() { return recur; }
+    void setInstNum(int num) { instNum = num; }
+    int getInstNum() { return instNum; }
+>>>>>>> f46f62c3da744a75af7818879e6b830480054c7f
 };
 
 #endif

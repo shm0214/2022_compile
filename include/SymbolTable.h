@@ -16,6 +16,7 @@ class SymbolEntry {
    protected:
     enum { CONSTANT, VARIABLE, TEMPORARY };
     Type* type;
+    int label;
 
    public:
     SymbolEntry(Type* type, int kind);
@@ -28,6 +29,7 @@ class SymbolEntry {
     virtual std::string toStr() = 0;
     bool setNext(SymbolEntry* se);
     SymbolEntry* getNext() const { return next; };
+    int getLabel() const { return label; }
 
     // You can add any function you need here.
 };
@@ -102,7 +104,6 @@ class IdentifierSymbolEntry : public SymbolEntry {
     std::string name;
     int scope;
     double value;
-    int label;
     bool initial;
     bool sysy;
     double* arrayValue;
@@ -169,7 +170,6 @@ class IdentifierSymbolEntry : public SymbolEntry {
 class TemporarySymbolEntry : public SymbolEntry {
    private:
     int stack_offset;
-    int label;
 
    public:
     TemporarySymbolEntry(Type* type, int label);

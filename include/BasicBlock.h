@@ -22,6 +22,8 @@ class BasicBlock {
     std::set<Operand*> stores;
     // 包含这个块内的store
     std::set<Operand*> stores1;
+    // used for entry
+    Instruction* lastAlloc;
 
    public:
     int order;
@@ -31,6 +33,7 @@ class BasicBlock {
     void insertFront(Instruction*);
     void insertBack(Instruction*);
     void insertBefore(Instruction*, Instruction*);
+    void insertAfter(Instruction*, Instruction*);
     void remove(Instruction*);
     bool empty() const { return head->getNext() == head; }
     void output() const;
@@ -73,6 +76,7 @@ class BasicBlock {
     void removeStore(Operand* ope) { stores.erase(ope); }
     bool inStore(Operand* ope) { return stores.count(ope); }
     void replaceIns(Instruction* old, Instruction* new_);
+    void addAlloc(Instruction* alloc);
 };
 
 #endif

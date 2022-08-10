@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <iostream>
 #include "Ast.h"
+#include "AutoInline.h"
+#include "CleanAsmAddZero.h"
 #include "ConstAsm.h"
 #include "CopyProp.h"
 #include "ElimComSubexpr.h"
@@ -9,13 +11,17 @@
 #include "CondCopyProp.h"
 #include "ElimUnreachCode.h"
 #include "GraphColor.h"
+#include "InsReorder.h"
 #include "LinearScan.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
 #include "MachineStraighten.h"
 #include "Mem2reg.h"
+#include "PartialRedundancyElimination.h"
+#include "PeepholeOptimization.h"
 #include "SSADestruction.h"
 #include "Starighten.h"
+#include "TreeHeightBalance.h"
 #include "Unit.h"
 #include "ValueNumber.h"
 using namespace std;
@@ -84,27 +90,32 @@ int main(int argc, char* argv[]) {
     ast.typeCheck();
     ast.genCode(&unit);
     if (optimize) {
-        ElimUnreachCode e(&unit);
-        DeadCodeElimination d(&unit);
+        ElimUnreachCode euc(&unit);
+        DeadCodeElimination dce(&unit);
         Starighten s(&unit);
-        Mem2reg m(&unit);
-        SSADestruction s1(&unit);
+        Mem2reg m2r(&unit);
+        SSADestruction ssad(&unit);
         ElimComSubexpr ec(&unit);
-        CopyProp c(&unit);
+        CopyProp cp(&unit);
         ValueNumber vn(&unit);
         CondCopyProp cc(&unit);
-        m.pass();
-        d.pass();
+        TreeHeightBalance thb(&unit);
+        InsReorder ir(&unit);
+        AutoInline ai(&unit);
+        m2r.pass();
+        dce.pass();
+        ai.pass();
+        dce.pass();
         ec.pass();
-        c.pass();
+        cp.pass();
         cc.pass();
         vn.pass();
-        e.pass();
+        thb.pass();
+        euc.pass();
         s.pass();
-        s1.pass();
+        ir.pass();
+        ssad.pass();
     }
-    // unit.output();
-    // return 0;  // test
     if (dump_ir) {
         unit.output();
         return 0;
@@ -113,14 +124,18 @@ int main(int argc, char* argv[]) {
     if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
+        CleanAsmAddZero caaz(&mUnit);
+        ConstAsm ca(&mUnit);
+        PeepholeOptimization po(&mUnit);
+        PartialRedundancyElimination pre(&mUnit);
+        caaz.pass();
+        ca.pass();
+        // 效果一般 而且会导致编译时间长一些
+        pre.pass();
         mdce.pass();
+        po.pass();
         ms.pass();
     }
-
-    // if (optimize) {
-    //     ConstAsm const_asm(&mUnit);
-    //     const_asm.pass();
-    // }
 
     if (!optimize) {
         LinearScan linearScan(&mUnit);
@@ -132,6 +147,8 @@ int main(int argc, char* argv[]) {
     if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
+        PeepholeOptimization po(&mUnit);
+        po.pass();
         mdce.pass();
         ms.pass();
     }

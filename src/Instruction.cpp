@@ -1954,7 +1954,7 @@ bool BinaryInstruction::genNode() {
             int val = ((ConstantSymbolEntry*)se)->getValue();
             if (opcode == AND || opcode == MUL)
                 val = 0;
-            node = new SSAGraphNode(val);
+            node = new SSAGraphNode(this, val, 0);
             return true;
         } else {
             auto def = operands[1]->getDef();
@@ -1992,7 +1992,7 @@ bool BinaryInstruction::genNode() {
                 val = val1 % val2;
                 break;
         }
-        node = new SSAGraphNode(val);
+        node = new SSAGraphNode(this, val, 0);
         return true;
     }
     // 1 temp 1 const
@@ -2000,12 +2000,12 @@ bool BinaryInstruction::genNode() {
     SSAGraphNode *node1, *node2;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(val1);
+        node1 = new SSAGraphNode(this, val1, 0);
     } else
         node1 = operands[1]->getDef()->getNode();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(val2);
+        node2 = new SSAGraphNode(this, val2, 0);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node1);
@@ -2020,12 +2020,12 @@ bool CmpInstruction::genNode() {
     SSAGraphNode *node1, *node2;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(val1);
+        node1 = new SSAGraphNode(this, val1, 0);
     } else
         node1 = operands[1]->getDef()->getNode();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(val2);
+        node2 = new SSAGraphNode(this, val2, 0);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node1);
@@ -2051,7 +2051,7 @@ bool XorInstruction::genNode() {
     SSAGraphNode* node1;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(val1);
+        node1 = new SSAGraphNode(this, val1, 0);
     } else
         node1 = operands[1]->getDef()->getNode();
     node->addChild(node1);
@@ -2073,7 +2073,7 @@ bool GepInstruction::genNode() {
     auto se2 = operands[2]->getEntry();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(val2);
+        node2 = new SSAGraphNode(this, val2, 0);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node2);
@@ -2089,7 +2089,7 @@ bool PhiInstruction::genNode() {
         SSAGraphNode* node1;
         if (se->isConstant()) {
             int val = ((ConstantSymbolEntry*)se)->getValue();
-            node1 = new SSAGraphNode(val);
+            node1 = new SSAGraphNode(this, val, 0);
             node->addChild(node1);
         } else {
             node1 = operand->getDef()->getNode();
@@ -2305,12 +2305,12 @@ bool ShlInstruction::genNode() {
     SSAGraphNode *node1, *node2;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(val1);
+        node1 = new SSAGraphNode(this, val1, 0);
     } else
         node1 = operands[1]->getDef()->getNode();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(val2);
+        node2 = new SSAGraphNode(this, val2, 0);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node1);
@@ -2399,12 +2399,12 @@ bool AshrInstruction::genNode() {
     SSAGraphNode *node1, *node2;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(val1);
+        node1 = new SSAGraphNode(this, val1, 0);
     } else
         node1 = operands[1]->getDef()->getNode();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(val2);
+        node2 = new SSAGraphNode(this, val2, 0);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node1);

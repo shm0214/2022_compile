@@ -68,6 +68,7 @@ class Function {
     int essential = -1;
     std::vector<SSAGraphNode*> nodes;
     std::set<Operand*> stores;
+    MinSSAGraph* ssa;
     // 用于mem2reg 有调用其他函数的话则为true
     bool call;
     std::map<Function*, std::vector<Instruction*>> preds;
@@ -120,6 +121,9 @@ class Function {
     void genSSAGraph();
     void computeStores();
     std::set<Operand*>& getStores() { return stores; }
+    std::vector<SSAGraphNode*> getNodes() {return nodes; }
+    void setMinSSA(SSAGraphNode* node) { ssa = new MinSSAGraph(node); }
+    MinSSAGraph* getMinSSA() { return ssa; }
     bool hasCall() { return call; }
     void setHasCall() { call = true; }
     std::map<Function*, std::vector<Instruction*>>& getPreds() {

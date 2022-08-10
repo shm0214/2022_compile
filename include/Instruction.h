@@ -191,7 +191,6 @@ class BinaryInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
-    int getOp() { return opcode; }
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
@@ -219,7 +218,6 @@ class CmpInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     enum { E, NE, L, LE, G, GE };
-    int getOp() { return opcode; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
     Operand* getDef() { return operands[0]; }

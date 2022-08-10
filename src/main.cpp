@@ -6,8 +6,6 @@
 #include "CleanAsmAddZero.h"
 #include "ConstAsm.h"
 #include "CopyProp.h"
-#include "ElimComSubexpr.h"
-#include "CondCopyProp.h"
 #include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
 #include "GraphColor.h"
@@ -96,10 +94,8 @@ int main(int argc, char* argv[]) {
         Starighten s(&unit);
         Mem2reg m2r(&unit);
         SSADestruction ssad(&unit);
-        ElimComSubexpr ec(&unit);
         CopyProp cp(&unit);
         ValueNumber vn(&unit);
-        CondCopyProp cc(&unit);
         TreeHeightBalance thb(&unit);
         InsReorder ir(&unit);
         AutoInline ai(&unit);
@@ -107,10 +103,8 @@ int main(int argc, char* argv[]) {
         dce.pass();
         ai.pass();
         dce.pass();
-        ec.pass();
-        cp.pass();
+        cp.copy_prop();
         vn.pass();
-        cc.pass();
         thb.pass();
         euc.pass();
         s.pass();

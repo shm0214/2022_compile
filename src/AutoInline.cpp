@@ -144,7 +144,7 @@ void AutoInline::deal(CallInstruction* in) {
                 if (uses.size()) {
                     auto use = uses[0];
                     auto zero = new Operand(
-                        new ConstantSymbolEntry(TypeSystem::intType, 0));
+                        new ConstantSymbolEntry(use->getType(), 0));
                     auto dst = getTempOperand(use);
                     retOpes.push_back(dst);
                     Operand* src;
@@ -305,7 +305,7 @@ void AutoInline::deal(CallInstruction* in) {
             newIn = phi;
         } else {
             auto zero =
-                new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
+                new Operand(new ConstantSymbolEntry(ret->getType(), 0));
             newIn = new BinaryInstruction(BinaryInstruction::ADD, ret,
                                           retOpes[0], zero);
         }

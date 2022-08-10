@@ -177,11 +177,7 @@ class StoreInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[0], operands[1]});
     }
-<<<<<<< HEAD
-    // bool genNode();
-=======
     Instruction* copy();
->>>>>>> f46f62c3da744a75af7818879e6b830480054c7f
 };
 
 class BinaryInstruction : public Instruction {

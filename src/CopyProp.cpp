@@ -80,11 +80,7 @@ USS intersection(BasicBlock* bb) {
     return res;
 }
 
-<<<<<<< HEAD
 void CopyProp::pass(){
-=======
-void CopyProp::pass() {
->>>>>>> 5d9f6c660dcdd5eb5fa3ae6b655f106023081260
     auto iter = unit->begin();
     USS ACP;
     while (iter != unit->end()) {

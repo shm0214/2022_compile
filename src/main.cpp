@@ -7,10 +7,6 @@
 #include "ConstAsm.h"
 #include "CopyProp.h"
 #include "ElimComSubexpr.h"
-<<<<<<< HEAD
-=======
-#include "CondCopyProp.h"
->>>>>>> 5d9f6c660dcdd5eb5fa3ae6b655f106023081260
 #include "DeadCodeElimination.h"
 #include "CondCopyProp.h"
 #include "ElimUnreachCode.h"
@@ -113,10 +109,6 @@ int main(int argc, char* argv[]) {
         dce.pass();
         ec.pass();
         cp.pass();
-<<<<<<< HEAD
-        cc.pass();
-=======
->>>>>>> 5d9f6c660dcdd5eb5fa3ae6b655f106023081260
         vn.pass();
         cc.pass();
         thb.pass();

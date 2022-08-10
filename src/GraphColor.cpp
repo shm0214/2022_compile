@@ -5,13 +5,12 @@
 #include "LiveVariableAnalysis.h"
 #include "ReachDefAnalysis.h"
 
-#define MAX 1000000.0
-
 using namespace std;
 
 GraphColor::GraphColor(MachineUnit* unit) {
     this->unit = unit;
     regNum = 11;
+    fRegNum = 32;
     defWeight = 2;
     useWeight = 4;
     copyWeight = 1;
@@ -36,6 +35,7 @@ void GraphColor::allocateRegisters() {
                 modifyCode();
             else
                 genSpillCode();
+            // func->output();
         }
     }
 }
@@ -121,10 +121,11 @@ void GraphColor::makeWebs() {
         Web* web = new Web({{du_chain.first},
                             du_chain.second,
                             false,
-                            du_chain.first->isReg() ? MAX / 2 : 0,
+                            du_chain.first->isReg() ? __DBL_MAX__ / 2 : 0,
                             0,
                             -1,
-                            -1});
+                            -1,
+                            du_chain.first->isFloat()});
         webs.push_back(web);
     }
     bool again = true;
@@ -178,7 +179,12 @@ void GraphColor::makeWebs() {
     int i = 0;
     for (; i < regNum; i++) {
         Web* web = new Web({set<MachineOperand*>(), set<MachineOperand*>(),
-                            false, MAX / 2, -1, -1, i});
+                            false, __DBL_MAX__ / 2, -1, -1, i, false});
+        symreg.push_back(web);
+    }
+    for (; i < regNum + fRegNum; i++) {
+        Web* web = new Web({set<MachineOperand*>(), set<MachineOperand*>(),
+                            false, __DBL_MAX__ / 2, -1, -1, i, true});
         symreg.push_back(web);
     }
     for (auto& web : webs) {
@@ -201,19 +207,22 @@ void GraphColor::makeMatrix() {
         for (auto b : v)
             b = false;
     }
-    for (int i = 0; i < regNum; i++)
+    for (int i = 0; i < regNum + fRegNum; i++)
         for (int j = 0; j < i; j++) {
             matrix[i][j] = true;
             matrix[j][i] = true;
         }
-    for (auto i = regNum; i < (int)webs.size(); i++) {
+    for (auto i = regNum + fRegNum; i < (int)webs.size(); i++) {
         auto def = *(webs[i]->defs.begin());
         if (!def->isReg())
             continue;
         webs[i]->rreg = def->getReg();
+        if (def->isFloat())
+            webs[i]->rreg -= 5;
+        auto rreg = webs[i]->rreg;
         int k = operand2web[def];
-        for (int i = 0; i < regNum; i++) {
-            if (i == def->getReg())
+        for (int i = 0; i < regNum + fRegNum; i++) {
+            if (i == rreg)
                 continue;
             matrix[k][i] = true;
             matrix[i][k] = true;
@@ -244,6 +253,18 @@ void GraphColor::makeMatrix() {
                 liveOut.insert(use);
         }
     }
+    // for (auto it = webs.begin() + regNum + fRegNum; it != webs.end(); it++) {
+    //     auto web = *it;
+    //     auto def = *(web->defs.begin());
+    //     auto j = operand2web[def];
+    //     if (web->fpu)
+    //         for (int i = 0; i < regNum; i++)
+    //             matrix[i][j] = matrix[j][i] = true;
+    //     else
+    //         for (int i = regNum; i < regNum + fRegNum; i++)
+    //             matrix[i][j] = matrix[j][i] = true;
+    // }
+    // 虚的之间应该不用标记冲突吧
 }
 
 void GraphColor::makeList() {
@@ -265,7 +286,12 @@ bool GraphColor::coalesceRegs() {
             bool flag1 = false;
             if (ins->isMov())
                 flag1 = true;
-            else if (ins->isAdd()) {
+            else if (ins->isVMov()) {
+                auto def = ins->getDef()[0];
+                auto use = ins->getUse()[0];
+                if (def->isFloat() && use->isFloat())
+                    flag1 = true;
+            } else if (ins->isAdd() || ins->isVAdd()) {
                 auto def = ins->getDef()[0];
                 if (def->isReg() && def->getReg() == 13)
                     continue;
@@ -329,7 +355,12 @@ void GraphColor::computeSpillCost() {
             bool flag = false;
             if (ins->isMov())
                 flag = true;
-            else if (ins->isAdd()) {
+            else if (ins->isVMov()) {
+                auto def = ins->getDef()[0];
+                auto use = ins->getUse()[0];
+                if (def->isFloat() && use->isFloat())
+                    flag = true;
+            } else if (ins->isAdd() || ins->isVAdd()) {
                 auto def = ins->getDef()[0];
                 if (def->isReg() && def->getReg() == 13)
                     continue;
@@ -368,11 +399,17 @@ void GraphColor::pruneGraph() {
     while (success) {
         success = false;
         for (int i = 0; i < (int)list.size(); i++)
-            if (list[i].size() > 0 && (int)list[i].size() < regNum &&
-                webs[i]->rreg == -1) {
-                success = true;
-                stk.push(i);
-                adjustNeighbours(i);
+            if (list[i].size() > 0 && webs[i]->rreg == -1) {
+                bool flag = false;
+                if (webs[i]->fpu)
+                    flag = (int)list[i].size() < fRegNum;
+                else
+                    flag = (int)list[i].size() < regNum;
+                if (flag) {
+                    success = true;
+                    stk.push(i);
+                    adjustNeighbours(i);
+                }
             }
     }
     while (stk.size() < list.size()) {
@@ -420,13 +457,20 @@ bool GraphColor::assignRegs() {
 
 int GraphColor::minColor(int r) {
     // 返回与r相邻的节点中还未使用的颜色中编号最小的颜色编号
-    vector<bool> use(regNum, false);
+    vector<bool> use(regNum + fRegNum, false);
+    bool fpu = webs[r]->fpu;
     for (auto& i : removeList[r])
         if (webs[i]->rreg != -1)
             use[webs[i]->rreg] = true;
-    for (int i = 0; i < regNum; i++)
-        if (!use[i])
-            return i;
+    if (!fpu) {
+        for (int i = 0; i < regNum; i++)
+            if (!use[i])
+                return i;
+    } else {
+        for (int i = regNum; i < regNum + fRegNum; i++)
+            if (!use[i])
+                return i;
+    }
     return -1;
 }
 
@@ -434,8 +478,12 @@ void GraphColor::modifyCode() {
     for (int i = regNum; i < (int)webs.size(); i++) {
         auto web = webs[i];
         auto rreg = web->rreg;
-        if (rreg > 3)
-            func->addSavedRegs(rreg);
+        if (web->fpu) {
+            rreg = rreg - regNum + 16;
+        }
+        if (web->defs.size() || web->uses.size())
+            if (rreg > 3 || rreg > 3 + 16)
+                func->addSavedRegs(rreg);
         for (auto def : web->defs)
             def->setReg(rreg);
         for (auto use : web->uses)
@@ -447,7 +495,12 @@ void GraphColor::modifyCode() {
             bool flag = false;
             if (ins->isMov())
                 flag = true;
-            else if (ins->isAdd()) {
+            else if (ins->isVMov()) {
+                auto def = ins->getDef()[0];
+                auto use = ins->getUse()[0];
+                if (def->isFloat() && use->isFloat())
+                    flag = true;
+            } else if (ins->isAdd() || ins->isVAdd()) {
                 auto def = ins->getDef()[0];
                 if (def->isReg() && def->getReg() == 13)
                     continue;
@@ -486,23 +539,49 @@ void GraphColor::genSpillCode() {
             auto temp = new MachineOperand(*use);
             MachineOperand* operand = nullptr;
             if (web->disp > 255 || web->disp < -255) {
-                operand = new MachineOperand(MachineOperand::VREG,
-                                             SymbolTable::getLabel());
-                auto inst1 =
-                    new LoadMInstruction(use->getParent()->getParent(),
-                                         LoadMInstruction::LDR, operand, off);
-                use->getParent()->insertBefore(inst1);
+                if (!use->isFloat()) {
+                    operand = new MachineOperand(MachineOperand::VREG,
+                                                 SymbolTable::getLabel());
+                    auto inst1 = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::LDR,
+                        operand, off);
+                    use->getParent()->insertBefore(inst1);
+
+                } else {
+                    operand = new MachineOperand(MachineOperand::VREG,
+                                                 SymbolTable::getLabel(), true);
+                    auto inst1 = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::VLDR,
+                        operand, off);
+                    use->getParent()->insertBefore(inst1);
+                }
             }
             if (operand) {
-                auto inst = new LoadMInstruction(
-                    use->getParent()->getParent(), LoadMInstruction::LDR, temp,
-                    fp, new MachineOperand(*operand));
-                use->getParent()->insertBefore(inst);
+                if (!use->isFloat()) {
+                    auto inst = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::LDR,
+                        temp, fp, new MachineOperand(*operand));
+                    use->getParent()->insertBefore(inst);
+
+                } else {
+                    auto inst = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::VLDR,
+                        temp, fp, new MachineOperand(*operand));
+                    use->getParent()->insertBefore(inst);
+                }
             } else {
-                auto inst =
-                    new LoadMInstruction(use->getParent()->getParent(),
-                                         LoadMInstruction::LDR, temp, fp, off);
-                use->getParent()->insertBefore(inst);
+                if (!use->isFloat()) {
+                    auto inst = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::LDR,
+                        temp, fp, off);
+                    use->getParent()->insertBefore(inst);
+
+                } else {
+                    auto inst = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::VLDR,
+                        temp, fp, off);
+                    use->getParent()->insertBefore(inst);
+                }
             }
         }
         for (auto def : web->defs) {
@@ -512,21 +591,44 @@ void GraphColor::genSpillCode() {
             MachineOperand* operand = nullptr;
             MachineInstruction *inst1 = nullptr, *inst = nullptr;
             if (web->disp > 255 || web->disp < -255) {
-                operand = new MachineOperand(MachineOperand::VREG,
-                                             SymbolTable::getLabel());
-                inst1 = new LoadMInstruction(def->getParent()->getParent(),
-                                             LoadMInstruction::LDR,
-                                             operand, off);
-                def->getParent()->insertAfter(inst1);
+                if (!def->isFloat()) {
+                    operand = new MachineOperand(MachineOperand::VREG,
+                                                 SymbolTable::getLabel());
+                    inst1 = new LoadMInstruction(def->getParent()->getParent(),
+                                                 LoadMInstruction::LDR, operand,
+                                                 off);
+                    def->getParent()->insertAfter(inst1);
+
+                } else {
+                    operand = new MachineOperand(MachineOperand::VREG,
+                                                 SymbolTable::getLabel(), true);
+                    inst1 = new LoadMInstruction(def->getParent()->getParent(),
+                                                 LoadMInstruction::VLDR,
+                                                 operand, off);
+                    def->getParent()->insertAfter(inst1);
+                }
             }
-            if (operand)
-                inst = new StoreMInstruction(def->getParent()->getParent(),
-                                             StoreMInstruction::STR, temp, fp,
-                                             new MachineOperand(*operand));
-            else
-                inst = new StoreMInstruction(def->getParent()->getParent(),
-                                             StoreMInstruction::STR, temp, fp,
-                                             off);
+            if (operand) {
+                if (!def->isFloat()) {
+                    inst = new StoreMInstruction(
+                        def->getParent()->getParent(), StoreMInstruction::STR,
+                        temp, fp, new MachineOperand(*operand));
+                } else {
+                    inst = new StoreMInstruction(
+                        def->getParent()->getParent(), StoreMInstruction::VSTR,
+                        temp, fp, new MachineOperand(*operand));
+                }
+            } else {
+                if (!def->isFloat()) {
+                    inst = new StoreMInstruction(def->getParent()->getParent(),
+                                                 StoreMInstruction::STR, temp,
+                                                 fp, off);
+                } else {
+                    inst = new StoreMInstruction(def->getParent()->getParent(),
+                                                 StoreMInstruction::VSTR, temp,
+                                                 fp, off);
+                }
+            }
             if (inst1)
                 inst1->insertAfter(inst);
             else

@@ -569,7 +569,7 @@ MachineOperand* Instruction::genMachineReg(int reg) {
 }
 
 MachineOperand* Instruction::genMachineFReg(int freg) {
-    return new MachineOperand(MachineOperand::REG, freg + 16);
+    return new MachineOperand(MachineOperand::REG, freg + 16, true);
 }
 
 MachineOperand* Instruction::genMachineVReg(bool fpu) {

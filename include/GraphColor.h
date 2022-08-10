@@ -12,12 +12,13 @@ struct Web {
     int sreg;
     int disp;
     int rreg;
+    bool fpu;
 };
 
 class GraphColor {
    private:
     MachineUnit* unit;
-    int regNum;
+    int regNum, fRegNum;
     double defWeight, useWeight, copyWeight;
     MachineFunction* func;
     std::map<MachineOperand*, std::set<MachineOperand*>> du_chains;

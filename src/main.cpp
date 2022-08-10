@@ -131,13 +131,13 @@ int main(int argc, char* argv[]) {
         ms.pass();
     }
 
-    if (!optimize) {
-        LinearScan linearScan(&mUnit);
-        linearScan.allocateRegisters();
-    } else {
-        GraphColor GraphColor(&mUnit);
-        GraphColor.allocateRegisters();
-    }
+    // if (!optimize) {
+    // LinearScan linearScan(&mUnit);
+    // linearScan.allocateRegisters();
+    // } else {
+    GraphColor GraphColor(&mUnit);
+    GraphColor.allocateRegisters();
+    // }
     if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);

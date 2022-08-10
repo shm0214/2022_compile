@@ -1872,13 +1872,13 @@ void FptosiInstruction::genMachineCode(AsmBuilder* builder) {
         cur_block->InsertInst(cur_inst);
         src_operand = tmp;
     }
-
-    cur_inst = new VcvtMInstruction(cur_block, VcvtMInstruction::F2S,
-                                    src_operand, src_operand);
+    auto vcvtDst = genMachineVReg(true);
+    cur_inst = new VcvtMInstruction(cur_block, VcvtMInstruction::F2S, vcvtDst,
+                                    src_operand);
     cur_block->InsertInst(cur_inst);
-
+    auto movUse = new MachineOperand(*vcvtDst);
     cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
-                                   dst_operand, src_operand);
+                                   dst_operand, movUse);
 
     cur_block->InsertInst(cur_inst);
 }
@@ -1896,14 +1896,14 @@ void SitofpInstruction::genMachineCode(AsmBuilder* builder) {
         cur_block->InsertInst(cur_inst);
         src_operand = tmp;
     }
-    auto dst_operand = genMachineFloatOperand(dst);
-
-    cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
-                                   dst_operand, src_operand);
+    auto movDst = genMachineVReg(true);
+    cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV, movDst,
+                                   src_operand);
     cur_block->InsertInst(cur_inst);
-
+    auto vcvtUse = new MachineOperand(*movDst);
+    auto dst_operand = genMachineFloatOperand(dst);
     cur_inst = new VcvtMInstruction(cur_block, VcvtMInstruction::S2F,
-                                    dst_operand, dst_operand);
+                                    dst_operand, vcvtUse);
     cur_block->InsertInst(cur_inst);
 }
 
@@ -2625,5 +2625,23 @@ void BitcastInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[1]->removeUse(this);
         operands[1] = new_;
         new_->addUse(this);
+    }
+}
+
+void SitofpInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+        src = new_;
+    }
+}
+
+void FptosiInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+        src = new_;
     }
 }

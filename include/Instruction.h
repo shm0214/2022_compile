@@ -473,6 +473,11 @@ class FptosiInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
 };
 
 class SitofpInstruction : public Instruction {
@@ -492,6 +497,11 @@ class SitofpInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
 };
 
 class BitcastInstruction : public Instruction {

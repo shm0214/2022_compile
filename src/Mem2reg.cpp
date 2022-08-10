@@ -70,7 +70,7 @@ void Mem2reg::insertPhiInstruction(Function* function) {
                 auto assignIns = new BinaryInstruction(
                     BinaryInstruction::ADD, newOperand, (*use)->getUse()[1],
                     new Operand(
-                        new ConstantSymbolEntry(TypeSystem::intType, 0)));
+                        new ConstantSymbolEntry(newOperand->getType(), 0)));
                 addZeroIns.push_back(assignIns);
                 (*use)->getParent()->insertBefore(assignIns, *use);
                 assigns.insert((*use)->getParent());
@@ -143,7 +143,7 @@ void Mem2reg::rename(BasicBlock* block) {
                     phi->addSrc(block, stacks[o].top());
                 else
                     phi->addSrc(block, new Operand(new ConstantSymbolEntry(
-                                           TypeSystem::intType, 0)));
+                                           o->getType(), 0)));
             } else
                 break;
         }

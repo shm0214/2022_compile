@@ -880,7 +880,7 @@ void UnaryExpr::genCode() {
         Operand* src2;
         BasicBlock* bb = builder->getInsertBB();
         Operand* src1 =
-            new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
+            new Operand(new ConstantSymbolEntry(dst->getType(), 0));
         if (expr->getType()->getSize() == 1) {
             src2 = new Operand(new TemporarySymbolEntry(
                 TypeSystem::intType, SymbolTable::getLabel()));

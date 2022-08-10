@@ -308,19 +308,30 @@ void TreeHeightBalance::pass(BasicBlock* block) {
 void TreeHeightBalance::convert(map<Operand*, int, cmp> operands,
                                 vector<Instruction*> addIns) {
     // 先不管浮点了
+    auto lastIn = *(addIns.rbegin());
+    auto oldRes = lastIn->getDef();
+    auto type = oldRes->getType();
     vector<Instruction*> newIns;
     vector<Operand*> dsts;
     auto block = addIns[0]->getParent();
-    int val = 0;
+    double val = 0;
     for (auto it : operands) {
         if (it.first->isConst())
             val += it.first->getConstVal() * it.second;
         else if (it.second != 1) {
-            auto dst = new Operand(new TemporarySymbolEntry(
-                TypeSystem::intType, SymbolTable::getLabel()));
             auto src1 = it.first;
             auto src2 = new Operand(
                 new ConstantSymbolEntry(TypeSystem::intType, it.second));
+            if (type->isFloat()) {
+                auto sitofpDst = new Operand(
+                    new TemporarySymbolEntry(type, SymbolTable::getLabel()));
+                auto sitofp = new SitofpInstruction(sitofpDst, src2);
+                sitofp->setParent(block);
+                newIns.push_back(sitofp);
+                src2 = sitofpDst;
+            }
+            auto dst = new Operand(
+                new TemporarySymbolEntry(type, SymbolTable::getLabel()));
             auto in =
                 new BinaryInstruction(BinaryInstruction::MUL, dst, src1, src2);
             in->setParent(block);
@@ -330,8 +341,7 @@ void TreeHeightBalance::convert(map<Operand*, int, cmp> operands,
             dsts.push_back(it.first);
     }
     if (val) {
-        auto imm =
-            new Operand(new ConstantSymbolEntry(TypeSystem::intType, val));
+        auto imm = new Operand(new ConstantSymbolEntry(type, val));
         dsts.push_back(imm);
     }
     Operand* res;
@@ -339,15 +349,15 @@ void TreeHeightBalance::convert(map<Operand*, int, cmp> operands,
         // assert(dsts[0]->isConst());
         res = dsts[0];
     } else {
-        res = new Operand(new TemporarySymbolEntry(TypeSystem::intType,
-                                                   SymbolTable::getLabel()));
+        res = new Operand(
+            new TemporarySymbolEntry(type, SymbolTable::getLabel()));
         auto in = new BinaryInstruction(BinaryInstruction::ADD, res, dsts[0],
                                         dsts[1]);
         in->setParent(block);
         newIns.push_back(in);
         for (auto it = dsts.begin() + 2; it != dsts.end(); it++) {
-            auto newRes = new Operand(new TemporarySymbolEntry(
-                TypeSystem::intType, SymbolTable::getLabel()));
+            auto newRes = new Operand(
+                new TemporarySymbolEntry(type, SymbolTable::getLabel()));
             in =
                 new BinaryInstruction(BinaryInstruction::ADD, newRes, res, *it);
             in->setParent(block);
@@ -355,8 +365,7 @@ void TreeHeightBalance::convert(map<Operand*, int, cmp> operands,
             res = newRes;
         }
     }
-    auto lastIn = *(addIns.rbegin());
-    auto oldRes = lastIn->getDef();
+
     while (oldRes->usersNum())
         (*(oldRes->use_begin()))->replaceUse(oldRes, res);
     auto nextIn = lastIn->getNext();

@@ -7,11 +7,16 @@
 #include "ConstAsm.h"
 #include "CopyProp.h"
 #include "ElimComSubexpr.h"
+<<<<<<< HEAD
+=======
+#include "CondCopyProp.h"
+>>>>>>> 5d9f6c660dcdd5eb5fa3ae6b655f106023081260
 #include "DeadCodeElimination.h"
 #include "CondCopyProp.h"
 #include "ElimUnreachCode.h"
 #include "GraphColor.h"
 #include "InsReorder.h"
+#include "InstructionScheduling.h"
 #include "LinearScan.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
@@ -108,8 +113,12 @@ int main(int argc, char* argv[]) {
         dce.pass();
         ec.pass();
         cp.pass();
+<<<<<<< HEAD
         cc.pass();
+=======
+>>>>>>> 5d9f6c660dcdd5eb5fa3ae6b655f106023081260
         vn.pass();
+        cc.pass();
         thb.pass();
         euc.pass();
         s.pass();
@@ -148,9 +157,11 @@ int main(int argc, char* argv[]) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);
+        InstructionScheduling is(&mUnit);
         po.pass();
         mdce.pass();
         ms.pass();
+        is.pass();
     }
     if (dump_asm)
         mUnit.output();

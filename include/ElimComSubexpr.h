@@ -3,7 +3,11 @@
 
 #include <vector>
 #include "Unit.h"
+<<<<<<< HEAD
 #include<unordered_map>
+=======
+#include <unordered_map>
+>>>>>>> 5d9f6c660dcdd5eb5fa3ae6b655f106023081260
 using namespace std;
 
 enum { SUB, ADD, AND, OR, MUL, DIV, MOD };

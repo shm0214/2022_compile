@@ -226,7 +226,10 @@ void CondCopyProp::pass(){
                     }
                     if(tmp) {
                         SSA[idx++] = {tmp->getNo(), node->getNo()};
+<<<<<<< HEAD
                         // cout<<tmp->getNo()<<"->"<<node->getNo()<<endl;
+=======
+>>>>>>> 5d9f6c660dcdd5eb5fa3ae6b655f106023081260
                         SSASucc[tmp->getNo()].push_back(node->getNo());
                     }
                     tmp = node;
@@ -238,10 +241,14 @@ void CondCopyProp::pass(){
                     SSAGraphNode* node = inst->getNode();
                     if(node){
                         if(tmp) {
+<<<<<<< HEAD
                             // tmp->addSucc(node);
                             // node->addPred(tmp);
                             SSA[idx++] = {tmp->getNo(), node->getNo()};
                             // cout<<tmp->getNo()<<"->"<<node->getNo()<<endl;
+=======
+                            SSA[idx++] = {tmp->getNo(), node->getNo()};
+>>>>>>> 5d9f6c660dcdd5eb5fa3ae6b655f106023081260
                             SSASucc[tmp->getNo()].push_back(node->getNo());
                         }
                         add = true;
@@ -260,7 +267,10 @@ void CondCopyProp::pass(){
                             if(node){
                                 if(tmp) {
                                     SSA[idx++] = {tmp->getNo(), node->getNo()};
+<<<<<<< HEAD
                                     // cout<<tmp->getNo()<<"->"<<node->getNo()<<endl;
+=======
+>>>>>>> 5d9f6c660dcdd5eb5fa3ae6b655f106023081260
                                     SSASucc[tmp->getNo()].push_back(node->getNo());
                                 }
                                 add = true;

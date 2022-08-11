@@ -50,7 +50,7 @@ class Function {
    private:
     std::vector<BasicBlock*> block_list;
     SymbolEntry* sym_ptr;
-    BasicBlock* entry;
+    BasicBlock *entry, *exit;
     Unit* parent;
     TreeNode* DFSTreeRoot;
     TreeNode* domTreeRoot;
@@ -68,7 +68,6 @@ class Function {
     int essential = -1;
     std::vector<SSAGraphNode*> nodes;
     std::set<Operand*> stores;
-    MinSSAGraph* ssa;
     // 用于mem2reg 有调用其他函数的话则为true
     bool call;
     std::map<Function*, std::vector<Instruction*>> preds;
@@ -77,7 +76,7 @@ class Function {
     int instNum;
 
    public:
-    Function() {}
+    Function() {};
     Function(Unit*, SymbolEntry*);
     ~Function();
     void insertBlock(BasicBlock* bb) { block_list.push_back(bb); };
@@ -122,8 +121,7 @@ class Function {
     void computeStores();
     std::set<Operand*>& getStores() { return stores; }
     std::vector<SSAGraphNode*> getNodes() {return nodes; }
-    void setMinSSA(SSAGraphNode* node) { ssa = new MinSSAGraph(node); }
-    MinSSAGraph* getMinSSA() { return ssa; }
+
     bool hasCall() { return call; }
     void setHasCall() { call = true; }
     std::map<Function*, std::vector<Instruction*>>& getPreds() {

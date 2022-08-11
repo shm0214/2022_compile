@@ -116,7 +116,7 @@ BinaryInstruction::BinaryInstruction(unsigned opcode,
                                      Operand* src1,
                                      Operand* src2,
                                      BasicBlock* insert_bb)
-    : Instruction(BINARY, insert_bb) {
+    : Instruction(BINARY, insert_bb), dst(dst), src1(src1), src2(src2) {
     this->opcode = opcode;
     operands.push_back(dst);
     operands.push_back(src1);
@@ -150,6 +150,55 @@ BinaryInstruction::~BinaryInstruction() {
         delete operands[0];
     operands[1]->removeUse(this);
     operands[2]->removeUse(this);
+}
+
+std::pair<char, int> BinaryInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+{
+    std::pair<char, int> res, val1, val2;
+    if (value.find(src1) == value.end())
+        val1 = src1->getInitLatticeValue();
+    else
+        val1 = value[src1];
+    if (value.find(src2) == value.end())
+        val2 = src2->getInitLatticeValue();
+    else
+        val2 = value[src2];
+
+    if (val1.first == -1 || val2.first == -1)
+        res = {-1, 0};
+    else if (val1.first == 0 && val2.first == 0)
+    {
+        res.first = 0;
+        switch (opcode)
+        {
+        case ADD:
+            res.second = val1.second + val2.second;
+            break;
+        case SUB:
+            res.second = val1.second - val2.second;
+            break;
+        case MUL:
+            res.second = val1.second * val2.second;
+            break;
+        case DIV:
+            res.second = val1.second / val2.second;
+            break;
+        case MOD:
+            res.second = val1.second % val2.second;
+            break;
+        case AND:
+            res.second = val1.second & val2.second;
+            break;
+        case OR:
+            res.second = val1.second | val2.second;
+            break;
+        default:
+            break;
+        }
+    }
+    else
+        res.first = 1;
+    return res;
 }
 
 void BinaryInstruction::output() const {
@@ -202,7 +251,7 @@ CmpInstruction::CmpInstruction(unsigned opcode,
                                Operand* src1,
                                Operand* src2,
                                BasicBlock* insert_bb)
-    : Instruction(CMP, insert_bb) {
+    : Instruction(CMP, insert_bb), dst(dst), src1(src1), src2(src2) {
     this->opcode = opcode;
     operands.push_back(dst);
     operands.push_back(src1);
@@ -270,6 +319,54 @@ void CmpInstruction::output() const {
 
     fprintf(yyout, "  %s = icmp %s %s %s, %s\n", s1.c_str(), op.c_str(),
             type.c_str(), s2.c_str(), s3.c_str());
+}
+
+std::pair<char, int> CmpInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+{
+    std::cout<<"cmp"<<std::endl;
+    std::pair<char, int> res, val1, val2;
+    if (value.find(src1) == value.end())
+        val1 = src1->getInitLatticeValue();
+    else
+        val1 = value[src1];
+    if (value.find(src2) == value.end())
+        val2 = src2->getInitLatticeValue();
+    else
+        val2 = value[src2];
+    if (val1.first == -1 || val2.first == -1){
+        res = {-1, 0};
+    }
+    else if (val1.first == 0 && val2.first == 0)
+    {
+        res.first = 0;
+        switch (opcode)
+        {
+        case E:
+            res.second = val1.second == val2.second;
+            break;
+        case NE:
+            res.second = val1.second != val2.second;
+            break;
+        case L:
+            res.second = val1.second < val2.second;
+            break;
+        case GE:
+            res.second = val1.second >= val2.second;
+            break;
+        case G:
+            res.second = val1.second > val2.second;
+            break;
+        case LE:
+            res.second = val1.second <= val2.second;
+            break;
+        default:
+            break;
+        }
+    }
+    else{
+        res.first = 1;
+    }
+    return res;
 }
 
 UncondBrInstruction::UncondBrInstruction(BasicBlock* to, BasicBlock* insert_bb)
@@ -422,7 +519,7 @@ void AllocaInstruction::output() const {
 LoadInstruction::LoadInstruction(Operand* dst,
                                  Operand* src_addr,
                                  BasicBlock* insert_bb)
-    : Instruction(LOAD, insert_bb) {
+    : Instruction(LOAD, insert_bb), dst(dst), src_addr(src_addr) {
     operands.push_back(dst);
     operands.push_back(src_addr);
     dst->setDef(this);
@@ -1758,6 +1855,31 @@ void PhiInstruction::output() const {
     fprintf(yyout, "\n");
 }
 
+std::pair<char, int> PhiInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+{
+    std::cout<<"phi"<<std::endl;
+    std::pair<char, int> res, tmp;
+    res = {1, 0};
+    for (auto i = srcs.begin(); i != srcs.end(); i++)
+    {
+        if (value.find((*i).second) == value.end())
+            tmp = (*i).second->getInitLatticeValue();
+        else
+            tmp = value[(*i).second];
+        if (res.first > tmp.first)
+            res = tmp;
+        else if (res.first == tmp.first)
+        {
+            if (res.first == 0)
+            {
+                if (res.second != tmp.second)
+                    res = {-1, 0};
+            }
+        }
+    }
+    return res;
+}
+
 void PhiInstruction::addSrc(BasicBlock* block, Operand* src) {
     operands.push_back(src);
     srcs.insert(std::make_pair(block, src));
@@ -1946,6 +2068,18 @@ bool LoadInstruction::genNode() {
     return true;
 }
 
+std::pair<char, int> LoadInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+{
+    std::cout<<"load"<<std::endl;
+    std::pair<char, int> l;
+    if (value.find(src_addr) == value.end())
+        l = src_addr->getInitLatticeValue();
+    else
+        l = value[src_addr];
+    return l;
+}
+
+
 bool BinaryInstruction::genNode() {
     // add 0
     if (operands[2]->isZero()) {
@@ -1954,7 +2088,7 @@ bool BinaryInstruction::genNode() {
             int val = ((ConstantSymbolEntry*)se)->getValue();
             if (opcode == AND || opcode == MUL)
                 val = 0;
-            node = new SSAGraphNode(this, val, 0);
+            node = new SSAGraphNode(val);
             return true;
         } else {
             auto def = operands[1]->getDef();
@@ -1992,7 +2126,7 @@ bool BinaryInstruction::genNode() {
                 val = val1 % val2;
                 break;
         }
-        node = new SSAGraphNode(this, val, 0);
+        node = new SSAGraphNode(val);
         return true;
     }
     // 1 temp 1 const
@@ -2000,12 +2134,12 @@ bool BinaryInstruction::genNode() {
     SSAGraphNode *node1, *node2;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(this, val1, 0);
+        node1 = new SSAGraphNode(val1);
     } else
         node1 = operands[1]->getDef()->getNode();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(this, val2, 0);
+        node2 = new SSAGraphNode(val2);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node1);
@@ -2020,12 +2154,12 @@ bool CmpInstruction::genNode() {
     SSAGraphNode *node1, *node2;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(this, val1, 0);
+        node1 = new SSAGraphNode(val1);
     } else
         node1 = operands[1]->getDef()->getNode();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(this, val2, 0);
+        node2 = new SSAGraphNode(val2);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node1);
@@ -2051,7 +2185,7 @@ bool XorInstruction::genNode() {
     SSAGraphNode* node1;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(this, val1, 0);
+        node1 = new SSAGraphNode(val1);
     } else
         node1 = operands[1]->getDef()->getNode();
     node->addChild(node1);
@@ -2073,7 +2207,7 @@ bool GepInstruction::genNode() {
     auto se2 = operands[2]->getEntry();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(this, val2, 0);
+        node2 = new SSAGraphNode(val2);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node2);
@@ -2089,7 +2223,7 @@ bool PhiInstruction::genNode() {
         SSAGraphNode* node1;
         if (se->isConstant()) {
             int val = ((ConstantSymbolEntry*)se)->getValue();
-            node1 = new SSAGraphNode(this, val, 0);
+            node1 = new SSAGraphNode(val);
             node->addChild(node1);
         } else {
             node1 = operand->getDef()->getNode();
@@ -2253,7 +2387,7 @@ ShlInstruction::ShlInstruction(Operand* dst,
                                Operand* src,
                                Operand* num,
                                BasicBlock* insert_bb)
-    : Instruction(SHL, insert_bb) {
+    : Instruction(SHL, insert_bb), dst(dst), src(src), num(num) {
     operands.push_back(dst);
     operands.push_back(src);
     operands.push_back(num);
@@ -2305,12 +2439,12 @@ bool ShlInstruction::genNode() {
     SSAGraphNode *node1, *node2;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(this, val1, 0);
+        node1 = new SSAGraphNode(val1);
     } else
         node1 = operands[1]->getDef()->getNode();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(this, val2, 0);
+        node2 = new SSAGraphNode(val2);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node1);
@@ -2323,6 +2457,31 @@ std::string ShlInstruction::getHash() {
     s << "shl ";
     s << operands[1]->toStr() << " " << operands[2]->toStr();
     return s.str();
+}
+
+std::pair<char, int> ShlInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+{
+    std::cout<<"shl"<<std::endl;
+    std::pair<char, int> res, val1, val2;
+    if (value.find(src) == value.end())
+        val1 = src->getInitLatticeValue();
+    else
+        val1 = value[src];
+    if (value.find(num) == value.end())
+        val2 = num->getInitLatticeValue();
+    else
+        val2 = value[num];
+
+    if (val1.first == -1 || val2.first == -1)
+        res = {-1, 0};
+    else if (val1.first == 0 && val2.first == 0)
+    {
+        res.first = 0;
+        res.second = val1.second << val2.second;
+    }
+    else
+        res.first = 1;
+    return res;
 }
 
 void ShlInstruction::genMachineCode(AsmBuilder* builder) {
@@ -2347,7 +2506,7 @@ AshrInstruction::AshrInstruction(Operand* dst,
                                  Operand* src,
                                  Operand* num,
                                  BasicBlock* insert_bb)
-    : Instruction(ASHR, insert_bb) {
+    : Instruction(ASHR, insert_bb), dst(dst), src(src), num(num) {
     operands.push_back(dst);
     operands.push_back(src);
     operands.push_back(num);
@@ -2382,6 +2541,31 @@ AshrInstruction::~AshrInstruction() {
     operands[2]->removeUse(this);
 }
 
+std::pair<char, int> AshrInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+{
+    std::cout<<"ashr"<<std::endl;
+    std::pair<char, int> res, val1, val2;
+    if (value.find(src) == value.end())
+        val1 = src->getInitLatticeValue();
+    else
+        val1 = value[src];
+    if (value.find(num) == value.end())
+        val2 = num->getInitLatticeValue();
+    else
+        val2 = value[num];
+
+    if (val1.first == -1 || val2.first == -1)
+        res = {-1, 0};
+    else if (val1.first == 0 && val2.first == 0)
+    {
+        res.first = 0;
+        res.second = val1.second >> val2.second;
+    }
+    else
+        res.first = 1;
+    return res;
+}
+
 void AshrInstruction::output() const {
     std::string dst = operands[0]->toStr();
     std::string src = operands[1]->toStr();
@@ -2399,12 +2583,12 @@ bool AshrInstruction::genNode() {
     SSAGraphNode *node1, *node2;
     if (se1->isConstant()) {
         int val1 = ((ConstantSymbolEntry*)se1)->getValue();
-        node1 = new SSAGraphNode(this, val1, 0);
+        node1 = new SSAGraphNode(val1);
     } else
         node1 = operands[1]->getDef()->getNode();
     if (se2->isConstant()) {
         int val2 = ((ConstantSymbolEntry*)se2)->getValue();
-        node2 = new SSAGraphNode(this, val2, 0);
+        node2 = new SSAGraphNode(val2);
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node1);

@@ -14,6 +14,36 @@ std::string Operand::toStr() const {
     return res;
 }
 
+bool Operand::isSSAName() {
+    if(se->isTemporary()){
+        return true;
+    }
+    else if(se->isVariable()){
+        if(se->getType()->isArray() || this->isGlobal()){
+            return false;
+        }
+        return true;
+    }
+    return false; // constant
+}
+
+std::pair<char, int> Operand::getInitLatticeValue(){
+    if(this->isConst()){
+        return {0, ((ConstantSymbolEntry*)se)->getValue()};
+    }
+    else if(se->isTemporary()){
+        if(this->isParam())
+            return {-1, 0};
+        return {1, 0};
+    }
+    else if(se->isVariable()){
+        if(((IdentifierSymbolEntry*)se)->isConstant()){
+            return {0, ((IdentifierSymbolEntry*)se)->getValue()};
+        }
+    }
+    return {-1, 0};
+}
+
 void Operand::removeUse(Instruction* inst) {
     auto i = std::find(uses.begin(), uses.end(), inst);
     if (i != uses.end())

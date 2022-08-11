@@ -59,14 +59,12 @@ void FunctionDef::genCode() {
     Function* func = new Function(unit, se);
     BasicBlock* entry = func->getEntry();
     // set the insert point to the entry basicblock of this function.
-
     builder->setInsertBB(entry);
     if (decl)
         decl->genCode();
     // function中的stmt节点是用compoundstmt进行初始化的
     if (stmt)
         stmt->genCode();
-
     /**
      * Construct control flow graph. You need do set successors and predecessors
      * for each basic block. Todo
@@ -121,7 +119,6 @@ void FunctionDef::genCode() {
                     new RetInstruction(nullptr, dst);
                 }
             }
-
         }
         //最后一条语句不是返回以及跳转
         else if (!last->isRet()) {

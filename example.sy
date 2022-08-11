@@ -1,8 +1,15 @@
 int main(){
     int a = 4;
+    int e = getint();
     int b, c, d;
-    b = a+45+a;
-    c = a+45+a;
-    d = a+45+a;
+    b = a+45;
+    e = b * 3;
+    if(b>e){
+        c = 45+a;
+    }
+    else{
+        c = 54 + b;
+    }
+    d = c*2;
     return d;
 }

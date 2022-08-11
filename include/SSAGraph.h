@@ -52,8 +52,7 @@ class SSAGraphNode {
         ASHR,
     };
     SSAGraphNode(Instruction* ins, int type = -1) : ins(ins), type(type) {}
-    SSAGraphNode(Instruction* ins, int val, int type) : ins(ins), val(val), type(CONST) {}
-    SSAGraphNode() : no(0) {} // only for entry node
+    SSAGraphNode(int val) : type(CONST) {}
     Instruction* getInst() { return ins; }
     void setNo(int num) { no = num; }
     int getNo() const{ return no; }

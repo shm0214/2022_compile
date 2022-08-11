@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
         Starighten s(&unit);
         Mem2reg m2r(&unit);
         SSADestruction ssad(&unit);
-        ElimComSubexpr ec(&unit);
+        // ElimComSubexpr ec(&unit);
         CopyProp cp(&unit);
         ValueNumber vn(&unit);
         CondCopyProp cc(&unit);
@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
         dce.pass();
         ai.pass();
         dce.pass();
-        ec.pass();
+        // ec.pass();
         cp.pass();
         vn.pass();
         cc.pass();

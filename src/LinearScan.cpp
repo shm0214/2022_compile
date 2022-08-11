@@ -200,22 +200,12 @@ void LinearScan::genSpillCode() {
             auto temp = new MachineOperand(*use);
             MachineOperand* operand = nullptr;
             if (interval->disp > 255 || interval->disp < -255) {
-                if (!use->isFloat()) {
-                    operand = new MachineOperand(MachineOperand::VREG,
-                                                 SymbolTable::getLabel());
-                    auto inst1 = new LoadMInstruction(
-                        use->getParent()->getParent(), LoadMInstruction::LDR,
-                        operand, off);
-                    use->getParent()->insertBefore(inst1);
-
-                } else {
-                    operand = new MachineOperand(MachineOperand::VREG,
-                                                 SymbolTable::getLabel(), true);
-                    auto inst1 = new LoadMInstruction(
-                        use->getParent()->getParent(), LoadMInstruction::VLDR,
-                        operand, off);
-                    use->getParent()->insertBefore(inst1);
-                }
+                operand = new MachineOperand(MachineOperand::VREG,
+                                             SymbolTable::getLabel());
+                auto inst1 =
+                    new LoadMInstruction(use->getParent()->getParent(),
+                                         LoadMInstruction::LDR, operand, off);
+                use->getParent()->insertBefore(inst1);
             }
             if (operand) {
                 if (!use->isFloat()) {
@@ -250,22 +240,12 @@ void LinearScan::genSpillCode() {
             MachineOperand* operand = nullptr;
             MachineInstruction *inst1 = nullptr, *inst = nullptr;
             if (interval->disp > 255 || interval->disp < -255) {
-                if (!def->isFloat()) {
-                    operand = new MachineOperand(MachineOperand::VREG,
-                                                 SymbolTable::getLabel());
-                    inst1 = new LoadMInstruction(def->getParent()->getParent(),
-                                                 LoadMInstruction::LDR, operand,
-                                                 off);
-                    def->getParent()->insertAfter(inst1);
-
-                } else {
-                    operand = new MachineOperand(MachineOperand::VREG,
-                                                 SymbolTable::getLabel(), true);
-                    inst1 = new LoadMInstruction(def->getParent()->getParent(),
-                                                 LoadMInstruction::VLDR,
-                                                 operand, off);
-                    def->getParent()->insertAfter(inst1);
-                }
+                operand = new MachineOperand(MachineOperand::VREG,
+                                                SymbolTable::getLabel());
+                inst1 = new LoadMInstruction(def->getParent()->getParent(),
+                                                LoadMInstruction::LDR, operand,
+                                                off);
+                def->getParent()->insertAfter(inst1);
             }
             if (operand) {
                 if (!def->isFloat()) {

@@ -128,6 +128,7 @@ int main(int argc, char* argv[]) {
         pre.pass();
         mdce.pass();
         po.pass();
+        mdce.pass();
         ms.pass();
     }
 

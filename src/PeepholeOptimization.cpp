@@ -234,12 +234,15 @@ void PeepholeOptimization::pass() {
                     auto store_src1 = next_inst->getUse()[0];
                     auto store_src2 = next_inst->getUse()[1];
 
+                    if(store_src1->isFloat() && !add_src2->isImm())
+                        continue;
+
                     if (*add_dst == *store_src2) {
                         auto src1 = new MachineOperand(*store_src1);
                         auto src2 = new MachineOperand(*add_src1);
                         auto src3 = new MachineOperand(*add_src2);
                         auto new_inst = new StoreMInstruction(
-                            block, StoreMInstruction::STR, src1, src2, src3);
+                            block, next_inst->getOp(), src1, src2, src3);
                         *next_inst_iter = new_inst;
                     }
                 } else if (curr_inst->isAdd() && next_inst->isLoad()) {
@@ -259,6 +262,9 @@ void PeepholeOptimization::pass() {
                     auto load_dst = next_inst->getDef()[0];
                     auto load_src1 = next_inst->getUse()[0];
 
+                    if (load_dst->isFloat() && !add_src2->isImm())
+                        continue;
+
                     if (add_dst->isReg() && !(*add_dst == *load_dst))
                         continue;
 
@@ -267,7 +273,7 @@ void PeepholeOptimization::pass() {
                         auto src2 = new MachineOperand(*add_src1);
                         auto src3 = new MachineOperand(*add_src2);
                         auto new_inst = new LoadMInstruction(
-                            block, LoadMInstruction::LDR, src1, src2, src3);
+                            block, next_inst->getOp(), src1, src2, src3);
                         *next_inst_iter = new_inst;
                         if (add_dst->isReg() && *add_dst == *load_dst)
                             instToRemove.insert(curr_inst);

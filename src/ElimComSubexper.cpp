@@ -17,7 +17,6 @@ void delAEB(Operand* opd, VAEB AEB){
 
 void ElimComSubexpr::pass(){
     auto iter = unit->begin();
-    iter = unit->begin();
     while (iter != unit->end()){
         vector<BasicBlock*> block_list = (*iter)->getBlockList();
         for(auto bb: block_list){
@@ -29,44 +28,40 @@ void ElimComSubexpr::pass(){
 
 void ElimComSubexpr::local_elim_cse(BasicBlock* bb){
     for(auto iter = bb->begin();iter!=bb->end();iter=iter->getNext()){
-        vector<Operand*> operands(iter->getOperands());
-        if (iter->isBin())
-        {
-            int op = ((BinaryInstruction*)iter)->getOp();
-            Instruction* p = iter;
+        Operand* def = iter->getDef();
+        vector<Operand*> uses(iter->getUse());
+        if(uses.size() == 2){
+            struct aeb t;
+            t.inst = iter, t.opd1 = uses[0], t.opr = iter->getOpcode(), t.opd2 = uses[1];
             bool found = false;
-            int len = AEB.size();
             int i = 0;
-            for(; i<len; i++){
-                if(op == AEB[i].opr && (operands[1] == AEB[i].opd1 || (operands[1]->isConst() && AEB[i].opd1->isConst() && operands[1]->getConstVal() == AEB[i].opd1->getConstVal()))
-                && (operands[2] == AEB[i].opd2  || (operands[2]->isConst() && AEB[i].opd2->isConst() && operands[2]->getConstVal() == AEB[i].opd2->getConstVal()))){
+            for(; i<int(AEB.size()); i++){
+                if(t == AEB[i]){
                     found = true;
                     break;
                 }
             }
+
             if(found){
-                p = AEB[i].inst;
+                Instruction* p = AEB[i].inst;
                 Operand* dst = AEB[i].tmp;
                 if(dst == nullptr){
                     dst = new Operand(new TemporarySymbolEntry(
-                    operands[1]->getType(), SymbolTable::getLabel()));
-                    vector<Operand*> pOperands(p->getOperands());
-                    Instruction* inst = new BinaryInstruction(op, dst, pOperands[1], pOperands[2], nullptr);
+                    def->getType(), SymbolTable::getLabel()));
+                    Instruction* inst = new BinaryInstruction(AEB[i].opr, dst, AEB[i].opd1, AEB[i].opd2, nullptr);
                     AEB[i].tmp = dst;
                     bb->insertBefore(inst, p);
-                    Instruction* inst1 = new BinaryInstruction(BinaryInstruction::ADD, pOperands[0], dst, new Operand(new ConstantSymbolEntry(dst->getType(), 0)), nullptr);
+                    Instruction* inst1 = new StoreInstruction(p->getDef(), dst, nullptr);
                     bb->insertBefore(inst1, p);
                     bb->remove(p);
                 }
-                Instruction* inst2 = new BinaryInstruction(BinaryInstruction::ADD, operands[0], dst, new Operand(new ConstantSymbolEntry(dst->getType(), 0)), nullptr);
+                Instruction* inst2 = new StoreInstruction(def, dst, nullptr);
                 bb->insertBefore(inst2, iter);
                 bb->remove(iter);
             } else {
                 // insert
-                struct aeb tmp;
-                tmp.inst = (BinaryInstruction*)iter, tmp.opd1 = operands[1], tmp.opr = op, tmp.opd2 = operands[2];
-                AEB.push_back(tmp);
-                delAEB(operands[0], AEB);
+                AEB.push_back(t);
+                delAEB(def, AEB);
             }
         }
     }

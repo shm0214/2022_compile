@@ -9,7 +9,7 @@ using namespace std;
 enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
 struct aeb
 {
-    BinaryInstruction* inst;
+    Instruction* inst;
     Operand* opd1;
     int opr;
     Operand* opd2;
@@ -18,7 +18,8 @@ struct aeb
         return opr<a.opr;
     }
     bool operator== (aeb a) const{
-        return inst==a.inst && opr==a.opr && opd1==a.opd1 && opd2==a.opd2;
+        return (opr==a.opr && (opd1==a.opd1 || (opd1->isConst() && a.opd1->isConst() && opd1->getConstVal() == a.opd1->getConstVal()))
+        && (opd2==a.opd2 || (opd2->isConst() && a.opd2->isConst() && opd2->getConstVal() == a.opd2->getConstVal())));
     }
 };
 

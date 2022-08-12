@@ -38,27 +38,24 @@ void CopyProp::pass(){
 void CopyProp::local_copy_prop(BasicBlock* bb) {
     bool flag;
     for (auto iter = bb->begin(); iter != bb->end(); iter = iter->getNext()) {
-        vector<Operand*> operands(iter->getOperands());
-        if (iter->isBin()) {
-            if (!operands[1]->isConst()) {
-                Operand* opd = copy_value(operands[1], flag);
+        Operand* def = iter->getDef();
+        vector<Operand*> uses(iter->getUse());
+        for(auto opd : uses) {
+            if (!opd->isConst()) {
+                Operand* new_opd = copy_value(opd, flag);
                 if (flag) {
-                    iter->replaceUse(operands[1], opd);
+                    iter->replaceUse(opd, new_opd);
+                    if(!opd->usersNum()){
+                        bb->remove(opd->getDef());
+                    }
                 }
             }
-            if (!operands[2]->isConst()) {
-                Operand* opd = copy_value(operands[2], flag);
-                if (flag) {
-                    iter->replaceUse(operands[2], opd);
-                }
-            }
-        } else if (iter->isStore()) {
-            remove_ACP(ACP, operands[0]);
-            if (!operands[1]->isConst()) {
-                ACP[operands[0]] = operands[1];
-            }
+        } 
+        if(def){
+            remove_ACP(ACP, def);
+            if(iter->isStore())
+                ACP[def] = ((StoreInstruction*)iter)->getSrc();
         }
-        operands.clear();
     }
 }
 

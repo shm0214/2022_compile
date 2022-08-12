@@ -1,5 +1,4 @@
 #include "CondCopyProp.h"
-#include <queue>
 using namespace std;
 
 void CondCopyProp::pass()

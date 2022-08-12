@@ -131,7 +131,8 @@ void BinaryInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[1]->removeUse(this);
         operands[1] = new_;
         new_->addUse(this);
-    } else if (operands[2] == old) {
+    } 
+    if (operands[2] == old) {
         operands[2]->removeUse(this);
         operands[2] = new_;
         new_->addUse(this);
@@ -152,9 +153,9 @@ BinaryInstruction::~BinaryInstruction() {
     operands[2]->removeUse(this);
 }
 
-std::pair<char, int> BinaryInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+std::pair<int, int> BinaryInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
-    std::pair<char, int> res, val1, val2;
+    std::pair<int, int> res, val1, val2;
     if (value.find(src1) == value.end())
         val1 = src1->getInitLatticeValue();
     else
@@ -266,7 +267,8 @@ void CmpInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[1]->removeUse(this);
         operands[1] = new_;
         new_->addUse(this);
-    } else if (operands[2] == old) {
+    } 
+    if (operands[2] == old) {
         operands[2]->removeUse(this);
         operands[2] = new_;
         new_->addUse(this);
@@ -321,10 +323,9 @@ void CmpInstruction::output() const {
             type.c_str(), s2.c_str(), s3.c_str());
 }
 
-std::pair<char, int> CmpInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+std::pair<int, int> CmpInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
-    std::cout<<"cmp"<<std::endl;
-    std::pair<char, int> res, val1, val2;
+    std::pair<int, int> res, val1, val2;
     if (value.find(src1) == value.end())
         val1 = src1->getInitLatticeValue();
     else
@@ -573,7 +574,8 @@ void StoreInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[0]->removeUse(this);
         operands[0] = new_;
         new_->addUse(this);
-    } else if (operands[1] == old) {
+    } 
+    if (operands[1] == old) {
         operands[1]->removeUse(this);
         operands[1] = new_;
         new_->addUse(this);
@@ -1855,11 +1857,11 @@ void PhiInstruction::output() const {
     fprintf(yyout, "\n");
 }
 
-std::pair<char, int> PhiInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+std::pair<int, int> PhiInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
-    std::cout<<"phi"<<std::endl;
-    std::pair<char, int> res, tmp;
+    std::pair<int, int> res, tmp;
     res = {1, 0};
+    /*
     for (auto i = srcs.begin(); i != srcs.end(); i++)
     {
         if (value.find((*i).second) == value.end())
@@ -1876,7 +1878,7 @@ std::pair<char, int> PhiInstruction::getLatticeValue(std::map<Operand *, std::pa
                     res = {-1, 0};
             }
         }
-    }
+    }*/
     return res;
 }
 
@@ -2068,10 +2070,9 @@ bool LoadInstruction::genNode() {
     return true;
 }
 
-std::pair<char, int> LoadInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+std::pair<int, int> LoadInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
-    std::cout<<"load"<<std::endl;
-    std::pair<char, int> l;
+    std::pair<int, int> l;
     if (value.find(src_addr) == value.end())
         l = src_addr->getInitLatticeValue();
     else
@@ -2459,10 +2460,9 @@ std::string ShlInstruction::getHash() {
     return s.str();
 }
 
-std::pair<char, int> ShlInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+std::pair<int, int> ShlInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
-    std::cout<<"shl"<<std::endl;
-    std::pair<char, int> res, val1, val2;
+    std::pair<int, int> res, val1, val2;
     if (value.find(src) == value.end())
         val1 = src->getInitLatticeValue();
     else
@@ -2541,10 +2541,9 @@ AshrInstruction::~AshrInstruction() {
     operands[2]->removeUse(this);
 }
 
-std::pair<char, int> AshrInstruction::getLatticeValue(std::map<Operand *, std::pair<char, int>> &value)
+std::pair<int, int> AshrInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
-    std::cout<<"ashr"<<std::endl;
-    std::pair<char, int> res, val1, val2;
+    std::pair<int, int> res, val1, val2;
     if (value.find(src) == value.end())
         val1 = src->getInitLatticeValue();
     else

@@ -33,7 +33,7 @@ class Operand {
     void setEntry(SymbolEntry* se) { this->se = se; };
     Instruction* getDef() { return def; };
     std::vector<Instruction*> getUse() { return uses; };
-    std::pair<char, int> getInitLatticeValue();
+    std::pair<int, int> getInitLatticeValue();
     bool isZero() const {
         if (se->isConstant()) {
             ConstantSymbolEntry* cse = (ConstantSymbolEntry*)se;

@@ -27,7 +27,7 @@ bool Operand::isSSAName() {
     return false; // constant
 }
 
-std::pair<char, int> Operand::getInitLatticeValue(){
+std::pair<int, int> Operand::getInitLatticeValue(){
     if(this->isConst()){
         return {0, ((ConstantSymbolEntry*)se)->getValue()};
     }

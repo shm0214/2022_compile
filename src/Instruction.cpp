@@ -937,10 +937,11 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
                 MachineOperand* dst1 = new MachineOperand(*dst);
                 src1 = new MachineOperand(*src1);
                 src2 = new MachineOperand(*src2);
+                auto temp = new MachineOperand(*dst);
                 cur_block->InsertInst(cur_inst);
                 // c = c * b
                 cur_inst = new BinaryMInstruction(
-                    cur_block, BinaryMInstruction::MUL, dst1, dst, src2);
+                    cur_block, BinaryMInstruction::MUL, dst1, temp, src2);
                 cur_block->InsertInst(cur_inst);
                 dst = new MachineOperand(*dst1);
                 // c = a - c
@@ -1111,6 +1112,15 @@ void RetInstruction::genMachineCode(AsmBuilder* builder) {
         } else {
             dst = new MachineOperand(MachineOperand::REG, 0);
             src = genMachineOperand(operands[0]);
+            if (operands[0]->isConst()) {
+                auto val = operands[0]->getConstVal();
+                if (val > 255 || val <= -255) {
+                    auto r0 = new MachineOperand(MachineOperand::REG, 0);
+                    cur_block->InsertInst(new LoadMInstruction(
+                        cur_block, LoadMInstruction::LDR, r0, src));
+                    src = r0;
+                }
+            }
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
                                            src);  // TODO: movw movt
         }

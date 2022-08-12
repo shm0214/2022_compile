@@ -918,8 +918,10 @@ FuncFParam
         SymbolEntry* se;
         if ($1->isFloat()) {
             se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), fpParamNo++);
+            ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
         } else {
             se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), paramNo++);
+            ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
         }
         identifiers->install($2, se);
         ((IdentifierSymbolEntry*)se)->setLabel();

@@ -114,6 +114,8 @@ class IdentifierSymbolEntry : public SymbolEntry {
     Operand* addr;  // The address of the identifier.
                     // You can add any field you need here.
     Function* func = nullptr;
+    // used for auto inline
+    int allParamNo;
 
    public:
     IdentifierSymbolEntry(Type* type,
@@ -139,6 +141,8 @@ class IdentifierSymbolEntry : public SymbolEntry {
     void setAllZero() { allZero = true; };
     bool isAllZero() const { return allZero; };
     int getParamNo() const { return paramNo; };
+    int getAllParamNo() const { return allParamNo; };
+    void setAllParamNo(int no) { allParamNo = no; }
     void setConst() { constant = true; };
     bool getConst() const { return constant; };
     int getNotZeroNum() const { return notZeroNum; }

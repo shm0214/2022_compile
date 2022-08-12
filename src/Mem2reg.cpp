@@ -67,14 +67,16 @@ void Mem2reg::insertPhiInstruction(Function* function) {
                 // if (((StoreInstruction*)(*use))->getDstAddr() == operand) {
                 //     lastDef = ((StoreInstruction*)(*use))->getSrc();
                 // }
-                auto assignIns = new BinaryInstruction(
-                    BinaryInstruction::ADD, newOperand, (*use)->getUse()[1],
-                    new Operand(
-                        new ConstantSymbolEntry(newOperand->getType(), 0)));
-                addZeroIns.push_back(assignIns);
-                (*use)->getParent()->insertBefore(assignIns, *use);
-                assigns.insert((*use)->getParent());
-                (*use)->getUse()[1]->removeUse(*use);
+                if (newOperand != (*use)->getUse()[1]) {
+                    auto assignIns = new BinaryInstruction(
+                        BinaryInstruction::ADD, newOperand, (*use)->getUse()[1],
+                        new Operand(
+                            new ConstantSymbolEntry(newOperand->getType(), 0)));
+                    addZeroIns.push_back(assignIns);
+                    (*use)->getParent()->insertBefore(assignIns, *use);
+                    assigns.insert((*use)->getParent());
+                    (*use)->getUse()[1]->removeUse(*use);
+                }
             }
             auto dst = (*use)->getDef();
             (*use)->getParent()->remove(*use);
@@ -189,6 +191,7 @@ void Mem2reg::cleanAddZeroIns(Function* func) {
             // paramNo--;
         }
         auto def = i->getDef();
+        // if (def != use)
         while (def->use_begin() != def->use_end()) {
             auto u = *(def->use_begin());
             u->replaceUse(def, use);

@@ -710,10 +710,40 @@ void StackMInstruction::output() {
                 break;
         }
         fprintf(yyout, "{");
-        this->use_list[0]->output();
-        for (long unsigned int i = 1; i < use_list.size(); i++) {
-            fprintf(yyout, ", ");
-            this->use_list[i]->output();
+        auto size = use_list.size();
+        if (size <= 16) {
+            this->use_list[0]->output();
+            for (long unsigned int i = 1; i < use_list.size(); i++) {
+                fprintf(yyout, ", ");
+                this->use_list[i]->output();
+            }
+        } else {
+            this->use_list[0]->output();
+            for (long unsigned int i = 1; i < 16; i++) {
+                fprintf(yyout, ", ");
+                this->use_list[i]->output();
+            }
+            fprintf(yyout, "}\n");
+            switch (op) {
+                case PUSH:
+                    fprintf(yyout, "\tpush ");
+                    break;
+                case POP:
+                    fprintf(yyout, "\tpop ");
+                    break;
+                case VPUSH:
+                    fprintf(yyout, "\tvpush ");
+                    break;
+                case VPOP:
+                    fprintf(yyout, "\tvpop ");
+                    break;
+            }
+            fprintf(yyout, "{");
+            this->use_list[16]->output();
+            for (long unsigned int i = 17; i < size; i++) {
+                fprintf(yyout, ", ");
+                this->use_list[i]->output();
+            }
         }
         fprintf(yyout, "}\n");
     }

@@ -109,6 +109,7 @@ class MachineInstruction {
     };
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
     virtual void output() = 0;
+    virtual int latency() { return 1; }
     void setNo(int no) { this->no = no; };
     int getNo() { return no; };
     std::vector<MachineOperand*>& getDef() { return def_list; };
@@ -120,6 +121,8 @@ class MachineInstruction {
     bool isBX() const { return type == BRANCH && op == 2; };
     bool isBL() const { return type == BRANCH && op == 1; };
     bool isB() const { return type == BRANCH && op == 0; };
+    bool isBranch() const { return type == BRANCH; }
+    bool isCmp() const { return type == CMP; }
     bool isLoad() const { return type == LOAD; }
     bool isStore() const { return type == STORE; };
     bool isBinary() const { return type == BINARY; }
@@ -132,6 +135,7 @@ class MachineInstruction {
     bool isVMov() const { return type == MOV && op == 3; };
     bool isCondMov() const { return type == MOV && op == 0 && cond != NONE; };
     bool isPush() const { return type == STACK && op == 0; };
+    bool isStack() const { return type == STACK; }
     void replaceUse(MachineOperand* old, MachineOperand* new_);
     void replaceDef(MachineOperand* old, MachineOperand* new_);
     int getCond() const { return cond; }
@@ -142,6 +146,19 @@ class MachineInstruction {
     }
     int getType() { return type; }
     int getOp() { return op; }
+    bool isSpecial() const {
+        for (auto& ope : def_list) {
+            if (ope->isReg() && ope->getReg() >= 11 && ope->getReg() <= 15) {
+                return true;
+            }
+        }
+        for (auto& ope : use_list) {
+            if (ope->isReg() && ope->getReg() >= 11 && ope->getReg() <= 15) {
+                return true;
+            }
+        }
+        return false;
+    }
 };
 
 class FuseMInstruction : public MachineInstruction {
@@ -154,6 +171,7 @@ class FuseMInstruction : public MachineInstruction {
                      MachineOperand* src2,
                      MachineOperand* src3);
     void output();
+    int latency();
 };
 
 class BinaryMInstruction : public MachineInstruction {
@@ -166,6 +184,7 @@ class BinaryMInstruction : public MachineInstruction {
                        MachineOperand* src2,
                        int cond = MachineInstruction::NONE);
     void output();
+    int latency();
 };
 
 class LoadMInstruction : public MachineInstruction {
@@ -183,6 +202,7 @@ class LoadMInstruction : public MachineInstruction {
     void output();
     void setNeedModify() { needModify = true; }
     bool isNeedModify() { return needModify; }
+    int latency();
 };
 
 class StoreMInstruction : public MachineInstruction {
@@ -195,6 +215,7 @@ class StoreMInstruction : public MachineInstruction {
                       MachineOperand* src3 = nullptr,
                       int cond = MachineInstruction::NONE);
     void output();
+    int latency();
 };
 
 class MovMInstruction : public MachineInstruction {
@@ -207,6 +228,7 @@ class MovMInstruction : public MachineInstruction {
                     int cond = MachineInstruction::NONE,
                     MachineOperand* num = nullptr);
     void output();
+    int latency();
 };
 
 class BranchMInstruction : public MachineInstruction {
@@ -217,6 +239,7 @@ class BranchMInstruction : public MachineInstruction {
                        MachineOperand* dst,
                        int cond = MachineInstruction::NONE);
     void output();
+    int latency();
 };
 
 class CmpMInstruction : public MachineInstruction {
@@ -228,6 +251,7 @@ class CmpMInstruction : public MachineInstruction {
                     MachineOperand* src2,
                     int cond = MachineInstruction::NONE);
     void output();
+    int latency();
 };
 
 class StackMInstruction : public MachineInstruction {
@@ -240,6 +264,7 @@ class StackMInstruction : public MachineInstruction {
                       MachineOperand* src1 = nullptr,
                       int cond = MachineInstruction::NONE);
     void output();
+    int latency();
 };
 
 class VcvtMInstruction : public MachineInstruction {
@@ -251,12 +276,14 @@ class VcvtMInstruction : public MachineInstruction {
                      MachineOperand* src,
                      int cond = MachineInstruction::NONE);
     void output();
+    int latency();
 };
 
 class VmrsMInstruction : public MachineInstruction {
    public:
     VmrsMInstruction(MachineBlock* p);
     void output();
+    int latency();
 };
 
 class MachineBlock {
@@ -280,6 +307,7 @@ class MachineBlock {
     std::vector<MachineInstruction*>::iterator end() {
         return inst_list.end();
     };
+    std::vector<MachineInstruction*>::iterator nonbranch_end();
     MachineBlock(MachineFunction* p, int no) {
         this->parent = p;
         this->no = no;

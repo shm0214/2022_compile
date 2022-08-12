@@ -718,31 +718,34 @@ void StackMInstruction::output() {
                 this->use_list[i]->output();
             }
         } else {
-            this->use_list[0]->output();
-            for (long unsigned int i = 1; i < 16; i++) {
-                fprintf(yyout, ", ");
-                this->use_list[i]->output();
-            }
-            fprintf(yyout, "}\n");
-            switch (op) {
-                case PUSH:
-                    fprintf(yyout, "\tpush ");
-                    break;
-                case POP:
-                    fprintf(yyout, "\tpop ");
-                    break;
-                case VPUSH:
-                    fprintf(yyout, "\tvpush ");
-                    break;
-                case VPOP:
-                    fprintf(yyout, "\tvpop ");
-                    break;
-            }
-            fprintf(yyout, "{");
-            this->use_list[16]->output();
-            for (long unsigned int i = 17; i < size; i++) {
-                fprintf(yyout, ", ");
-                this->use_list[i]->output();
+            if (op == VPUSH) {
+                this->use_list[0]->output();
+                for (long unsigned int i = 1; i < 16; i++) {
+                    fprintf(yyout, ", ");
+                    this->use_list[i]->output();
+                }
+                fprintf(yyout, "}\n");
+                fprintf(yyout, "\tvpush ");
+                fprintf(yyout, "{");
+                this->use_list[16]->output();
+                for (long unsigned int i = 17; i < size; i++) {
+                    fprintf(yyout, ", ");
+                    this->use_list[i]->output();
+                }
+            } else if (op == VPOP) {
+                this->use_list[16]->output();
+                for (long unsigned int i = 17; i < size; i++) {
+                    fprintf(yyout, ", ");
+                    this->use_list[i]->output();
+                }
+                fprintf(yyout, "}\n");
+                fprintf(yyout, "\tvpop ");
+                fprintf(yyout, "{");
+                this->use_list[0]->output();
+                for (long unsigned int i = 1; i < 16; i++) {
+                    fprintf(yyout, ", ");
+                    this->use_list[i]->output();
+                }
             }
         }
         fprintf(yyout, "}\n");

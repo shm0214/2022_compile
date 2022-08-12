@@ -264,6 +264,14 @@ void GraphColor::makeMatrix() {
     //         for (int i = regNum; i < regNum + fRegNum; i++)
     //             matrix[i][j] = matrix[j][i] = true;
     // }
+    for (auto it = webs.begin() + regNum + fRegNum; it != webs.end(); it++) {
+        auto web = *it;
+        auto def = *(web->defs.begin());
+        auto j = operand2web[def];
+        if (web->fpu)
+            for (int i = regNum + 12; i <= regNum + 15; i++)
+                matrix[i][j] = matrix[j][i] = true;
+    }
     // 虚的之间应该不用标记冲突吧
 }
 

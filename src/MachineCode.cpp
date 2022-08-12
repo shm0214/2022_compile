@@ -750,7 +750,7 @@ void MachineBlock::output() {
                 int temp = baseOffset + operand->getOffset();
                 auto off = new MachineOperand(MachineOperand::IMM, temp);
                 // auto off = new MachineOperand(MachineOperand::IMM, offset);
-                // offset += 4;
+                // offset += 4; // FIXME
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();

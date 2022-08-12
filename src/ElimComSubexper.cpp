@@ -1,8 +1,4 @@
 #include "ElimComSubexpr.h"
-#include <set>
-#include <algorithm>
-#include <queue>
-typedef vector<BasicBlock*>::iterator bb_iterator;
 typedef vector<struct aeb> VAEB;
 using namespace std;
 VAEB AEB;
@@ -49,7 +45,6 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb){
                 }
             }
             if(found){
-                // cout<<"found"<<endl;
                 p = AEB[i].inst;
                 Operand* dst = AEB[i].tmp;
                 if(dst == nullptr){

@@ -1,9 +1,6 @@
 #include "CopyProp.h"
-#include <queue>
-#include <set>
 #include <vector>
 using namespace std;
-typedef vector<BasicBlock*>::iterator bb_iterator;
 UOO ACP;
 
 void remove_ACP(UOO& ACP, Operand* opd) {

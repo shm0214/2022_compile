@@ -1073,8 +1073,6 @@ int ExprNode::fold_const(bool& flag) {
         SymbolEntry* sym = this->getSymbolEntry();
         if(sym->isConstant())
             return ((ConstantSymbolEntry*)sym)->getValue();
-        // else if(sym->isVariable() && ((IdentifierSymbolEntry*)sym)->getValue())
-        //     return ((IdentifierSymbolEntry*)sym)->getValue();
     }
     flag = 0;
     return 0;

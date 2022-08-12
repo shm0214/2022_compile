@@ -234,16 +234,25 @@ void PeepholeOptimization::pass() {
                     auto store_src1 = next_inst->getUse()[0];
                     auto store_src2 = next_inst->getUse()[1];
 
-                    if(store_src1->isFloat() && !add_src2->isImm())
+                    if (store_src1->isFloat() &&
+                        !(add_src2->isImm() && add_src2->getVal() == 0))
+                        continue;
+
+                    // 这个dce消不掉了
+                    if (add_dst->isReg())
                         continue;
 
                     if (*add_dst == *store_src2) {
                         auto src1 = new MachineOperand(*store_src1);
                         auto src2 = new MachineOperand(*add_src1);
                         auto src3 = new MachineOperand(*add_src2);
+                        if (add_src2->isImm() && add_src2->getVal() == 0)
+                            src3 = nullptr;
                         auto new_inst = new StoreMInstruction(
                             block, next_inst->getOp(), src1, src2, src3);
                         *next_inst_iter = new_inst;
+                        if (add_dst->isReg())
+                            instToRemove.insert(curr_inst);
                     }
                 } else if (curr_inst->isAdd() && next_inst->isLoad()) {
                     // array or overflow
@@ -262,16 +271,19 @@ void PeepholeOptimization::pass() {
                     auto load_dst = next_inst->getDef()[0];
                     auto load_src1 = next_inst->getUse()[0];
 
-                    if (load_dst->isFloat() && !add_src2->isImm())
+                    if (load_dst->isFloat() &&
+                        !(add_src2->isImm() && add_src2->getVal() == 0))
                         continue;
 
-                    if (add_dst->isReg() && !(*add_dst == *load_dst))
+                    if (add_dst->isReg())
                         continue;
 
                     if (*add_dst == *load_src1) {
                         auto src1 = new MachineOperand(*load_dst);
                         auto src2 = new MachineOperand(*add_src1);
                         auto src3 = new MachineOperand(*add_src2);
+                        if (add_src2->isImm() && add_src2->getVal() == 0)
+                            src3 = nullptr;
                         auto new_inst = new LoadMInstruction(
                             block, next_inst->getOp(), src1, src2, src3);
                         *next_inst_iter = new_inst;

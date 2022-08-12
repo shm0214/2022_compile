@@ -948,6 +948,7 @@ FuncFParam
             stk.pop();
         }
         se = new IdentifierSymbolEntry(arr, $2, identifiers->getLevel(), paramNo++);
+        ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
         identifiers->install($2, se);
         ((IdentifierSymbolEntry*)se)->setLabel();
         ((IdentifierSymbolEntry*)se)->setAddr(new Operand(se));

@@ -69,7 +69,6 @@ void CondCopyProp::constantPropagation(Function *func)
     }
     for (auto &i : delete_list){
         cout<<"del"<<endl;
-        i->output();
         i->getParent()->remove(i);
     }        
 }

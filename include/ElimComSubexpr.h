@@ -10,9 +10,9 @@ enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
 struct aeb
 {
     BinaryInstruction* inst;
-    SymbolEntry* opd1;
+    Operand* opd1;
     int opr;
-    SymbolEntry* opd2;
+    Operand* opd2;
     Operand* tmp = nullptr;
     bool operator< (aeb a) const{
         return opr<a.opr;
@@ -28,7 +28,7 @@ class ElimComSubexpr {
     ElimComSubexpr(Unit* unit) : unit(unit){};
     ~ElimComSubexpr();
     void pass();
-    void local_elim_cse(BasicBlock* bb, vector<struct aeb> AEB);
+    void local_elim_cse(BasicBlock* bb);
 };
 
 #endif

@@ -1,145 +1,55 @@
-@ascii_0 = global i32 48, align 4
-define i32 @main() {
-B131:
-  %t212 = add i32 0, 0
-  br label %B177
-B177:                               	; preds = %B131, %B280, %B281
-  br i1 1, label %B179, label %B282
-B179:                               	; preds = %B177
-  %t180 = call i32 @getch()
-  %t181 = load i32, i32* @ascii_0, align 4
-  %t182 = sub i32 %t180, %t181
-  %t183 = icmp slt i32 %t182, 0
-  br i1 %t183, label %B280, label %B190
-B280:                               	; preds = %B179
-  %t212 = add i32 %t182, 0
-  br label %B177
-B190:                               	; preds = %B179
-  %t189 = icmp sgt i32 %t182, 9
-  br i1 %t189, label %B281, label %B283
-B281:                               	; preds = %B190
-  %t212 = add i32 %t182, 0
-  br label %B177
-B283:                               	; preds = %B190
-  %t213 = add i32 %t182, 0
-  br label %B184
-B184:                               	; preds = %B282, %B283
-  %t201 = add i32 %t213, 0
-  br label %B192
-B192:                               	; preds = %B184, %B203
-  br i1 1, label %B194, label %B199
-B194:                               	; preds = %B192
-  %t195 = call i32 @getch()
-  %t196 = load i32, i32* @ascii_0, align 4
-  %t197 = sub i32 %t195, %t196
-  %t198 = icmp sge i32 %t197, 0
-  br i1 %t198, label %B208, label %B199
-B208:                               	; preds = %B194
-  %t209 = icmp sle i32 %t197, 9
-  br i1 %t209, label %B203, label %B199
-B203:                               	; preds = %B208
-  %t204 = mul i32 %t201, 10
-  %t205 = add i32 %t204, %t197
-  %t201 = add i32 %t205, 0
-  br label %B192
-B199:                               	; preds = %B192, %B194, %B208
-  %t200 = add i32 %t201, 0
-  %t63 = add i32 %t200, 0
-  %t167 = add i32 %t63, 0
-  br label %B134
-B134:                               	; preds = %B199, %B278
-  %t66 = icmp sgt i32 %t167, 0
-  br i1 %t66, label %B284, label %B139
-B284:                               	; preds = %B134
-  %t251 = add i32 0, 0
-  br label %B216
-B216:                               	; preds = %B284, %B285, %B286
-  br i1 1, label %B218, label %B287
-B218:                               	; preds = %B216
-  %t219 = call i32 @getch()
-  %t220 = load i32, i32* @ascii_0, align 4
-  %t221 = sub i32 %t219, %t220
-  %t222 = icmp slt i32 %t221, 0
-  br i1 %t222, label %B285, label %B229
-B285:                               	; preds = %B218
-  %t251 = add i32 %t221, 0
-  br label %B216
-B229:                               	; preds = %B218
-  %t228 = icmp sgt i32 %t221, 9
-  br i1 %t228, label %B286, label %B288
-B286:                               	; preds = %B229
-  %t251 = add i32 %t221, 0
-  br label %B216
-B288:                               	; preds = %B229
-  %t252 = add i32 %t221, 0
-  br label %B223
-B223:                               	; preds = %B287, %B288
-  %t240 = add i32 %t252, 0
-  br label %B231
-B231:                               	; preds = %B223, %B242
-  br i1 1, label %B233, label %B238
-B233:                               	; preds = %B231
-  %t234 = call i32 @getch()
-  %t235 = load i32, i32* @ascii_0, align 4
-  %t236 = sub i32 %t234, %t235
-  %t237 = icmp sge i32 %t236, 0
-  br i1 %t237, label %B247, label %B238
-B247:                               	; preds = %B233
-  %t248 = icmp sle i32 %t236, 9
-  br i1 %t248, label %B242, label %B238
-B242:                               	; preds = %B247
-  %t243 = mul i32 %t240, 10
-  %t244 = add i32 %t243, %t236
-  %t240 = add i32 %t244, 0
-  br label %B231
-B238:                               	; preds = %B231, %B233, %B247
-  %t239 = add i32 %t240, 0
-  %t67 = add i32 %t239, 0
-  %t255 = alloca [16 x i32], align 4
-  %t256 = add i32 %t67, 0
-  %t265 = add i32 0, 0
-  %t259 = add i32 %t256, 0
-  br label %B257
-B257:                               	; preds = %B260, %B238
-  %t258 = icmp sgt i32 %t259, 0
-  br i1 %t258, label %B260, label %B289
-B260:                               	; preds = %B257
-  %t261 = srem i32 %t259, 10
-  %t262 = load i32, i32* @ascii_0, align 4
-  %t263 = add i32 %t261, %t262
-  %t264 = getelementptr inbounds [16 x i32], [16 x i32]* %t255, i32 0, i32 %t265
-  store i32 %t263, i32* %t264, align 4
-  %t266 = sdiv i32 %t259, 10
-  %t267 = add i32 %t265, 1
-  %t265 = add i32 %t267, 0
-  %t259 = add i32 %t266, 0
-  br label %B257
-B289:                               	; preds = %B257
-  %t272 = add i32 %t265, 0
-  br label %B270
-B270:                               	; preds = %B273, %B289
-  %t271 = icmp sgt i32 %t272, 0
-  br i1 %t271, label %B273, label %B278
-B273:                               	; preds = %B270
-  %t274 = sub i32 %t272, 1
-  %t275 = getelementptr inbounds [16 x i32], [16 x i32]* %t255, i32 0, i32 %t274
-  %t276 = load i32, i32* %t275, align 4
-  call void @putch(i32 %t276)
-  %t272 = add i32 %t274, 0
-  br label %B270
-B278:                               	; preds = %B270
-  call void @putch(i32 10)
-  %t73 = sub i32 %t167, 1
-  %t167 = add i32 %t73, 0
-  br label %B134
-B287:                               	; preds = %B216
-  %t252 = add i32 %t251, 0
-  br label %B223
-B139:                               	; preds = %B134
-  ret i32 0
-B282:                               	; preds = %B177
-  %t213 = add i32 %t212, 0
-  br label %B184
+int g;
+int h;
+int f;
+int e;
+int EightWhile() {
+  int a;
+  a = 5;
+  int b;
+  int c;
+  b = 6;
+  c = 7;
+  int d;
+  d = 10;
+  while (a < 20) {
+    a = a + 3;
+    while(b < 10){
+      b = b + 1;
+      while(c == 7){
+        c = c - 1;
+        while(d < 20){
+          d = d + 3;
+          while(e > 1){
+            e = e-1;
+            while(f > 2){
+              f = f -2;
+              while(g < 3){
+                g = g +10;
+                while(h < 10){
+                  h = h + 8;
+                }
+                h = h-1;
+              }
+              g = g- 8;
+            }
+            f = f + 1;
+          }
+          e = e + 1;
+        }
+        d = d - 1;
+      }
+      c = c + 1;
+    }
+    b = b - 2;
+  }
+  
+  return (a + (b + d) + c)-(e + d - g + h);
 }
-declare i32 @getch()
-declare void @putch(i32)
+
+int main() {
+  g = 1;
+  h = 2;
+  e = 4;
+  f = 6;
+  return EightWhile();
+}

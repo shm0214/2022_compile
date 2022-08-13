@@ -10,13 +10,13 @@ using namespace std;
 extern FILE* yyout;
 
 Function::Function(Unit* u, SymbolEntry* s) {
-    u->insertFunc(this);
     entry = new BasicBlock(this);
     sym_ptr = s;
     parent = u;
     ((IdentifierSymbolEntry*)s)->setFunction(this);
     call = false;
     recur = false;
+    u->insertFunc(this);
 }
 
 int TreeNode::Num = 0;

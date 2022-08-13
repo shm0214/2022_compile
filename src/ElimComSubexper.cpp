@@ -129,7 +129,9 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                 if(dst == nullptr){
                     dst = new Operand(new TemporarySymbolEntry(
                     def->getType(), SymbolTable::getLabel()));
-                    Instruction* inst = new BinaryInstruction(AEB[i].opr, dst, AEB[i].opd1, AEB[i].opd2, nullptr);
+                    // Instruction* inst = new BinaryInstruction(AEB[i].opr, dst, AEB[i].opd1, AEB[i].opd2, nullptr);
+                    Instruction* inst = p->copy();
+                    inst->replaceDef(dst);
                     AEB[i].tmp = dst;
                     bb->insertBefore(inst, p);
                     Instruction* inst1 = new StoreInstruction(p->getDef(), dst, nullptr);

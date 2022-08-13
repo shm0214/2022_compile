@@ -107,7 +107,7 @@ int main(int argc, char* argv[]) {
         dce.pass();
         ai.pass();
         dce.pass();
-        cp.pass();             
+        cp.pass();
         vn.pass();
         cc.pass();
         ec.pass();

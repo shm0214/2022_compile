@@ -14,7 +14,7 @@ class CopyProp {
     CopyProp(Unit* unit) : unit(unit){};
     ~CopyProp();
     void pass();
-    void local_copy_prop(BasicBlock* bb);
+    void local_copy_prop(BasicBlock* bb, UOO ACP);
 };
 
 #endif

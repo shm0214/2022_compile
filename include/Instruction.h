@@ -176,10 +176,10 @@ class StoreInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     void replaceUse(Operand* old, Operand* new_);
-    Operand* getDef() { return operands[0]; }
+    Operand* getDstAddr() { return operands[0]; }
     Operand* getSrc() { return operands[1]; }
     std::vector<Operand*> getUse() {
-        return std::vector<Operand*>({operands[1]});
+        return std::vector<Operand*>({operands[0], operands[1]});
     }
     Instruction* copy();
 };
@@ -194,8 +194,9 @@ class BinaryInstruction : public Instruction {
     ~BinaryInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
-    int getOpcode() const{return opcode;};
+    int getOp() const{return opcode;};
     enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
+    int getOp() { return opcode; }
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
@@ -226,6 +227,7 @@ class CmpInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     enum { E, NE, L, LE, G, GE };
+    int getOp() { return opcode; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
     Operand* getDef() { return operands[0]; }
@@ -234,7 +236,7 @@ class CmpInstruction : public Instruction {
     }
     std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     bool genNode();
-    int getOpcode() const{return opcode;};
+    int getOp() const{return opcode;};
     std::string getHash();
     bool isConstExp();
     Instruction* copy();

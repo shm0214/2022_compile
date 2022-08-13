@@ -21,7 +21,11 @@ struct aeb
         return (opr==a.opr && (opd1==a.opd1 || (opd1->isConst() && a.opd1->isConst() && opd1->getConstVal() == a.opd1->getConstVal()))
         && (opd2==a.opd2 || (opd2->isConst() && a.opd2->isConst() && opd2->getConstVal() == a.opd2->getConstVal())));
     }
+    bool isIn(Operand* opd){
+        return opd1==opd || opd2==opd;
+    }
 };
+typedef vector<struct aeb> VAEB;
 
 class ElimComSubexpr {
     Unit* unit;
@@ -29,7 +33,7 @@ class ElimComSubexpr {
     ElimComSubexpr(Unit* unit) : unit(unit){};
     ~ElimComSubexpr();
     void pass();
-    void local_elim_cse(BasicBlock* bb);
+    void local_elim_cse(BasicBlock* bb, VAEB AEB);
 };
 
 #endif

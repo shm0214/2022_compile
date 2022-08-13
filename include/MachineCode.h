@@ -68,7 +68,9 @@ class MachineOperand {
     MachineInstruction* getParent() { return this->parent; };
     void PrintReg();
     void output();
-    bool needColor() { return type == VREG || (type == REG && reg_no < 11); }
+    bool needColor() {
+        return type == VREG || (type == REG && (reg_no < 11 || reg_no >= 16));
+    }
     void setParam() { param = true; }
     bool isParam() { return param; }
     void setParamNo(int no) { paramNo = no; }
@@ -125,10 +127,12 @@ class MachineInstruction {
     bool isStore() const { return type == STORE; };
     bool isBinary() const { return type == BINARY; }
     bool isAdd() const { return type == BINARY && op == 0; };
+    bool isVAdd() const { return type == BINARY && op == 6; };
     bool isSub() const { return type == BINARY && op == 1; };
     bool isMul() const { return type == BINARY && op == 2; };
     bool isDiv() const { return type == BINARY && op == 3; };
     bool isMov() const { return type == MOV && op == 0; };
+    bool isVMov() const { return type == MOV && op == 3; };
     bool isCondMov() const { return type == MOV && op == 0 && cond != NONE; };
     bool isPush() const { return type == STACK && op == 0; };
     bool isStack() const { return type == STACK; }

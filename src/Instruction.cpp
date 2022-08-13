@@ -571,7 +571,7 @@ MachineOperand* Instruction::genMachineReg(int reg) {
 }
 
 MachineOperand* Instruction::genMachineFReg(int freg) {
-    return new MachineOperand(MachineOperand::REG, freg + 16);
+    return new MachineOperand(MachineOperand::REG, freg + 16, true);
 }
 
 MachineOperand* Instruction::genMachineVReg(bool fpu) {
@@ -939,10 +939,11 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
                 MachineOperand* dst1 = new MachineOperand(*dst);
                 src1 = new MachineOperand(*src1);
                 src2 = new MachineOperand(*src2);
+                auto temp = new MachineOperand(*dst);
                 cur_block->InsertInst(cur_inst);
                 // c = c * b
                 cur_inst = new BinaryMInstruction(
-                    cur_block, BinaryMInstruction::MUL, dst1, dst, src2);
+                    cur_block, BinaryMInstruction::MUL, dst1, temp, src2);
                 cur_block->InsertInst(cur_inst);
                 dst = new MachineOperand(*dst1);
                 // c = a - c
@@ -1136,6 +1137,15 @@ void RetInstruction::genMachineCode(AsmBuilder* builder) {
         } else {
             dst = new MachineOperand(MachineOperand::REG, 0);
             src = genMachineOperand(operands[0]);
+            if (operands[0]->isConst()) {
+                auto val = operands[0]->getConstVal();
+                if (val > 255 || val <= -255) {
+                    auto r0 = new MachineOperand(MachineOperand::REG, 0);
+                    cur_block->InsertInst(new LoadMInstruction(
+                        cur_block, LoadMInstruction::LDR, r0, src));
+                    src = r0;
+                }
+            }
             cur_inst = new MovMInstruction(cur_block, MovMInstruction::MOV, dst,
                                            src);  // TODO: movw movt
         }
@@ -1912,13 +1922,13 @@ void FptosiInstruction::genMachineCode(AsmBuilder* builder) {
         cur_block->InsertInst(cur_inst);
         src_operand = tmp;
     }
-
-    cur_inst = new VcvtMInstruction(cur_block, VcvtMInstruction::F2S,
-                                    src_operand, src_operand);
+    auto vcvtDst = genMachineVReg(true);
+    cur_inst = new VcvtMInstruction(cur_block, VcvtMInstruction::F2S, vcvtDst,
+                                    src_operand);
     cur_block->InsertInst(cur_inst);
-
+    auto movUse = new MachineOperand(*vcvtDst);
     cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
-                                   dst_operand, src_operand);
+                                   dst_operand, movUse);
 
     cur_block->InsertInst(cur_inst);
 }
@@ -1936,14 +1946,14 @@ void SitofpInstruction::genMachineCode(AsmBuilder* builder) {
         cur_block->InsertInst(cur_inst);
         src_operand = new MachineOperand(*tmp);
     }
-    auto dst_operand = genMachineFloatOperand(dst);
-
-    cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
-                                   dst_operand, src_operand);
+    auto movDst = genMachineVReg(true);
+    cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV, movDst,
+                                   src_operand);
     cur_block->InsertInst(cur_inst);
-
+    auto vcvtUse = new MachineOperand(*movDst);
+    auto dst_operand = genMachineFloatOperand(dst);
     cur_inst = new VcvtMInstruction(cur_block, VcvtMInstruction::S2F,
-                                    dst_operand, dst_operand);
+                                    dst_operand, vcvtUse);
     cur_block->InsertInst(cur_inst);
 }
 
@@ -2665,5 +2675,23 @@ void BitcastInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[1]->removeUse(this);
         operands[1] = new_;
         new_->addUse(this);
+    }
+}
+
+void SitofpInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+        src = new_;
+    }
+}
+
+void FptosiInstruction::replaceUse(Operand* old, Operand* new_) {
+    if (operands[1] == old) {
+        operands[1]->removeUse(this);
+        operands[1] = new_;
+        new_->addUse(this);
+        src = new_;
     }
 }

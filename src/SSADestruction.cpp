@@ -25,7 +25,7 @@ void SSADestruction::pass(Function* function) {
                     auto copyIns = new BinaryInstruction(
                         BinaryInstruction::ADD, def, src,
                         new Operand(
-                            new ConstantSymbolEntry(TypeSystem::intType, 0)));
+                            new ConstantSymbolEntry(def->getType(), 0)));
                     // auto endIns = pred->rbegin();
                     // pred->insertBefore(copyIns, endIns);
                     copyInss[pred].push_back(copyIns);
@@ -56,7 +56,7 @@ void SSADestruction::pass(Function* function) {
                     auto copyIns = new BinaryInstruction(
                         BinaryInstruction::ADD, def, src,
                         new Operand(
-                            new ConstantSymbolEntry(TypeSystem::intType, 0)));
+                            new ConstantSymbolEntry(def->getType(), 0)));
                     // newBlock->insertFront(copyIns);
                     copyInss[newBlock].push_back(copyIns);
                 }

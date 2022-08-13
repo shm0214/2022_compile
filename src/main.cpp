@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
         po.pass();
         mdce.pass();
         ms.pass();
-        is.pass();
+        // is.pass();
     }
     if (dump_asm)
         mUnit.output();

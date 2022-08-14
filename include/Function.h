@@ -120,8 +120,6 @@ class Function {
     void genSSAGraph();
     void computeStores();
     std::set<Operand*>& getStores() { return stores; }
-    std::vector<SSAGraphNode*> getNodes() {return nodes; }
-
     bool hasCall() { return call; }
     void setHasCall() { call = true; }
     std::map<Function*, std::vector<Instruction*>>& getPreds() {

@@ -53,8 +53,9 @@ class Operand {
             return ((IdentifierSymbolEntry*)se)->isParam();
         return false;
     }
+    // used for auto inline
     int getParamNo() const {
-        return ((IdentifierSymbolEntry*)se)->getParamNo();
+        return ((IdentifierSymbolEntry*)se)->getAllParamNo();
     }
     bool isGlobal() const {
         if (se->isVariable())

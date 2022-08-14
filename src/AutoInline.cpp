@@ -42,17 +42,18 @@ void AutoInline::pass(Function* func) {
 void AutoInline::decide(CallInstruction* in) {
     IdentifierSymbolEntry* funcSE =
         (IdentifierSymbolEntry*)(((CallInstruction*)in)->getFuncSE());
+    // 貌似可以了
     // 有两个例子始终始终会由于窥孔优化导致寄存器分配出错 因此只能这样阻止内联
     // 105_n_queens
-    if (funcSE->getName() == "printans")
-        return;
+    // if (funcSE->getName() == "printans")
+    //     return;
     // floyd
-    if (funcSE->getName() == "getvalue") {
-        auto type = (FunctionType*)(funcSE->getType());
-        auto size = type->getParamsType().size();
-        if (size == 4)
-            return;
-    }
+    // if (funcSE->getName() == "getvalue") {
+    //     auto type = (FunctionType*)(funcSE->getType());
+    //     auto size = type->getParamsType().size();
+    //     if (size == 4)
+    //         return;
+    // }
     if (funcSE->isSysy() || funcSE->getName() == "llvm.memset.p0.i32")
         return;
     auto func = funcSE->getFunction();
@@ -118,7 +119,7 @@ void AutoInline::deal(CallInstruction* in) {
             if (!in1->isPhi())
                 break;
             auto phi = (PhiInstruction*)in1;
-            phi->changeSrcBlock(temp);
+            phi->changeSrcBlock(temp, true);
         }
     }
     // copy func
@@ -144,7 +145,7 @@ void AutoInline::deal(CallInstruction* in) {
                 if (uses.size()) {
                     auto use = uses[0];
                     auto zero = new Operand(
-                        new ConstantSymbolEntry(TypeSystem::intType, 0));
+                        new ConstantSymbolEntry(use->getType(), 0));
                     auto dst = getTempOperand(use);
                     retOpes.push_back(dst);
                     Operand* src;
@@ -262,6 +263,7 @@ void AutoInline::deal(CallInstruction* in) {
         auto oldPhi = (PhiInstruction*)(it.second);
         auto newPhi = (PhiInstruction*)(it.first);
         newPhi->getSrcs().clear();
+        newPhi->cleanUseInOperands();
         for (auto it : oldPhi->getSrcs()) {
             Operand* src;
             auto use = it.second;
@@ -305,7 +307,7 @@ void AutoInline::deal(CallInstruction* in) {
             newIn = phi;
         } else {
             auto zero =
-                new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
+                new Operand(new ConstantSymbolEntry(ret->getType(), 0));
             newIn = new BinaryInstruction(BinaryInstruction::ADD, ret,
                                           retOpes[0], zero);
         }

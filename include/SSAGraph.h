@@ -3,16 +3,6 @@
 #include <vector>
 
 class Instruction;
-class SSAGraphNode;
-
-class MinSSAGraph {
-    SSAGraphNode* head;
-  public:
-    MinSSAGraph(SSAGraphNode* node) { 
-        head = node;
-    }
-    SSAGraphNode* getEntry() const{ return head; }
-};
 
 class SSAGraphNode {
     // CONST 没有
@@ -20,7 +10,6 @@ class SSAGraphNode {
     // only for CONST
     int val;
     int type;
-    int no;
     std::vector<SSAGraphNode*> children;
 
    public:
@@ -43,7 +32,6 @@ class SSAGraphNode {
         PHI,
         CALL,
         LOAD,
-        // STORE,
         GEP,
         ZEXT,
         XOR,
@@ -52,12 +40,16 @@ class SSAGraphNode {
         ASHR,
     };
     SSAGraphNode(Instruction* ins, int type = -1) : ins(ins), type(type) {}
+<<<<<<< HEAD
     SSAGraphNode(int val) : type(CONST) {}
     Instruction* getInst() { return ins; }
     void setNo(int num) { no = num; }
     int getNo() const{ return no; }
+=======
+    SSAGraphNode(int val) : val(val), type(CONST) {}
+>>>>>>> 9cd9ef7951de5bfe3e8cd614e8d60b2c80fe9fdf
     void addChild(SSAGraphNode* node) { children.push_back(node); }
-    std::vector<SSAGraphNode*>& getChildren() { return children; }     
+    std::vector<SSAGraphNode*>& getChildren() { return children; }
 };
 
 #endif

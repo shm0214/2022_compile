@@ -253,7 +253,11 @@ UnaryExp
         Type* exprType = $2->getType();
         SymbolEntry* se = new TemporarySymbolEntry(exprType, SymbolTable::getLabel());
         ExprNode* tmpExpr = new UnaryExpr(se, UnaryExpr::SUB, $2);
-        $$ = tmpExpr->const_fold();
+        if (exprType->isFloat()) {
+            $$ = tmpExpr;
+        } else {
+            $$ = tmpExpr->const_fold();
+        }
     }
     | NOT UnaryExp {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
@@ -267,11 +271,11 @@ UnaryExp
             BinaryExpr* cmpZero = new BinaryExpr(temp, BinaryExpr::NOTEQUAL,
                                                     $2, new Constant(zero));
 
-            tmpExpr = new UnaryExpr(se, UnaryExpr::NOT, cmpZero);
+            $$ = new UnaryExpr(se, UnaryExpr::NOT, cmpZero);
         } else {
             tmpExpr = new UnaryExpr(se, UnaryExpr::NOT, $2);
+            $$ = tmpExpr->const_fold();
         }
-        $$ = tmpExpr->const_fold();
     }
     ;
 MulExp
@@ -280,21 +284,23 @@ MulExp
         SymbolEntry* se;
         if ($1->getType()->isFloat() || $3->getType()->isFloat()) {
             se = new TemporarySymbolEntry(TypeSystem::floatType, SymbolTable::getLabel());
+            $$ = new BinaryExpr(se, BinaryExpr::MUL, $1, $3);
         } else {
             se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+            ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::MUL, $1, $3);
+            $$ = tmpExpr->const_fold();
         }
-        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::MUL, $1, $3);
-        $$ = tmpExpr->const_fold();
     }
     | MulExp DIV UnaryExp {
         SymbolEntry* se;
         if ($1->getType()->isFloat() || $3->getType()->isFloat()) {
             se = new TemporarySymbolEntry(TypeSystem::floatType, SymbolTable::getLabel());
+            $$ = new BinaryExpr(se, BinaryExpr::DIV, $1, $3);
         } else {
             se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+            ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::DIV, $1, $3);
+            $$ = tmpExpr->const_fold();
         }
-        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::DIV, $1, $3);
-        $$ = tmpExpr->const_fold();
     }
     | MulExp MOD UnaryExp {
 
@@ -315,21 +321,23 @@ AddExp
         SymbolEntry* se;
         if ($1->getType()->isFloat() || $3->getType()->isFloat()) {
             se = new TemporarySymbolEntry(TypeSystem::floatType, SymbolTable::getLabel());
+            $$ = new BinaryExpr(se, BinaryExpr::ADD, $1, $3);
         } else {
             se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+            ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::ADD, $1, $3);
+            $$ = tmpExpr->const_fold();
         }
-        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::ADD, $1, $3);
-        $$ = tmpExpr->const_fold();
     }
     | AddExp SUB MulExp {
         SymbolEntry* se;
         if ($1->getType()->isFloat() || $3->getType()->isFloat()) {
             se = new TemporarySymbolEntry(TypeSystem::floatType, SymbolTable::getLabel());
+            $$ = new BinaryExpr(se, BinaryExpr::SUB, $1, $3);
         } else {
             se = new TemporarySymbolEntry(TypeSystem::intType, SymbolTable::getLabel());
+            ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::SUB, $1, $3);
+            $$ = tmpExpr->const_fold();
         }
-        ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::SUB, $1, $3);
-        $$ = tmpExpr->const_fold();
     }
     ;
 RelExp
@@ -918,8 +926,10 @@ FuncFParam
         SymbolEntry* se;
         if ($1->isFloat()) {
             se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), fpParamNo++);
+            ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
         } else {
             se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), paramNo++);
+            ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
         }
         identifiers->install($2, se);
         ((IdentifierSymbolEntry*)se)->setLabel();
@@ -946,6 +956,7 @@ FuncFParam
             stk.pop();
         }
         se = new IdentifierSymbolEntry(arr, $2, identifiers->getLevel(), paramNo++);
+        ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
         identifiers->install($2, se);
         ((IdentifierSymbolEntry*)se)->setLabel();
         ((IdentifierSymbolEntry*)se)->setAddr(new Operand(se));

@@ -10,7 +10,6 @@ using namespace std;
 extern FILE* yyout;
 
 Function::Function(Unit* u, SymbolEntry* s) {
-    u->insertFunc(this);
     entry = new BasicBlock(this);
     exit = new BasicBlock(this);
     sym_ptr = s;
@@ -18,6 +17,7 @@ Function::Function(Unit* u, SymbolEntry* s) {
     ((IdentifierSymbolEntry*)s)->setFunction(this);
     call = false;
     recur = false;
+    u->insertFunc(this);
 }
 
 int TreeNode::Num = 0;
@@ -66,6 +66,7 @@ void Function::output() {
     entry->output();
     dfs1(entry, v);
     fprintf(yyout, "}\n");
+    // fflush(yyout);
 }
 
 void Function::dfs(AsmBuilder* builder,

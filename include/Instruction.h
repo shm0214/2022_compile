@@ -196,7 +196,6 @@ class BinaryInstruction : public Instruction {
     void genMachineCode(AsmBuilder*);
     int getOp() const{return opcode;};
     enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
-    int getOp() { return opcode; }
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
@@ -227,7 +226,6 @@ class CmpInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     enum { E, NE, L, LE, G, GE };
-    int getOp() { return opcode; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
     Operand* getDef() { return operands[0]; }
@@ -249,6 +247,9 @@ class CmpInstruction : public Instruction {
 };
 
 class UncondBrInstruction : public Instruction {
+   private:
+    bool noStraighten;
+
    public:
     UncondBrInstruction(BasicBlock*, BasicBlock* insert_bb = nullptr);
     void output() const;
@@ -256,6 +257,8 @@ class UncondBrInstruction : public Instruction {
     BasicBlock* getBranch();
     void genMachineCode(AsmBuilder*);
     Instruction* copy();
+    void setNoStraighten() { noStraighten = true; }
+    bool isNoStraighten() { return noStraighten; }
 
    protected:
     BasicBlock* branch;
@@ -288,6 +291,8 @@ class CondBrInstruction : public Instruction {
     BasicBlock* getOriginFalse() { return originFalse; }
     void cleanOriginTrue() { originTrue = nullptr; }
     void cleanOriginFalse() { originFalse = nullptr; }
+    void setOriginTrue(BasicBlock* block) { originTrue = block; }
+    void setOriginFalse(BasicBlock* block) { originFalse = block; }
 
    protected:
     BasicBlock* true_branch;
@@ -450,8 +455,8 @@ class PhiInstruction : public Instruction {
     void replaceDef(Operand* new_);
     Operand* getOriginDef() { return originDef; }
     void replaceOriginDef(Operand* new_);
-    void changeSrcBlock(
-        std::map<BasicBlock*, std::vector<BasicBlock*>> changes);
+    void changeSrcBlock(std::map<BasicBlock*, std::vector<BasicBlock*>> changes,
+                        bool flag = false);
     std::vector<Operand*> getUse() {
         std::vector<Operand*> ret;
         for (auto ope : operands)
@@ -471,6 +476,12 @@ class PhiInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    // only remove use in operands
+    // used for starighten::checkphi
+    void removeUse(Operand* use);
+    // remove all use operands
+    // used for auto inline
+    void cleanUseInOperands();
 };
 
 class FptosiInstruction : public Instruction {
@@ -488,8 +499,14 @@ class FptosiInstruction : public Instruction {
     Instruction* copy();
     void setDef(Operand* def) {
         operands[0] = def;
+        dst = def;
         def->setDef(this);
     }
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
 };
 
 class SitofpInstruction : public Instruction {
@@ -507,8 +524,14 @@ class SitofpInstruction : public Instruction {
     Instruction* copy();
     void setDef(Operand* def) {
         operands[0] = def;
+        dst = def;
         def->setDef(this);
     }
+    std::vector<Operand*> getUse() {
+        return std::vector<Operand*>({operands[1]});
+    }
+    Operand* getDef() { return operands[0]; }
+    void replaceUse(Operand* old, Operand* new_);
 };
 
 class BitcastInstruction : public Instruction {
@@ -531,6 +554,7 @@ class BitcastInstruction : public Instruction {
     Operand* getDef() { return operands[0]; }
     void setDef(Operand* def) {
         operands[0] = def;
+        dst = def;
         def->setDef(this);
     }
     void replaceUse(Operand* old, Operand* new_);

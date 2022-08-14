@@ -537,12 +537,39 @@ BranchMInstruction::BranchMInstruction(MachineBlock* p,
         this->use_list.push_back(r1u);
         this->use_list.push_back(r2u);
         this->use_list.push_back(r3u);
+        auto s0d = new MachineOperand(MachineOperand::REG, 16, true);
+        auto s0u = new MachineOperand(MachineOperand::REG, 16, true);
+        auto s1d = new MachineOperand(MachineOperand::REG, 17, true);
+        auto s1u = new MachineOperand(MachineOperand::REG, 17, true);
+        auto s2d = new MachineOperand(MachineOperand::REG, 18, true);
+        auto s2u = new MachineOperand(MachineOperand::REG, 18, true);
+        auto s3d = new MachineOperand(MachineOperand::REG, 19, true);
+        auto s3u = new MachineOperand(MachineOperand::REG, 19, true);
+        s0d->setParent(this);
+        s0u->setParent(this);
+        s1d->setParent(this);
+        s1u->setParent(this);
+        s2d->setParent(this);
+        s2u->setParent(this);
+        s3d->setParent(this);
+        s3u->setParent(this);
+        this->def_list.push_back(s0d);
+        this->def_list.push_back(s1d);
+        this->def_list.push_back(s2d);
+        this->def_list.push_back(s3d);
+        this->use_list.push_back(s0u);
+        this->use_list.push_back(s1u);
+        this->use_list.push_back(s2u);
+        this->use_list.push_back(s3u);
     } else if (op == BX) {
         auto r0 = new MachineOperand(MachineOperand::REG, 0);
+        auto s0 = new MachineOperand(MachineOperand::REG, 16, true);
         auto sp = new MachineOperand(MachineOperand::REG, 13);
         r0->setParent(this);
+        s0->setParent(this);
         sp->setParent(this);
         this->use_list.push_back(r0);
+        this->use_list.push_back(s0);
         this->use_list.push_back(sp);
     }
 }
@@ -683,10 +710,43 @@ void StackMInstruction::output() {
                 break;
         }
         fprintf(yyout, "{");
-        this->use_list[0]->output();
-        for (long unsigned int i = 1; i < use_list.size(); i++) {
-            fprintf(yyout, ", ");
-            this->use_list[i]->output();
+        auto size = use_list.size();
+        if (size <= 16) {
+            this->use_list[0]->output();
+            for (long unsigned int i = 1; i < use_list.size(); i++) {
+                fprintf(yyout, ", ");
+                this->use_list[i]->output();
+            }
+        } else {
+            if (op == VPUSH) {
+                this->use_list[0]->output();
+                for (long unsigned int i = 1; i < 16; i++) {
+                    fprintf(yyout, ", ");
+                    this->use_list[i]->output();
+                }
+                fprintf(yyout, "}\n");
+                fprintf(yyout, "\tvpush ");
+                fprintf(yyout, "{");
+                this->use_list[16]->output();
+                for (long unsigned int i = 17; i < size; i++) {
+                    fprintf(yyout, ", ");
+                    this->use_list[i]->output();
+                }
+            } else if (op == VPOP) {
+                this->use_list[16]->output();
+                for (long unsigned int i = 17; i < size; i++) {
+                    fprintf(yyout, ", ");
+                    this->use_list[i]->output();
+                }
+                fprintf(yyout, "}\n");
+                fprintf(yyout, "\tvpop ");
+                fprintf(yyout, "{");
+                this->use_list[0]->output();
+                for (long unsigned int i = 1; i < 16; i++) {
+                    fprintf(yyout, ", ");
+                    this->use_list[i]->output();
+                }
+            }
         }
         fprintf(yyout, "}\n");
     }
@@ -750,7 +810,7 @@ void MachineBlock::output() {
                 int temp = baseOffset + operand->getOffset();
                 auto off = new MachineOperand(MachineOperand::IMM, temp);
                 // auto off = new MachineOperand(MachineOperand::IMM, offset);
-                // offset += 4;
+                // offset += 4; // FIXME
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();
@@ -877,6 +937,7 @@ void MachineFunction::output() {
         }
     }
     fprintf(yyout, "\n");
+    fflush(yyout);
 }
 
 void MachineFunction::addSavedRegs(int regno) {
@@ -917,6 +978,7 @@ std::vector<MachineOperand*> MachineFunction::getSavedFpRegs() {
             min_regno = *it;
         }
     }
+    min_regno = 4 + 16;
 
     int cnt = max_regno - min_regno + 1;
     if (cnt % 2 != 0) {

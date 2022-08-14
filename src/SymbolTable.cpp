@@ -1,4 +1,5 @@
 #include "SymbolTable.h"
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include "Type.h"
@@ -62,7 +63,7 @@ std::string ConstantSymbolEntry::toStr() {
         else
             buffer << (int)value;
     } else if (type->isFloat())
-        buffer << value;
+        buffer << std::fixed << value;
     else if (type->isString())
         buffer << strValue;
     return buffer.str();

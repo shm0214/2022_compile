@@ -10,6 +10,7 @@
 #include "DeadCodeElimination.h"
 #include "CondCopyProp.h"
 #include "ElimUnreachCode.h"
+#include "Global2Local.h"
 #include "GraphColor.h"
 #include "InsReorder.h"
 #include "InstructionScheduling.h"
@@ -96,13 +97,13 @@ int main(int argc, char* argv[]) {
         Starighten s(&unit);
         Mem2reg m2r(&unit);
         SSADestruction ssad(&unit);
-        ElimComSubexpr ec(&unit);
         CopyProp cp(&unit);
         ValueNumber vn(&unit);
-        CondCopyProp cc(&unit);
         TreeHeightBalance thb(&unit);
         InsReorder ir(&unit);
         AutoInline ai(&unit);
+        Global2Local g2l(&unit);
+        g2l.pass();
         m2r.pass();
         dce.pass();
         ai.pass();
@@ -135,6 +136,7 @@ int main(int argc, char* argv[]) {
         pre.pass();
         mdce.pass();
         po.pass();
+        mdce.pass();
         ms.pass();
     }
 
@@ -153,7 +155,7 @@ int main(int argc, char* argv[]) {
         po.pass();
         mdce.pass();
         ms.pass();
-        is.pass();
+        // is.pass();
     }
     if (dump_asm)
         mUnit.output();

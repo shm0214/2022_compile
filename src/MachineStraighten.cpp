@@ -6,10 +6,10 @@ void MachineStraighten::pass() {
         bool again = true;
         while (again) {
             again = false;
-            again = again || pass4(func);
-            again = again || pass1(func);
-            again = again || pass2(func);
-            again = again || pass3(func);
+            again = pass4(func) || again;
+            again = pass1(func) || again;
+            again = pass2(func) || again;
+            again = pass3(func) || again;
         }
     }
 }

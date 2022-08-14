@@ -267,12 +267,7 @@ void CmpInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[1]->removeUse(this);
         operands[1] = new_;
         new_->addUse(this);
-<<<<<<< HEAD
-    } 
-    if (operands[2] == old) {
-=======
     } else if (operands[2] == old) {
->>>>>>> 9cd9ef7951de5bfe3e8cd614e8d60b2c80fe9fdf
         operands[2]->removeUse(this);
         operands[2] = new_;
         new_->addUse(this);

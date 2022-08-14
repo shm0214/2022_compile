@@ -18,8 +18,8 @@ bool Operand::isSSAName() {
     if(se->isTemporary()){
         return true;
     }
-    else if(se->isVariable()){
-        if(se->getType()->isArray() || this->isGlobal()){
+    else if(se->isVariable() || this->isGlobal()){
+        if(se->getType()->isArray()){
             return false;
         }
         return true;

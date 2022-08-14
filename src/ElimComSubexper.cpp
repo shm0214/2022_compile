@@ -125,11 +125,11 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
 
             if(found){
                 Instruction* p = AEB[i].inst;
+                cout<<p->getParent()->getNo()<<endl;
                 Operand* dst = AEB[i].tmp;
                 if(dst == nullptr){
                     dst = new Operand(new TemporarySymbolEntry(
                     def->getType(), SymbolTable::getLabel()));
-                    // Instruction* inst = new BinaryInstruction(AEB[i].opr, dst, AEB[i].opd1, AEB[i].opd2, nullptr);
                     Instruction* inst = p->copy();
                     inst->replaceDef(dst);
                     AEB[i].tmp = dst;
@@ -137,10 +137,13 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
                     Instruction* inst1 = new StoreInstruction(p->getDef(), dst, nullptr);
                     bb->insertBefore(inst1, p);
                     bb->remove(p);
+                    inst->output();
+                    inst1->output();
                 }
                 Instruction* inst2 = new StoreInstruction(def, dst, nullptr);
                 bb->insertBefore(inst2, iter);
                 bb->remove(iter);
+                inst2->output();
             } else {
                 AEB.push_back(t);
             }

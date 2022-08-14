@@ -18,7 +18,7 @@ struct aeb
         return opr<a.opr;
     }
     bool operator== (aeb a) const{
-        return (opr==a.opr && (opd1==a.opd1 || (opd1->isConst() && a.opd1->isConst() && opd1->getConstVal() == a.opd1->getConstVal()))
+        return (inst->hasEqualOp(a.inst) && (opd1==a.opd1 || (opd1->isConst() && a.opd1->isConst() && opd1->getConstVal() == a.opd1->getConstVal()))
         && (opd2==a.opd2 || (opd2->isConst() && a.opd2->isConst() && opd2->getConstVal() == a.opd2->getConstVal())));
     }
     bool isIn(Operand* opd){

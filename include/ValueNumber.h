@@ -13,7 +13,8 @@ class ValueNumber {
     void pass(BasicBlock* block,
               std::map<std::string, Operand*> hash,
               std::map<Operand*, Operand*> valueNumber,
-              std::set<Operand*> stores);
+              std::set<Operand*> stores,
+              std::set<SymbolEntry*> storeGlobals);
 };
 
 #endif

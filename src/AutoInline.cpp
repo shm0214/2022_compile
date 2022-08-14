@@ -42,17 +42,18 @@ void AutoInline::pass(Function* func) {
 void AutoInline::decide(CallInstruction* in) {
     IdentifierSymbolEntry* funcSE =
         (IdentifierSymbolEntry*)(((CallInstruction*)in)->getFuncSE());
+    // 貌似可以了
     // 有两个例子始终始终会由于窥孔优化导致寄存器分配出错 因此只能这样阻止内联
     // 105_n_queens
-    if (funcSE->getName() == "printans")
-        return;
+    // if (funcSE->getName() == "printans")
+    //     return;
     // floyd
-    if (funcSE->getName() == "getvalue") {
-        auto type = (FunctionType*)(funcSE->getType());
-        auto size = type->getParamsType().size();
-        if (size == 4)
-            return;
-    }
+    // if (funcSE->getName() == "getvalue") {
+    //     auto type = (FunctionType*)(funcSE->getType());
+    //     auto size = type->getParamsType().size();
+    //     if (size == 4)
+    //         return;
+    // }
     if (funcSE->isSysy() || funcSE->getName() == "llvm.memset.p0.i32")
         return;
     auto func = funcSE->getFunction();

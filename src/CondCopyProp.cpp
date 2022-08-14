@@ -63,13 +63,13 @@ void CondCopyProp::constantPropagation(Function *func)
             std::vector<Instruction *> use = op.first->getUse();
             delete_list.push_back(def);
             for (auto &use_inst : use){
-                cout<<"replace:"<<use_inst->getParent()->getNo()<<endl;
+                // cout<<"replace:"<<use_inst->getParent()->getNo()<<endl;
                 use_inst->replaceUse(op.first, cst);
             }     
         }       
     }
     for (auto &i : delete_list){
-        cout<<"del"<<endl;
+        // cout<<"del"<<endl;
         i->getParent()->remove(i);
     }        
 }

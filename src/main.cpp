@@ -110,9 +110,6 @@ int main(int argc, char* argv[]) {
         cp.pass();
         vn.pass();
         cc.pass();
-        unit.output();
-        return 0;
-        
         ec.pass();
         thb.pass();
         euc.pass();

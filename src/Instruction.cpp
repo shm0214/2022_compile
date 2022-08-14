@@ -1845,7 +1845,7 @@ void PhiInstruction::changeSrcBlock(
                 auto vec = changes[it.first];
                 auto src = srcs[it.first];
                 for (auto b : vec) {
-                    if (srcs.find(b) != srcs.end()) {
+                    if (srcs.find(b) != srcs.end() && srcs[b] != src) {
                         auto& phiBlocks = parent->getPhiBlocks();
                         auto iter = phiBlocks.find(b);
                         BasicBlock* b1;

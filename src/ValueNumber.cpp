@@ -16,13 +16,14 @@ void ValueNumber::pass(Function* func) {
     func->computeIdom();
     func->computeStores();
     auto entry = func->getEntry();
-    pass(entry, {}, {}, {});
+    pass(entry, {}, {}, {}, {});
 }
 
 void ValueNumber::pass(BasicBlock* block,
                        map<string, Operand*> hash,
                        map<Operand*, Operand*> valueNumber,
-                       set<Operand*> stores) {
+                       set<Operand*> stores,
+                       set<SymbolEntry*> storeGlobals) {
     vector<Instruction*> temp;
     // cout << block->getNo() << endl;
     for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
@@ -157,16 +158,43 @@ void ValueNumber::pass(BasicBlock* block,
                 if (hash.count(in->getHash())) {
                     if (in->isLoad()) {
                         auto use = in->getUse()[0];
-                        if (stores.count(use)) {
-                            stores.erase(use);
-                            valueNumber[in->getDef()] = in->getDef();
-                            hash[in->getHash()] = in->getDef();
-                            continue;
-                        } else if (block->inStore(use)) {
-                            valueNumber[in->getDef()] = in->getDef();
-                            hash[in->getHash()] = in->getDef();
-                            block->removeStore(use);
-                            continue;
+                        if (use->isGlobal()) {
+                            string name = use->toStr().substr(1);
+                            auto global = identifiers->lookup(name);
+                            if (storeGlobals.count(global)) {
+                                storeGlobals.erase(global);
+                                valueNumber[in->getDef()] = in->getDef();
+                                hash[in->getHash()] = in->getDef();
+                                continue;
+                            } else {
+                                auto s = block->getStores();
+                                auto flag = false;
+                                for (auto o : s) {
+                                    if (o->isGlobal() &&
+                                        o->toStr().substr(1) == name) {
+                                        valueNumber[in->getDef()] =
+                                            in->getDef();
+                                        hash[in->getHash()] = in->getDef();
+                                        block->removeStore(use);
+                                        flag = true;
+                                        break;
+                                    }
+                                }
+                                if (flag)
+                                    continue;
+                            }
+                        } else {
+                            if (stores.count(use)) {
+                                stores.erase(use);
+                                valueNumber[in->getDef()] = in->getDef();
+                                hash[in->getHash()] = in->getDef();
+                                continue;
+                            } else if (block->inStore(use)) {
+                                valueNumber[in->getDef()] = in->getDef();
+                                hash[in->getHash()] = in->getDef();
+                                block->removeStore(use);
+                                continue;
+                            }
                         }
                     }
                     valueNumber[in->getDef()] = hash[in->getHash()];
@@ -183,8 +211,16 @@ void ValueNumber::pass(BasicBlock* block,
                     hash[in->getHash()] = in->getDef();
                 }
             } else if (in->isStore())
-                if (!in->getUse()[1]->getEntry()->isVariable())
-                    stores.insert(in->getUse()[0]);
+                if (!in->getUse()[1]->getEntry()->isVariable()) {
+                    auto useAddr = in->getUse()[0];
+                    if (useAddr->isGlobal()) {
+                        string name = useAddr->toStr().substr(1);
+                        auto global = identifiers->lookup(name);
+                        storeGlobals.insert(global);
+                    } else {
+                        stores.insert(useAddr);
+                    }
+                }
         }
     }
     for (auto it = block->succ_begin(); it != block->succ_end(); it++) {
@@ -208,6 +244,6 @@ void ValueNumber::pass(BasicBlock* block,
     auto node = func->getDomNode(block);
     for (auto node : node->children) {
         auto b = node->block;
-        pass(b, hash, valueNumber, stores);
+        pass(b, hash, valueNumber, stores, storeGlobals);
     }
 }

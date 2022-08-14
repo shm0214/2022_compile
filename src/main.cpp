@@ -8,6 +8,7 @@
 #include "CopyProp.h"
 #include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
+#include "Global2Local.h"
 #include "GraphColor.h"
 #include "InsReorder.h"
 #include "InstructionScheduling.h"
@@ -99,6 +100,8 @@ int main(int argc, char* argv[]) {
         TreeHeightBalance thb(&unit);
         InsReorder ir(&unit);
         AutoInline ai(&unit);
+        Global2Local g2l(&unit);
+        g2l.pass();
         m2r.pass();
         dce.pass();
         ai.pass();

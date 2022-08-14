@@ -1412,6 +1412,36 @@ void GepInstruction::replaceUse(Operand* old, Operand* new_) {
     }
 }
 
+double* GepInstruction::getArrayValue(){
+    GepInstruction* tmp = this;
+    while(tmp->paramFirst){
+        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();
+    }
+    return ((IdentifierSymbolEntry*)tmp->getUse()[0]->getEntry())->getArrayValue();
+}
+
+int GepInstruction::getFlatIdx(){
+    if(!last) 
+        return -1;
+    GepInstruction* tmp = this;
+    int res = 1;
+    SymbolEntry* se = tmp->getUse()[1]->getEntry();
+    if(se->isConstant())
+        res += ((ConstantSymbolEntry*)se)->getValue();
+    else if(se->isVariable())
+        res += ((IdentifierSymbolEntry*)se)->getValue();    
+    
+    while(!tmp->first){
+        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();
+        SymbolEntry* se = tmp->getUse()[1]->getEntry();
+        if(se->isConstant())
+            res += ((ConstantSymbolEntry*)se)->getValue() * ((ArrayType*)tmp->getUse()[0]->getEntry()->getType())->getLength();
+        else if(se->isVariable())
+            res += ((IdentifierSymbolEntry*)se)->getValue()  * ((ArrayType*)tmp->getUse()[0]->getEntry()->getType())->getLength();
+    }
+    return res;
+}
+
 void GepInstruction::output() const {
     Operand* dst = operands[0];
     Operand* arr = operands[1];

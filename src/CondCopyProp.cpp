@@ -19,7 +19,7 @@ void CondCopyProp::constantPropagation(Function *func)
             Operand *def = inst->getDef();
             if (def == nullptr){
                 continue;
-            }                
+            }    
             if (def->isSSAName())
             {
                 value[def] = inst->getLatticeValue(value);
@@ -59,14 +59,14 @@ void CondCopyProp::constantPropagation(Function *func)
         Operand *cst;
         cst = new Operand(new ConstantSymbolEntry(op.first->getType(), op.second.second));
         Instruction *def = op.first->getDef();
-        if(!def->isCmp()){
-            std::vector<Instruction *> use = op.first->getUse();
-            delete_list.push_back(def);
-            for (auto &use_inst : use){
-                // cout<<"replace:"<<use_inst->getParent()->getNo()<<endl;
-                use_inst->replaceUse(op.first, cst);
-            }     
-        }       
+        // if(!def->isCmp()){
+        std::vector<Instruction *> use = op.first->getUse();
+        delete_list.push_back(def);
+        for (auto &use_inst : use){
+            // cout<<"replace:"<<use_inst->getParent()->getNo()<<endl;
+            use_inst->replaceUse(op.first, cst);
+        }     
+        // }       
     }
     for (auto &i : delete_list){
         // cout<<"del"<<endl;

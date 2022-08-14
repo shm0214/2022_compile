@@ -46,6 +46,7 @@ class Operand {
     double getConstVal() const {
         return ((ConstantSymbolEntry*)se)->getValue();
     }
+    bool isInArray();
     int getLabel() const { return se->getLabel(); }
     bool isParam() const {
         if (se->isVariable())

@@ -414,6 +414,8 @@ class GepInstruction : public Instruction {
         this->init = init;
         this->off = off;
     };
+    double* getArrayValue();
+    int getFlatIdx();
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }

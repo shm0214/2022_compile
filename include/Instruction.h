@@ -28,6 +28,7 @@ class Instruction {
     bool isLoad() const { return instType == LOAD; };
     bool isCmp() const { return instType == CMP; };
     bool isGep() const { return instType == GEP; };
+    bool isXor() const { return instType == XOR; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);

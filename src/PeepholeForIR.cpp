@@ -14,7 +14,20 @@ void PeepholeForIR::pass(Function* func) {
         auto next = cur->getNext();
         vector<Instruction*> rmvList;
         while (next != block->end()) {
-            if (cur->isStore() && next->isLoad()) {
+            if (cur->isConstExp()) {
+                // xor性能应该不会出现 cmp出现的话处理复杂一些
+                if (!(cur->isCmp() || cur->isXor())) {
+                    double val = cur->getConstVal();
+                    auto def = cur->getDef();
+                    auto imm = new Operand(
+                        new ConstantSymbolEntry(def->getType(), val));
+                    while (def->use_begin() != def->use_end()) {
+                        auto use = *(def->use_begin());
+                        use->replaceUse(def, imm);
+                    }
+                    rmvList.push_back(cur);
+                }
+            } else if (cur->isStore() && next->isLoad()) {
                 auto strAddr = cur->getUse()[0];
                 auto ldrAddr = next->getUse()[0];
                 auto flag = strAddr == ldrAddr;

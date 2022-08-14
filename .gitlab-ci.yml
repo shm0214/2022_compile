@@ -13,7 +13,7 @@ compile:
     - make app
     - sudo cp /home/ubuntu/compile/compile.py .
     - python compile.py
-    - zip -r asm.zip functional/ performance/
+    - zip -r asm.zip functional/ performance/ > /dev/null 2>&1
   artifacts:
     paths:
       - asm.zip
@@ -23,7 +23,7 @@ functional:
   tags:
     - timer
   script:
-    - unzip asm.zip
+    - unzip asm.zip > /dev/null 2>&1
     - cp /home/pi/compiler/functional.py .
     - python functional.py
   dependencies:
@@ -36,7 +36,7 @@ performance:
   needs:
     - [functional, compile]
   script:
-    - unzip asm.zip
+    - unzip asm.zip > /dev/null 2>&1
     - cp /home/pi/compiler/performance.py .
     - python performance.py
     - cp /home/pi/compiler/data.csv .

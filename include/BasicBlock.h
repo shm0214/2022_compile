@@ -64,6 +64,7 @@ class BasicBlock {
     void cleanPhiBlocks() { phiBlocks.clear(); }
     std::map<BasicBlock*, BasicBlock*>& getPhiBlocks() { return phiBlocks; }
     std::vector<BasicBlock*> getSucc() { return succ; }
+    std::vector<BasicBlock*> getPred() { return pred; }
     void deleteBack(int num = 1);
     void setMark() { mark = true; }
     void unsetMark() { mark = false; }

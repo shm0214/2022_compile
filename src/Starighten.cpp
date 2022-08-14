@@ -5,22 +5,34 @@ using namespace std;
 void Starighten::pass() {
     auto iter = unit->begin();
     while (iter != unit->end()) {
-        changes.clear();
-        pass1(*iter);
-        //pass2(*iter);
-        pass3(*iter);
-        pass4(*iter);
-        checkPhi(*iter);
-        checkAllocAndPhi(*iter);
+        bool again = true;
+        while (again) {
+            again = false;
+            setOriginBranch(*iter);
+            // (*iter)->output();
+            changes.clear();
+            again = pass1(*iter) || again;
+            //pass2(*iter);
+            again = pass3(*iter) || again;
+            again = pass4(*iter) || again;
+            // (*iter)->output();
+            // for (auto it : changes)
+            //     cout << it.first->getNo() << "->" << it.second[0]->getNo()
+            //          << endl;
+            checkPhi(*iter);
+            // checkAllocAndPhi(*iter);
+        }
         iter++;
     }
 }
 
-void Starighten::pass1(Function* func) {
+bool Starighten::pass1(Function* func) {
+    bool ret = false;
     auto& blocklist = func->getBlockList();
     for (auto i : blocklist) {
         if (i->getNumOfSucc() == 1 &&
             (*(i->succ_begin()))->getNumOfPred() == 1) {
+            ret = true;
             assert(*((*(i->succ_begin()))->pred_begin()) == i);
             auto j = *(i->succ_begin());
             fuseBlock(func, i, j);
@@ -30,8 +42,9 @@ void Starighten::pass1(Function* func) {
             pass1(func);
         }
     }
+    return ret;
 }
-void Starighten::pass2(Function* func) {
+bool Starighten::pass2(Function* func) {
     // 这里同时删除了顺序连接的基本块之间的无条件跳转
     // 目前找不到打印时的下一个基本块
     auto blocklist = func->getBlockList();
@@ -46,9 +59,11 @@ void Starighten::pass2(Function* func) {
                 i->remove(i->rbegin());
         }
     }
+    return false;
 }
-void Starighten::pass3(Function* func) {
+bool Starighten::pass3(Function* func) {
     // 删除只有一句无条件跳转的基本块
+    bool ret = false;
     auto& blocklist = func->getBlockList();
     for (auto it = blocklist.begin(); it != blocklist.end();) {
         if ((*it)->begin() == (*it)->rbegin() && (*it)->begin()->isUncond()) {
@@ -56,7 +71,13 @@ void Starighten::pass3(Function* func) {
                 it++;
                 continue;
             }
-            auto block = ((UncondBrInstruction*)((*it)->begin()))->getBranch();
+            auto unCond = (UncondBrInstruction*)((*it)->begin());
+            if (unCond->isNoStraighten()) {
+                it++;
+                continue;
+            }
+            ret = true;
+            auto block = unCond->getBranch();
             block->removePred(*it);
             if ((*it)->getNumOfPred())
                 changes.insert(make_pair(*it, vector<BasicBlock*>()));
@@ -86,7 +107,9 @@ void Starighten::pass3(Function* func) {
             it++;
         }
     }
+    return ret;
 }
+
 void Starighten::fuseBlock(Function* func, BasicBlock* i, BasicBlock* j) {
     Instruction* tail = i->rbegin();
     if (tail->isUncond()) {
@@ -126,26 +149,108 @@ void Starighten::checkPhi(Function* func) {
             else
                 break;
     }
+    // map<Instruction*, Instruction*> replaceIns;
+    vector<Instruction*> removeIns;
+    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
+        auto preds = (*it)->getPred();
+        for (auto i = (*it)->begin(); i != (*it)->end(); i = i->getNext())
+            if (i->isPhi()) {
+                auto phi = (PhiInstruction*)i;
+                auto& srcs = phi->getSrcs();
+                vector<BasicBlock*> rmvList;
+                for (auto it : srcs)
+                    if (find(preds.begin(), preds.end(), it.first) ==
+                        preds.end()) {
+                        rmvList.push_back(it.first);
+                        phi->removeUse(it.second);
+                    }
+                for (auto block : rmvList)
+                    srcs.erase(block);
+                if (srcs.size() == 1) {
+                    auto def = phi->getDef();
+                    auto use = phi->getUse()[0];
+                    use->removeUse(phi);
+                    // 要退化为add 0
+                    // auto zero = new Operand(
+                    //     new ConstantSymbolEntry(TypeSystem::intType, 0));
+                    // auto addIn = new BinaryInstruction(BinaryInstruction::ADD,
+                    //                                    def, use, zero);
+                    // addIn->setParent(*it);
+                    // replaceIns[phi] = addIn;
+                    // 直接替换所有def即可吧
+                    while (def->use_begin() != def->use_end()) {
+                        auto in = *(def->use_begin());
+                        in->replaceUse(def, use);
+                    }
+                    removeIns.push_back(phi);
+                }
+            }
+    }
+    // for (auto it : replaceIns)
+    //     it.first->getParent()->replaceIns(it.first, it.second);
+    for (auto it : removeIns)
+        it->getParent()->remove(it);
 }
 
-void Starighten::pass4(Function* func) {
+bool Starighten::pass4(Function* func) {
     // 解决由于DCE带来的无前驱块
+    bool ret = false;
+    // auto& blocklist = func->getBlockList();
+    // vector<BasicBlock*> temp;
+    // for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
+    //     if ((*it)->getNumOfPred() == 0 && *it != func->getEntry()) {
+    //         for (auto it1 = (*it)->pred_begin(); it1 != (*it)->pred_end();
+    //              it1++) {
+    //             (*it1)->removePred(*it);
+    //         }
+    //         temp.push_back(*it);
+    //         ret = true;
+    //     }
+    // }
+    // for (auto b : temp)
+    //     func->remove(b);
+    // 需要改进成移除所有非enter所在的联通分量内的块
     auto& blocklist = func->getBlockList();
-    vector<BasicBlock*> temp;
-    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
-        if ((*it)->getNumOfPred() == 0 && *it != func->getEntry()) {
-            for (auto it1 = (*it)->pred_begin(); it1 != (*it)->pred_end();
-                 it1++) {
-                (*it1)->removePred(*it);
-            }
-            temp.push_back(*it);
+    set<BasicBlock*> blocks;
+    for (auto block : blocklist)
+        blocks.insert(block);
+    set<BasicBlock*> visited;
+    stack<BasicBlock*> stk;
+    stk.push(func->getEntry());
+    while (!stk.empty()) {
+        auto block = stk.top();
+        stk.pop();
+        if (visited.count(block))
+            continue;
+        visited.insert(block);
+        for (auto succ : block->getSucc())
+            stk.push(succ);
+    }
+    set<BasicBlock*> temp;
+    set_difference(blocks.begin(), blocks.end(), visited.begin(), visited.end(),
+                   inserter(temp, temp.end()));
+    if (temp.size())
+        ret = true;
+    for (auto block : temp) {
+        for (auto succ = block->succ_begin(); succ != block->succ_end(); succ++)
+            (*succ)->removePred(block);
+    }
+    for (auto block : temp)
+        func->remove(block);
+    return ret;
+}
+
+void Starighten::checkAllocAndPhi(Function* func) {
+    // 解决由于内联导致的alloc 和 phi不在块的开始
+}
+
+void Starighten::setOriginBranch(Function* func) {
+    for (auto block : func->getBlockList()) {
+        auto in = block->rbegin();
+        if (in->isCond()) {
+            auto cond = (CondBrInstruction*)in;
+            cond->setOriginFalse(cond->getFalseBranch());
+            cond->setOriginTrue(cond->getTrueBranch());
         }
     }
-    for (auto b : temp)
-        func->remove(b);
-}
-
-
-void Starighten::checkAllocAndPhi(Function* func){
-    // 解决由于内联导致的alloc 和 phi不在块的开始
 }

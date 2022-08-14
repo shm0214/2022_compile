@@ -65,6 +65,7 @@ void Function::output() {
     entry->output();
     dfs1(entry, v);
     fprintf(yyout, "}\n");
+    // fflush(yyout);
 }
 
 void Function::dfs(AsmBuilder* builder,

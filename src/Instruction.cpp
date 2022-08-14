@@ -1822,6 +1822,12 @@ void PhiInstruction::replaceUse(Operand* old, Operand* new_) {
             *it = new_;
 }
 
+void PhiInstruction::removeUse(Operand* use) {
+    auto it = find(operands.begin() + 1, operands.end(), use);
+    if (it != operands.end())
+        operands.erase(it);
+}
+
 void PhiInstruction::replaceDef(Operand* new_) {
     dst->removeDef(this);
     dst = new_;
@@ -1833,10 +1839,13 @@ void PhiInstruction::replaceOriginDef(Operand* new_) {
 }
 
 void PhiInstruction::changeSrcBlock(
-    std::map<BasicBlock*, std::vector<BasicBlock*>> changes) {
+    std::map<BasicBlock*, std::vector<BasicBlock*>> changes,
+    bool autoInline) {
     std::map<Operand*, BasicBlock*> originBlocks;
-    for (auto it : srcs)
-        originBlocks[it.second] = it.first;
+    if (autoInline) {
+        for (auto it : srcs)
+            originBlocks[it.second] = it.first;
+    }
     bool flag;
     while (true) {
         flag = false;
@@ -1858,21 +1867,39 @@ void PhiInstruction::changeSrcBlock(
                             b->addSucc(b1);
                             b->removeSuccFromEnd(this->getParent());
                             auto i = (CondBrInstruction*)(b->rbegin());
-                            auto nowSrc = srcs[b];
-                            auto originBlock = originBlocks[nowSrc];
-                            while (true) {
-                                if (i->getOriginFalse() == originBlock) {
-                                    i->setTrueBranch(b1);
-                                    break;
-                                } else if (i->getOriginTrue() == originBlock) {
-                                    i->setFalseBranch(b1);
-                                    break;
+                            if (autoInline) {
+                                auto nowSrc = srcs[b];
+                                auto originBlock = originBlocks[nowSrc];
+                                while (true) {
+                                    if (i->getOriginFalse() == originBlock) {
+                                        i->setTrueBranch(b1);
+                                        break;
+                                    } else if (i->getOriginTrue() ==
+                                               originBlock) {
+                                        i->setFalseBranch(b1);
+                                        break;
+                                    }
+                                    if (changes.count(originBlock))
+                                        originBlock = changes[originBlock][0];
                                 }
-                                if (changes.count(originBlock))
-                                    originBlock = changes[originBlock][0];
+                            } else {
+                                auto temp = it.first;
+                                while (true) {
+                                    if (i->getOriginTrue() == temp) {
+                                        i->setTrueBranch(b1);
+                                        break;
+                                    } else if (i->getOriginFalse() == temp) {
+                                        i->setFalseBranch(b1);
+                                        break;
+                                    }
+                                    if (changes.count(temp))
+                                        temp = changes[temp][0];
+                                }
                             }
                             b1->addPred(b);
-                            new UncondBrInstruction(this->getParent(), b1);
+                            auto unCond =
+                                new UncondBrInstruction(this->getParent(), b1);
+                            unCond->setNoStraighten();
                             this->getParent()->removePredFromEnd(b);
                             this->getParent()->addPred(b1);
                             b1->addSucc(this->getParent());
@@ -2676,6 +2703,11 @@ void BitcastInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[1] = new_;
         new_->addUse(this);
     }
+}
+
+void PhiInstruction::cleanUseInOperands() {
+    std::vector<Operand*> v({dst});
+    v.swap(operands);
 }
 
 void SitofpInstruction::replaceUse(Operand* old, Operand* new_) {

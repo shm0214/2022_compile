@@ -40,14 +40,7 @@ class SSAGraphNode {
         ASHR,
     };
     SSAGraphNode(Instruction* ins, int type = -1) : ins(ins), type(type) {}
-<<<<<<< HEAD
-    SSAGraphNode(int val) : type(CONST) {}
-    Instruction* getInst() { return ins; }
-    void setNo(int num) { no = num; }
-    int getNo() const{ return no; }
-=======
     SSAGraphNode(int val) : val(val), type(CONST) {}
->>>>>>> 9cd9ef7951de5bfe3e8cd614e8d60b2c80fe9fdf
     void addChild(SSAGraphNode* node) { children.push_back(node); }
     std::vector<SSAGraphNode*>& getChildren() { return children; }
 };

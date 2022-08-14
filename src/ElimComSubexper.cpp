@@ -111,7 +111,7 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
     for(auto iter = bb->begin();iter!=bb->end();iter=iter->getNext()){
         Operand* def = iter->getDef();
         vector<Operand*> uses(iter->getUse());
-        if(uses.size() == 2){
+        if(uses.size() == 2 && !iter->isCall()){
             struct aeb t;
             t.inst = iter, t.opd1 = uses[0], t.opr = iter->getOpcode(), t.opd2 = uses[1];
             bool found = false;
@@ -124,6 +124,7 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB){
             }
 
             if(found){
+                cout<<"found"<<endl;
                 Instruction* p = AEB[i].inst;
                 cout<<p->getParent()->getNo()<<endl;
                 Operand* dst = AEB[i].tmp;

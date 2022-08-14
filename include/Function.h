@@ -10,6 +10,7 @@
 #include "AsmBuilder.h"
 #include "Ast.h"
 #include "BasicBlock.h"
+#include "SSAGraph.h"
 #include "SymbolTable.h"
 
 class Unit;
@@ -61,6 +62,7 @@ class Function {
     // sdoms idoms order->order
     std::vector<int> sdoms;
     std::vector<int> idoms;
+    std::vector<SSAGraphNode*> nodes;
 
    public:
     Function() {}
@@ -97,6 +99,9 @@ class Function {
              std::set<BasicBlock*>& v,
              std::map<BasicBlock*, MachineBlock*>& map);
     void dfs1(BasicBlock* block, std::set<BasicBlock*>& v);
+    void genSSAGraph();
+    std::vector<SSAGraphNode*>& getSSAGraph(){return nodes;};
+    void addNodeToSSAGraph(SSAGraphNode* node){nodes.push_back(node);};
 };
 
 #endif

@@ -1,0 +1,41 @@
+define i32 @main() {
+B25:
+  %t44 = add i32 0, 0
+  %t45 = add i32 1, 0
+  %t46 = add i32 9, 0
+  br label %B29
+B29:                               	; preds = %B25, %B30
+  %t65 = phi i32[ 0 , %B25 ], [ %t67 , %B30 ]
+  %t48 = phi i32[ %t45 , %B25 ], [ %t49 , %B30 ]
+  %t5 = icmp slt i32 %t47, %t46
+  br i1 %t5, label %B30, label %B34
+B30:                               	; preds = %B29
+  %t64 = add i32 %t65, 0
+  %t49 = add i32 %t64, 0
+  %t68 = add i32 %t65, 5
+  %t67 = add i32 %t68, 0
+  br label %B29
+B34:                               	; preds = %B29
+  br label %B31
+B31:                               	; preds = %B34
+  %t15 = add i32 %t47, %t46
+  %t51 = add i32 %t15, 0
+  %t70 = mul i32 %t51, 4
+  %t77 = add i32 %t70, 0
+  br label %B35
+B35:                               	; preds = %B31, %B36
+  %t76 = phi i32[ %t77 , %B31 ], [ %t78 , %B36 ]
+  %t53 = phi i32[ %t48 , %B31 ], [ %t54 , %B36 ]
+  %t17 = icmp slt i32 %t52, 16
+  br i1 %t17, label %B36, label %B40
+B36:                               	; preds = %B35
+  %t75 = add i32 %t76, 0
+  %t54 = add i32 %t75, 0
+  %t79 = add i32 %t76, 4
+  %t78 = add i32 %t79, 0
+  br label %B35
+B40:                               	; preds = %B35
+  br label %B37
+B37:                               	; preds = %B40
+  ret i32 %t52
+}

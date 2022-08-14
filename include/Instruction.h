@@ -8,6 +8,7 @@
 #include "Operand.h"
 #include "Type.h"
 
+class SSAGraphNode;
 class BasicBlock;
 
 class Instruction {
@@ -22,6 +23,7 @@ class Instruction {
     bool isStore() const { return instType == STORE; };
     bool isBin() const {return instType == BINARY; };
     bool isPhi() const { return instType == PHI; };
+    bool isCmp() const {return instType == CMP;};
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
@@ -39,7 +41,10 @@ class Instruction {
     virtual Operand* getDef() { return nullptr; }
     virtual void replaceUse(Operand* old, Operand* new_) {}
     virtual void replaceDef(Operand* new_) {}
-
+    virtual bool genNode() { return true; }
+    SSAGraphNode* getNode() { return node; }
+    void setNode(SSAGraphNode* node){this->node=node;};
+    virtual Instruction* copy() = 0;
    protected:
     unsigned instType;
     unsigned opcode;
@@ -62,6 +67,7 @@ class Instruction {
         GEP,
         PHI
     };
+    SSAGraphNode* node;
 };
 
 // meaningless instruction, used as the head node of the instruction list.
@@ -70,6 +76,7 @@ class DummyInstruction : public Instruction {
     DummyInstruction() : Instruction(-1, nullptr){};
     void output() const {};
     void genMachineCode(AsmBuilder*){};
+    Instruction* copy() { return nullptr; }
 };
 
 class AllocaInstruction : public Instruction {
@@ -83,6 +90,8 @@ class AllocaInstruction : public Instruction {
     Operand* getDef() { return operands[0]; }
     void replaceDef(Operand* new_);
     bool isArray() { return se->getType()->isArray(); }
+    bool genNode();
+    Instruction* copy();
 
    private:
     SymbolEntry* se;
@@ -102,6 +111,8 @@ class LoadInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1]});
     }
+    bool genNode();
+    Instruction* copy();
 };
 
 class StoreInstruction : public Instruction {
@@ -118,6 +129,7 @@ class StoreInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[0], operands[1]});
     }
+    Instruction* copy();
 };
 
 class BinaryInstruction : public Instruction {
@@ -137,6 +149,12 @@ class BinaryInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
+    bool isAdd(){return this->opcode==ADD;};
+    bool isSub(){return this->opcode==SUB;};
+    bool isMul(){return this->opcode==MUL;};
+    bool isDIV(){return this->opcode==DIV;};
+    bool genNode();
+    Instruction* copy();
 };
 
 class CmpInstruction : public Instruction {
@@ -155,6 +173,9 @@ class CmpInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
+    Operand* getDef() { return operands[0]; }
+    bool genNode();
+    Instruction* copy();
 };
 
 // unconditional branch
@@ -165,6 +186,7 @@ class UncondBrInstruction : public Instruction {
     void setBranch(BasicBlock*);
     BasicBlock* getBranch();
     void genMachineCode(AsmBuilder*);
+    Instruction* copy();
 
    protected:
     BasicBlock* branch;
@@ -172,6 +194,10 @@ class UncondBrInstruction : public Instruction {
 
 // conditional branch
 class CondBrInstruction : public Instruction {
+   private:
+    BasicBlock* originTrue;
+    BasicBlock* originFalse;
+
    public:
     CondBrInstruction(BasicBlock*,
                       BasicBlock*,
@@ -188,6 +214,12 @@ class CondBrInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[0]});
     }
+    Instruction* copy();
+    BasicBlock* getOriginTrue() { return originTrue; }
+    BasicBlock* getOriginFalse() { return originFalse; }
+    void cleanOriginTrue() { originTrue = nullptr; }
+    void cleanOriginFalse() { originFalse = nullptr; }
+
 
    protected:
     BasicBlock* true_branch;
@@ -207,6 +239,8 @@ class RetInstruction : public Instruction {
             return std::vector<Operand*>({operands[0]});
         return std::vector<Operand*>();
     }
+    bool genNode();
+    Instruction* copy();
 };
 
 class CallInstruction : public Instruction {
@@ -231,6 +265,8 @@ class CallInstruction : public Instruction {
             vec.push_back(*it);
         return vec;
     }
+    bool genNode();
+    Instruction* copy();
 };
 
 class ZextInstruction : public Instruction {
@@ -247,6 +283,8 @@ class ZextInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1]});
     }
+    bool genNode();
+    Instruction* copy();
 };
 
 class XorInstruction : public Instruction {
@@ -261,6 +299,8 @@ class XorInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1]});
     }
+    bool genNode();
+    Instruction* copy();
 };
 
 class GepInstruction : public Instruction {
@@ -289,6 +329,8 @@ class GepInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
+    bool genNode();
+    Instruction* copy();
 };
 
 class PhiInstruction : public Instruction {
@@ -312,6 +354,16 @@ class PhiInstruction : public Instruction {
     Operand* getOriginDef() { return originDef; }
     void replaceOriginDef(Operand* new_);
     void changeSrcBlock(std::map<BasicBlock*, std::vector<BasicBlock*>> changes);
+    std::vector<Operand*> getUse() {
+        std::vector<Operand*> ret;
+        for (auto ope : operands)
+            if (ope != operands[0])
+                ret.push_back(ope);
+        return ret;
+    }
+    bool genNode();
+    bool reGenNode();
+    Instruction* copy();
 };
 
 #endif

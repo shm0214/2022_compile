@@ -29,6 +29,14 @@ class Operand {
     std::string toStr() const;
     SymbolEntry* getEntry() { return se; };
     Instruction* getDef() { return def; };
+    bool isZero() const {
+        if (se->isConstant()) {
+            ConstantSymbolEntry* cse = (ConstantSymbolEntry*)se;
+            if (cse->getValue() == 0)
+                return true;
+        }
+        return false;
+    }
 };
 
 #endif

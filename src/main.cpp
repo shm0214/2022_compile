@@ -86,8 +86,8 @@ int main(int argc, char* argv[]) {
     // s1.pass();
     
     
-
-    // unit.output();
+    
+    
     if (dump_ir)
         unit.output();
     // unit.genMachineCode(&mUnit);

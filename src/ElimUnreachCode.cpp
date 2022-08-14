@@ -99,9 +99,15 @@ void ElimUnreachCode::pass2(Function* func) {
         auto def = in->getDef();
         // 应该只有一个use吧
         // assert(def->usersNum() == 1);
-        auto useIn = *(def->use_begin());
+        // auto useIn = *(def->use_begin());
         // 还需要xor的先不管了  性能里面应该不多
-        if (!useIn->isCond())
+        bool flag = false;
+        for (auto it = def->use_begin(); it != def->use_end(); it++)
+            if (!(*it)->isCond()) {
+                flag = true;
+                break;
+            }
+        if (flag)
             continue;
         auto branch = (CondBrInstruction*)(*(def->use_begin()));
         BasicBlock *dstBlock, *otherBlock;

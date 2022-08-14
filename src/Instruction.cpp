@@ -1737,7 +1737,7 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
     if (paramFirst || !first) {
         auto arr = genMachineOperand(operands[1]);
         auto in = operands[1]->getDef();
-        if (in->isGep()) {
+        if (in && in->isGep()) {
             auto gep = (GepInstruction*)in;
             if (gep->hasNoAsm()) {
                 gep->setInit(nullptr, 0);

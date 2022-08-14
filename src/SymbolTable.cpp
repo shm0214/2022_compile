@@ -1,4 +1,5 @@
 #include "SymbolTable.h"
+#include <iomanip>
 #include <iostream>
 #include <sstream>
 #include "Type.h"
@@ -27,9 +28,9 @@ SymbolEntry::SymbolEntry(Type* type, int kind) {
     this->kind = kind;
 }
 
-ConstantSymbolEntry::ConstantSymbolEntry(Type* type, int value)
+ConstantSymbolEntry::ConstantSymbolEntry(Type* type, double value)
     : SymbolEntry(type, SymbolEntry::CONSTANT) {
-    assert(type->isInt());
+    assert(type->isInt() || type->isFloat());
     this->value = value;
 }
 
@@ -44,8 +45,8 @@ ConstantSymbolEntry::ConstantSymbolEntry(Type* type)
     // assert(type->isArray());
 }
 
-int ConstantSymbolEntry::getValue() const {
-    assert(type->isInt());
+double ConstantSymbolEntry::getValue() const {
+    assert(type->isInt() || type->isFloat());
     return value;
 }
 
@@ -56,8 +57,13 @@ std::string ConstantSymbolEntry::getStrValue() const {
 
 std::string ConstantSymbolEntry::toStr() {
     std::ostringstream buffer;
-    if (type->isInt())
-        buffer << value;
+    if (type->isInt()) {
+        if (value == 2147483648)
+            buffer << "2147483648";
+        else
+            buffer << (int)value;
+    } else if (type->isFloat())
+        buffer << std::fixed << value;
     else if (type->isString())
         buffer << strValue;
     return buffer.str();
@@ -77,28 +83,29 @@ IdentifierSymbolEntry::IdentifierSymbolEntry(Type* type,
     this->label = -1;
     this->allZero = false;
     this->constant = false;
+    this->notZeroNum = 0;
 }
 
-void IdentifierSymbolEntry::setValue(int value) {
-    if (((IntType*)(this->getType()))->isConst()) {
+void IdentifierSymbolEntry::setValue(double value) {
+    if (((IntType*)(this->getType()))->isConst()) {  // IntType is ok here.
         if (!initial) {
             this->value = value;
             initial = true;
         } else {
-            // 需要报错
+            fprintf(stderr, "trying to set value for constant.\n");
         }
     } else {
         this->value = value;
     }
 }
 
-void IdentifierSymbolEntry::setArrayValue(int* arrayValue) {
-    if (((IntType*)(this->getType()))->isConst()) {
+void IdentifierSymbolEntry::setArrayValue(double* arrayValue) {
+    if (((ArrayType*)(this->getType()))->isConst()) {
         if (!initial) {
             this->arrayValue = arrayValue;
             initial = true;
         } else {
-            // 需要报错
+            fprintf(stderr, "trying to set value for constant.\n");
         }
     } else {
         this->arrayValue = arrayValue;

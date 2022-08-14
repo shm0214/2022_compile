@@ -4,9 +4,9 @@
 #include <assert.h>
 #include <map>
 #include <string>
-
 class Type;
 class Operand;
+class Function;
 
 class SymbolEntry {
    private:
@@ -16,6 +16,7 @@ class SymbolEntry {
    protected:
     enum { CONSTANT, VARIABLE, TEMPORARY };
     Type* type;
+    int label;
 
    public:
     SymbolEntry(Type* type, int kind);
@@ -28,6 +29,7 @@ class SymbolEntry {
     virtual std::string toStr() = 0;
     bool setNext(SymbolEntry* se);
     SymbolEntry* getNext() const { return next; };
+    int getLabel() const { return label; }
 
     // You can add any function you need here.
 };
@@ -60,15 +62,15 @@ class SymbolTable {
 */
 class ConstantSymbolEntry : public SymbolEntry {
    private:
-    int value;
+    double value;
     std::string strValue;
 
    public:
-    ConstantSymbolEntry(Type* type, int value);
+    ConstantSymbolEntry(Type* type, double value);
     ConstantSymbolEntry(Type* type, std::string strValue);
     ConstantSymbolEntry(Type* type);
     virtual ~ConstantSymbolEntry(){};
-    int getValue() const;
+    double getValue() const;
     std::string getStrValue() const;
     std::string toStr();
     // You can add any function you need here.
@@ -101,16 +103,19 @@ class IdentifierSymbolEntry : public SymbolEntry {
     enum { GLOBAL, PARAM, LOCAL };
     std::string name;
     int scope;
-    int value;
-    int label;
+    double value;
     bool initial;
     bool sysy;
-    int* arrayValue;
+    double* arrayValue;
+    int notZeroNum;
     bool allZero;
     int paramNo;
     bool constant;
     Operand* addr;  // The address of the identifier.
                     // You can add any field you need here.
+    Function* func = nullptr;
+    // used for auto inline
+    int allParamNo;
 
    public:
     IdentifierSymbolEntry(Type* type,
@@ -127,18 +132,24 @@ class IdentifierSymbolEntry : public SymbolEntry {
     int getScope() const { return scope; };
     void setAddr(Operand* addr) { this->addr = addr; };
     Operand* getAddr() { return addr; };
-    void setValue(int value);
-    int getValue() const { return value; };
-    void setArrayValue(int* arrayValue);
-    int* getArrayValue() const { return arrayValue; };
+    void setValue(double value);
+    double getValue() const { return value; };
+    void setArrayValue(double* arrayValue);
+    double* getArrayValue() const { return arrayValue; };
     int getLabel() const { return label; };
     void setLabel() { label = SymbolTable::getLabel(); };
     void setAllZero() { allZero = true; };
     bool isAllZero() const { return allZero; };
     int getParamNo() const { return paramNo; };
+    int getAllParamNo() const { return allParamNo; };
+    void setAllParamNo(int no) { allParamNo = no; }
     void setConst() { constant = true; };
     bool getConst() const { return constant; };
-
+    int getNotZeroNum() const { return notZeroNum; }
+    void setNotZeroNum(int num) { notZeroNum = num; }
+    std::string getName() const { return name; }
+    Function* getFunction() { return func; }
+    void setFunction(Function* func) { this->func = func; }
     // You can add any function you need here.
 };
 
@@ -163,7 +174,6 @@ class IdentifierSymbolEntry : public SymbolEntry {
 class TemporarySymbolEntry : public SymbolEntry {
    private:
     int stack_offset;
-    int label;
 
    public:
     TemporarySymbolEntry(Type* type, int label);

@@ -6,9 +6,12 @@
 
 LinearScan::LinearScan(MachineUnit* unit) {
     this->unit = unit;
-    // 这里不对r0-r3做分配嘛
-    for (int i = 4; i < 11; i++)
+    for (int i = 4; i < 11; i++) {
         regs.push_back(i);
+    }
+    for (int i = 4; i < 32; i++) {
+        fpregs.push_back(i + 16);
+    }
 }
 
 void LinearScan::allocateRegisters() {
@@ -16,8 +19,7 @@ void LinearScan::allocateRegisters() {
         func = f;
         bool success;
         success = false;
-        while (!success)  // repeat until all vregs can be mapped
-        {
+        while (!success) {  // repeat until all vregs can be mapped
             computeLiveIntervals();
             success = linearScanRegisterAllocation();
             if (success)  // all vregs can be mapped to real regs
@@ -49,8 +51,9 @@ void LinearScan::makeDuChains() {
                     du_chains[def].insert(uses.begin(), uses.end());
                     auto& kill = lva.getAllUses()[*def];
                     std::set<MachineOperand*> res;
-                    set_difference(uses.begin(), uses.end(), kill.begin(),
-                                   kill.end(), inserter(res, res.end()));
+                    std::set_difference(uses.begin(), uses.end(), kill.begin(),
+                                        kill.end(),
+                                        std::inserter(res, res.end()));
                     liveVar[*def] = res;
                 }
             }
@@ -67,15 +70,46 @@ void LinearScan::computeLiveIntervals() {
     intervals.clear();
     for (auto& du_chain : du_chains) {
         int t = -1;
-        for (auto& use : du_chain.second)
+        int min = 1000000;
+        for (auto& use : du_chain.second) {
             t = std::max(t, use->getParent()->getNo());
+            min = std::min(min, use->getParent()->getNo());
+        }
+        // int s = du_chain.first->getParent()->getNo();
+        // if (min != -1 && s > min) {
+        //     // 一个很粗的估计
+        //     // 找到最大的有回边的块
+        //     auto sBlock = du_chain.first->getParent()->getParent();
+        //     auto func = sBlock->getParent();
+        //     auto blocks = func->getBlocks();
+        //     for (auto it = blocks.rbegin();; it++) {
+        //         auto succs = (*it)->getSuccs();
+        //         bool flag = false;
+        //         for (auto succ : succs)
+        //             if (find(blocks.begin(), blocks.end(), succ) <
+        //                 (it + 1).base()) {
+        //                 flag = true;
+        //                 break;
+        //             }
+        //         if (flag) {
+        //             t = (*((*it)->getInsts().rbegin()))->getNo();
+        //             break;
+        //         }
+        //         if (*it == sBlock)
+        //             break;
+        //     }
+        // }
+        // Interval* interval = new Interval(
+        //     {s, t, false, 0, 0, {du_chain.first}, du_chain.second});
         Interval* interval = new Interval({du_chain.first->getParent()->getNo(),
                                            t,
                                            false,
                                            0,
                                            0,
+                                           du_chain.first->isFloat(),
                                            {du_chain.first},
                                            du_chain.second});
+
         intervals.push_back(interval);
     }
     bool change;
@@ -113,17 +147,26 @@ bool LinearScan::linearScanRegisterAllocation() {
     bool success = true;
     active.clear();
     regs.clear();
+    fpregs.clear();
     for (int i = 4; i < 11; i++)
         regs.push_back(i);
+    for (int i = 4; i < 32; i++) {
+        fpregs.push_back(i + 16);
+    }
     for (auto& i : intervals) {
         expireOldIntervals(i);
-        if (regs.empty()) {
+        if ((!i->fpu && regs.empty()) || (i->fpu && fpregs.empty())) {
             spillAtInterval(i);
             // 不知道是不是该这样
             success = false;
         } else {
-            i->rreg = regs.front();
-            regs.erase(regs.begin());
+            if (!i->fpu) {
+                i->rreg = regs.front();
+                regs.erase(regs.begin());
+            } else {
+                i->rreg = fpregs.front();
+                fpregs.erase(fpregs.begin());
+            }
             active.push_back(i);
             sort(active.begin(), active.end(), compareEnd);
         }
@@ -145,7 +188,6 @@ void LinearScan::genSpillCode() {
     for (auto& interval : intervals) {
         if (!interval->spill)
             continue;
-        // TODO
         /* HINT:
          * The vreg should be spilled to memory.
          * 1. insert ldr inst before the use of vreg
@@ -160,19 +202,37 @@ void LinearScan::genSpillCode() {
             if (interval->disp > 255 || interval->disp < -255) {
                 operand = new MachineOperand(MachineOperand::VREG,
                                              SymbolTable::getLabel());
-                auto inst1 = new LoadMInstruction(use->getParent()->getParent(),
-                                                  operand, off);
+                auto inst1 =
+                    new LoadMInstruction(use->getParent()->getParent(),
+                                         LoadMInstruction::LDR, operand, off);
                 use->getParent()->insertBefore(inst1);
             }
             if (operand) {
-                auto inst =
-                    new LoadMInstruction(use->getParent()->getParent(), temp,
-                                         fp, new MachineOperand(*operand));
-                use->getParent()->insertBefore(inst);
+                if (!use->isFloat()) {
+                    auto inst = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::LDR,
+                        temp, fp, new MachineOperand(*operand));
+                    use->getParent()->insertBefore(inst);
+
+                } else {
+                    auto inst = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::VLDR,
+                        temp, fp, new MachineOperand(*operand));
+                    use->getParent()->insertBefore(inst);
+                }
             } else {
-                auto inst = new LoadMInstruction(use->getParent()->getParent(),
-                                                 temp, fp, off);
-                use->getParent()->insertBefore(inst);
+                if (!use->isFloat()) {
+                    auto inst = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::LDR,
+                        temp, fp, off);
+                    use->getParent()->insertBefore(inst);
+
+                } else {
+                    auto inst = new LoadMInstruction(
+                        use->getParent()->getParent(), LoadMInstruction::VLDR,
+                        temp, fp, off);
+                    use->getParent()->insertBefore(inst);
+                }
             }
         }
         for (auto def : interval->defs) {
@@ -181,18 +241,33 @@ void LinearScan::genSpillCode() {
             MachineInstruction *inst1 = nullptr, *inst = nullptr;
             if (interval->disp > 255 || interval->disp < -255) {
                 operand = new MachineOperand(MachineOperand::VREG,
-                                             SymbolTable::getLabel());
+                                                SymbolTable::getLabel());
                 inst1 = new LoadMInstruction(def->getParent()->getParent(),
-                                             operand, off);
+                                                LoadMInstruction::LDR, operand,
+                                                off);
                 def->getParent()->insertAfter(inst1);
             }
-            if (operand)
-                inst =
-                    new StoreMInstruction(def->getParent()->getParent(), temp,
-                                          fp, new MachineOperand(*operand));
-            else
-                inst = new StoreMInstruction(def->getParent()->getParent(),
-                                             temp, fp, off);
+            if (operand) {
+                if (!def->isFloat()) {
+                    inst = new StoreMInstruction(
+                        def->getParent()->getParent(), StoreMInstruction::STR,
+                        temp, fp, new MachineOperand(*operand));
+                } else {
+                    inst = new StoreMInstruction(
+                        def->getParent()->getParent(), StoreMInstruction::VSTR,
+                        temp, fp, new MachineOperand(*operand));
+                }
+            } else {
+                if (!def->isFloat()) {
+                    inst = new StoreMInstruction(def->getParent()->getParent(),
+                                                 StoreMInstruction::STR, temp,
+                                                 fp, off);
+                } else {
+                    inst = new StoreMInstruction(def->getParent()->getParent(),
+                                                 StoreMInstruction::VSTR, temp,
+                                                 fp, off);
+                }
+            }
             if (inst1)
                 inst1->insertAfter(inst);
             else
@@ -206,9 +281,20 @@ void LinearScan::expireOldIntervals(Interval* interval) {
     while (it != active.end()) {
         if ((*it)->end >= interval->start)
             return;
-        regs.push_back((*it)->rreg);
-        it = active.erase(find(active.begin(), active.end(), *it));
-        sort(regs.begin(), regs.end());
+        if ((*it)->rreg < 11) {
+            // general purpose registers
+            regs.push_back((*it)->rreg);
+            it = active.erase(find(active.begin(), active.end(), *it));
+            sort(regs.begin(), regs.end());
+        } else if ((*it)->rreg >= 20 && (*it)->rreg < 48) {
+            // floating-point registers
+            fpregs.push_back((*it)->rreg);
+            it = active.erase(find(active.begin(), active.end(), *it));
+            sort(fpregs.begin(), fpregs.end());
+
+        } else {
+            // error
+        }
     }
 }
 

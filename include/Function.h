@@ -12,7 +12,6 @@
 #include "BasicBlock.h"
 #include "SSAGraph.h"
 #include "SymbolTable.h"
-
 class Unit;
 
 struct TreeNode {
@@ -62,7 +61,19 @@ class Function {
     // sdoms idoms order->order
     std::vector<int> sdoms;
     std::vector<int> idoms;
+    // -1 for not calculate
+    // 1 for essential
+    // 0 not essential
+    // a function is essential if it is a sysy/memset function or it has a array param or it call a essential function
+    int essential = -1;
     std::vector<SSAGraphNode*> nodes;
+    std::set<Operand*> stores;
+    // 用于mem2reg 有调用其他函数的话则为true
+    bool call;
+    std::map<Function*, std::vector<Instruction*>> preds;
+    bool recur;
+    // used for auto inline
+    int instNum;
 
    public:
     Function() {}
@@ -81,6 +92,44 @@ class Function {
     SymbolEntry* getSymPtr() { return sym_ptr; };
     void genMachineCode(AsmBuilder*);
     std::vector<std::vector<int>> getBlockMap();
+    void computeDFSTree();
+    void search(TreeNode* node, bool* visited);
+    int getIndex(BasicBlock* block) {
+        return std::find(block_list.begin(), block_list.end(), block) -
+               block_list.begin();
+    }
+    int eval(int i, int* ancestors);
+    void computeSdom();
+    int LCA(int i, int j);
+    void computeIdom();
+    void domTest();
+    void computeDomFrontier();
+    TreeNode* getDomNode(BasicBlock* b) { return preOrder2dom[b->order]; }
+    void dfs(AsmBuilder* builder,
+             BasicBlock* block,
+             std::set<BasicBlock*>& v,
+             std::map<BasicBlock*, MachineBlock*>& map);
+    void dfs1(BasicBlock* block, std::set<BasicBlock*>& v);
+    void computeReverseDFSTree(BasicBlock* exit);
+    void reverseSearch(TreeNode* node, bool* visited);
+    void computeReverseSdom(BasicBlock* exit);
+    void computeReverseIdom(BasicBlock* exit);
+    void computeReverseDomFrontier();
+    int getEssential();
+    BasicBlock* getMarkBranch(BasicBlock* block);
+    void genSSAGraph();
+    void computeStores();
+    std::set<Operand*>& getStores() { return stores; }
+    bool hasCall() { return call; }
+    void setHasCall() { call = true; }
+    std::map<Function*, std::vector<Instruction*>>& getPreds() {
+        return preds;
+    };
+    void addPred(Instruction* in);
+    void removePred(Instruction* in);
+    bool hasRecur() { return recur; }
+    void setInstNum(int num) { instNum = num; }
+    int getInstNum() { return instNum; }
     void computeDFSTree();
     void search(TreeNode* node, bool* visited);
     int getIndex(BasicBlock* block) {

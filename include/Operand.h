@@ -28,6 +28,7 @@ class Operand {
     Type* getType() { return se->getType(); };
     std::string toStr() const;
     SymbolEntry* getEntry() { return se; };
+    void setEntry(SymbolEntry* se) { this->se = se; };
     Instruction* getDef() { return def; };
     bool isZero() const {
         if (se->isConstant()) {
@@ -35,6 +36,25 @@ class Operand {
             if (cse->getValue() == 0)
                 return true;
         }
+        return false;
+    }
+    bool isConst() const { return se->isConstant(); }
+    double getConstVal() const {
+        return ((ConstantSymbolEntry*)se)->getValue();
+    }
+    int getLabel() const { return se->getLabel(); }
+    bool isParam() const {
+        if (se->isVariable())
+            return ((IdentifierSymbolEntry*)se)->isParam();
+        return false;
+    }
+    // used for auto inline
+    int getParamNo() const {
+        return ((IdentifierSymbolEntry*)se)->getAllParamNo();
+    }
+    bool isGlobal() const {
+        if (se->isVariable())
+            return ((IdentifierSymbolEntry*)se)->isGlobal();
         return false;
     }
 };

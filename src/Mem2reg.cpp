@@ -20,7 +20,7 @@ void Mem2reg::pass(Function* function) {
     insertPhiInstruction(function);
     rename(function);
     // 这个会导致r0-r3被覆盖
-    //cleanAddZeroIns(function);
+    cleanAddZeroIns(function);
 }
 
 void Mem2reg::insertPhiInstruction(Function* function) {
@@ -67,13 +67,16 @@ void Mem2reg::insertPhiInstruction(Function* function) {
                 // if (((StoreInstruction*)(*use))->getDstAddr() == operand) {
                 //     lastDef = ((StoreInstruction*)(*use))->getSrc();
                 // }
-                auto assignIns = new BinaryInstruction(
-                    BinaryInstruction::ADD, newOperand, (*use)->getUse()[1],
-                    new Operand(
-                        new ConstantSymbolEntry(TypeSystem::intType, 0)));
-                addZeroIns.push_back(assignIns);
-                (*use)->getParent()->insertBefore(assignIns, *use);
-                assigns.insert((*use)->getParent());
+                if (newOperand != (*use)->getUse()[1]) {
+                    auto assignIns = new BinaryInstruction(
+                        BinaryInstruction::ADD, newOperand, (*use)->getUse()[1],
+                        new Operand(
+                            new ConstantSymbolEntry(newOperand->getType(), 0)));
+                    addZeroIns.push_back(assignIns);
+                    (*use)->getParent()->insertBefore(assignIns, *use);
+                    assigns.insert((*use)->getParent());
+                    (*use)->getUse()[1]->removeUse(*use);
+                }
             }
             auto dst = (*use)->getDef();
             (*use)->getParent()->remove(*use);
@@ -142,8 +145,8 @@ void Mem2reg::rename(BasicBlock* block) {
                     phi->addSrc(block, stacks[o].top());
                 else
                     phi->addSrc(block, new Operand(new ConstantSymbolEntry(
-                                           TypeSystem::intType, 0)));
-            }else
+                                           o->getType(), 0)));
+            } else
                 break;
         }
     }
@@ -163,14 +166,38 @@ Operand* Mem2reg::newName(Operand* old) {
 }
 
 void Mem2reg::cleanAddZeroIns(Function* func) {
+    auto type = (FunctionType*)(func->getSymPtr()->getType());
+    int paramNo = type->getParamsType().size() - 1;
+    int regNum = 4;
+    if (paramNo > 3)
+        regNum--;
     for (auto i : addZeroIns) {
         auto use = i->getUse()[0];
+        // if (use->getEntry()->isConstant())
+        //     continue;
+        if (i->getParent()->begin() == i && i->getNext()->isUncond())
+            continue;
+        if (use->getEntry()->isVariable()) {
+            continue;
+            // if (func->hasCall())
+            //     if (paramNo < regNum) {
+            //         paramNo--;
+            //         continue;
+            //     }
+            // if (paramNo >= regNum) {
+            //     paramNo--;
+            //     continue;
+            // }
+            // paramNo--;
+        }
         auto def = i->getDef();
+        // if (def != use)
         while (def->use_begin() != def->use_end()) {
             auto u = *(def->use_begin());
             u->replaceUse(def, use);
         }
         i->getParent()->remove(i);
+        use->removeUse(i);
         delete i;
     }
 }

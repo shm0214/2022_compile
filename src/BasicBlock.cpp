@@ -28,6 +28,17 @@ void BasicBlock::insertBefore(Instruction* dst, Instruction* src) {
     dst->setParent(this);
 }
 
+// insert the instruction dst after src.
+void BasicBlock::insertAfter(Instruction* dst, Instruction* src) {
+    dst->setNext(src->getNext());
+    src->getNext()->setPrev(dst);
+
+    dst->setPrev(src);
+    src->setNext(dst);
+
+    dst->setParent(this);
+}
+
 // remove the instruction from intruction list.
 void BasicBlock::remove(Instruction* inst) {
     inst->getPrev()->setNext(inst->getNext());
@@ -92,6 +103,8 @@ BasicBlock::BasicBlock(Function* f) {
     parent = f;
     head = new DummyInstruction();
     head->setParent(this);
+    mark = false;
+    lastAlloc = nullptr;
 }
 
 BasicBlock::~BasicBlock() {
@@ -116,7 +129,51 @@ void BasicBlock::cleanSucc() {
     vector<BasicBlock*>().swap(succ);
 }
 
+void BasicBlock::cleanMark() {
+    auto inst = head->getNext();
+    while (inst != head) {
+        inst->unsetMark();
+        inst = inst->getNext();
+    }
+}
 void BasicBlock::insertPhiInstruction(Operand* dst) {
     Instruction* i = new PhiInstruction(dst);
     insertFront(i);
+}
+
+void BasicBlock::deleteBack(int num) {
+    while (num--) {
+        remove(head->getPrev());
+    }
+}
+
+bool BasicBlock::isBefore(Instruction* a, Instruction* b) {
+    if (a->getParent() != this)
+        return true;
+    assert(b->getParent() == this);
+    auto temp = a;
+    while (temp != head) {
+        if (temp == b)
+            return true;
+        temp = temp->getNext();
+    }
+    return false;
+}
+
+void BasicBlock::replaceIns(Instruction* old, Instruction* new_) {
+    old->getPrev()->setNext(new_);
+    new_->setPrev(old->getPrev());
+    old->getNext()->setPrev(new_);
+    new_->setNext(old->getNext());
+}
+
+void BasicBlock::addAlloc(Instruction* alloc) {
+    assert(alloc->isAlloc());
+    if (!lastAlloc) {
+        insertFront(alloc);
+        lastAlloc = alloc;
+    } else {
+        insertAfter(alloc, lastAlloc);
+        lastAlloc = alloc;
+    }
 }

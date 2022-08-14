@@ -1,11 +1,7 @@
 *.ast
 *.o
 .vscode/
-build/*
-parser.h
-parser.cpp
-lexer.h
-lexer.cpp
+build
 *.ll
 *.bin
 *.log
@@ -15,6 +11,11 @@ example
 *.ast
 *.toks
 *.s
-performance/
+# performance/
 test1
+test
 .VSCodeCounter/
+sysyruntimelibrary
+
+perf.*
+Makefile

@@ -2,14 +2,28 @@
 #include <unistd.h>
 #include <iostream>
 #include "Ast.h"
+#include "AutoInline.h"
+#include "CleanAsmAddZero.h"
+#include "ConstAsm.h"
+#include "CopyProp.h"
+#include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
-#include "LoopOptimization.h"
+#include "Global2Local.h"
+#include "GraphColor.h"
+#include "InsReorder.h"
+#include "InstructionScheduling.h"
 #include "LinearScan.h"
 #include "MachineCode.h"
+#include "MachineDeadCodeElimination.h"
+#include "MachineStraighten.h"
 #include "Mem2reg.h"
+#include "PartialRedundancyElimination.h"
+#include "PeepholeOptimization.h"
 #include "SSADestruction.h"
 #include "Starighten.h"
+#include "TreeHeightBalance.h"
 #include "Unit.h"
+#include "ValueNumber.h"
 using namespace std;
 
 Ast ast;
@@ -25,6 +39,7 @@ bool dump_tokens;
 bool dump_ast;
 bool dump_ir;
 bool dump_asm;
+bool optimize;
 
 int main(int argc, char* argv[]) {
     int opt;
@@ -43,13 +58,15 @@ int main(int argc, char* argv[]) {
                 dump_ir = true;
                 break;
             case 'O':
+                optimize = true;
+                break;
             case 'S':
                 dump_asm = true;
                 break;
             default:
                 // fprintf(stderr, "Usage: %s [-o outfile] infile\n", argv[0]);
                 // exit(EXIT_FAILURE);
-                dump_asm = true;
+                dump_asm = false;
 
                 break;
         }
@@ -72,28 +89,71 @@ int main(int argc, char* argv[]) {
         ast.output();
     ast.typeCheck();
     ast.genCode(&unit);
-    // ElimUnreachCode e(&unit);
-    // Starighten s(&unit);
-    Mem2reg m(&unit);
-
-    LoopOptimization LoopOp(&unit);
-   
-    // SSADestruction s1(&unit);
-    m.pass();
-    LoopOp.pass();
-    // e.pass();
-    // s.pass();
-    // s1.pass();
-    
-    
-    
-    
-    if (dump_ir)
+    if (optimize) {
+        ElimUnreachCode euc(&unit);
+        DeadCodeElimination dce(&unit);
+        Starighten s(&unit);
+        Mem2reg m2r(&unit);
+        SSADestruction ssad(&unit);
+        CopyProp cp(&unit);
+        ValueNumber vn(&unit);
+        TreeHeightBalance thb(&unit);
+        InsReorder ir(&unit);
+        AutoInline ai(&unit);
+        Global2Local g2l(&unit);
+        g2l.pass();
+        m2r.pass();
+        dce.pass();
+        ai.pass();
+        dce.pass();
+        cp.copy_prop();
+        vn.pass();
+        thb.pass();
+        euc.pass();
+        s.pass();
+        ir.pass();
+        ssad.pass();
+    }
+    if (dump_ir) {
         unit.output();
-    // unit.genMachineCode(&mUnit);
-    // LinearScan linearScan(&mUnit);
-    // linearScan.allocateRegisters();
-    // if (dump_asm)
-    //     mUnit.output();
+        return 0;
+    }
+    unit.genMachineCode(&mUnit);
+    if (optimize) {
+        MachineDeadCodeElimination mdce(&mUnit);
+        MachineStraighten ms(&mUnit);
+        CleanAsmAddZero caaz(&mUnit);
+        ConstAsm ca(&mUnit);
+        PeepholeOptimization po(&mUnit);
+        PartialRedundancyElimination pre(&mUnit);
+        caaz.pass();
+        ca.pass();
+        // 效果一般 而且会导致编译时间长一些
+        pre.pass();
+        mdce.pass();
+        po.pass();
+        mdce.pass();
+        ms.pass();
+    }
+
+    if (!optimize) {
+        LinearScan linearScan(&mUnit);
+        linearScan.allocateRegisters();
+    } else {
+        GraphColor GraphColor(&mUnit);
+        GraphColor.allocateRegisters();
+    }
+    if (optimize) {
+        MachineDeadCodeElimination mdce(&mUnit);
+        MachineStraighten ms(&mUnit);
+        PeepholeOptimization po(&mUnit);
+        InstructionScheduling is(&mUnit);
+        po.pass();
+        mdce.pass();
+        ms.pass();
+        // is.pass();
+    }
+    if (dump_asm)
+        mUnit.output();
     return 0;
 }

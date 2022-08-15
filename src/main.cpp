@@ -111,6 +111,9 @@ int main(int argc, char* argv[]) {
         cp.copy_prop();
         vn.pass();
         thb.pass();
+        ai.pass();
+        vn.pass();
+        thb.pass();
         euc.pass();
         s.pass();
         ir.pass();

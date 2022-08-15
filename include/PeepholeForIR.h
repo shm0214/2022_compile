@@ -10,6 +10,7 @@ class PeepholeForIR {
     PeepholeForIR(Unit* unit) : unit(unit){};
     void pass();
     void pass(Function* function);
+    void cleanOnlyStore();
 };
 
 #endif

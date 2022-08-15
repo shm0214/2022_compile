@@ -6,6 +6,7 @@ void PeepholeForIR::pass() {
     auto iter = unit->begin();
     while (iter != unit->end())
         pass(*iter++);
+    cleanOnlyStore();
 }
 
 void PeepholeForIR::pass(Function* func) {
@@ -69,4 +70,31 @@ void PeepholeForIR::pass(Function* func) {
                 in->getParent()->remove(in);
         }
     }
+}
+
+void PeepholeForIR::cleanOnlyStore() {
+    set<string> loads;
+    map<string, vector<Instruction*>> stores;
+    for (auto iter = unit->begin(); iter != unit->end(); iter++)
+        for (auto block : (*iter)->getBlockList())
+            for (auto in = block->begin(); in != block->end();
+                 in = in->getNext()) {
+                if (in->isLoad()) {
+                    auto addr = in->getUse()[0];
+                    if (addr->isGlobal())
+                        loads.insert(addr->toStr());
+                }
+                if (in->isStore()) {
+                    auto addr = in->getUse()[0];
+                    if (addr->isGlobal())
+                        stores[addr->toStr()].push_back(in);
+                }
+            }
+    for (auto it : stores)
+        if (!loads.count(it.first))
+            for (auto in : it.second) {
+                auto use = in->getUse()[1];
+                use->removeUse(in);
+                in->getParent()->remove(in);
+            }
 }

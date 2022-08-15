@@ -35,13 +35,15 @@ void PeepholeForIR::pass(Function* func) {
                     flag = strAddr->toStr() == ldrAddr->toStr();
                 if (flag) {
                     auto strSrc = cur->getUse()[1];
-                    auto ldrDef = next->getDef();
-                    while (ldrDef->use_begin() != ldrDef->use_end()) {
-                        auto use = *(ldrDef->use_begin());
-                        use->replaceUse(ldrDef, strSrc);
+                    if (!strSrc->isParam()) {
+                        auto ldrDef = next->getDef();
+                        while (ldrDef->use_begin() != ldrDef->use_end()) {
+                            auto use = *(ldrDef->use_begin());
+                            use->replaceUse(ldrDef, strSrc);
+                        }
+                        ldrAddr->removeUse(next);
+                        rmvList.push_back(next);
                     }
-                    ldrAddr->removeUse(next);
-                    rmvList.push_back(next);
                 }
             }
             cur = next;

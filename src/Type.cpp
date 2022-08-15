@@ -62,7 +62,7 @@ std::string ArrayType::toStr() {
     } else if (temp->isFloat()) {
         buffer << "float";
     } else {
-        assert(false); // invalid type
+        assert(false);  // invalid type
     }
     while (count--)
         buffer << ']';
@@ -93,4 +93,10 @@ std::string PointerType::toStr() {
     std::ostringstream buffer;
     buffer << valueType->toStr() << "*";
     return buffer.str();
+}
+
+bool Type::isPtr2Array() {
+    if (isPtr())
+        return ((PointerType*)this)->getType()->isArray();
+    return false;
 }

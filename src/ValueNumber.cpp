@@ -191,30 +191,35 @@ void ValueNumber::pass(BasicBlock* block,
                                 hash[in->getHash()] = in->getDef();
                                 continue;
                             } else if (block->inStore(use)) {
-                                valueNumber[in->getDef()] = in->getDef();
-                                hash[in->getHash()] = in->getDef();
-                                block->removeStore(use);
-                                continue;
-                            } else {
-                                auto blockStores = block->getStores1();
-                                auto f = false;
-                                for (auto s : blockStores) {
-                                    if (use->getDef() && s->getDef() &&
-                                        use->getDef()->isGep() &&
-                                        s->getDef()->isGep() &&
-                                        use->getDef()->getHash() ==
-                                            s->getDef()->getHash()) {
-                                        if (!alreadyLoad.count(s)) {
-                                            alreadyLoad.insert(s);
-                                            f = true;
-                                            break;
-                                        }
-                                    }
-                                }
-                                if (f) {
+                                if (!use->getType()->isPtr2Array()) {
                                     valueNumber[in->getDef()] = in->getDef();
                                     hash[in->getHash()] = in->getDef();
+                                    block->removeStore(use);
                                     continue;
+                                }
+                            } else {
+                                if (!use->getType()->isPtr2Array()) {
+                                    auto blockStores = block->getStores1();
+                                    auto f = false;
+                                    for (auto s : blockStores) {
+                                        if (use->getDef() && s->getDef() &&
+                                            use->getDef()->isGep() &&
+                                            s->getDef()->isGep() &&
+                                            use->getDef()->getHash() ==
+                                                s->getDef()->getHash()) {
+                                            if (!alreadyLoad.count(s)) {
+                                                alreadyLoad.insert(s);
+                                                f = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (f) {
+                                        valueNumber[in->getDef()] =
+                                            in->getDef();
+                                        hash[in->getHash()] = in->getDef();
+                                        continue;
+                                    }
                                 }
                             }
                         }

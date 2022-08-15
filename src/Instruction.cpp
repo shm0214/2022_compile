@@ -2727,3 +2727,12 @@ void FptosiInstruction::replaceUse(Operand* old, Operand* new_) {
         src = new_;
     }
 }
+
+bool Instruction::isAddZero() {
+    if (isAdd()) {
+        auto src2 = operands[2];
+        if (src2->isConst() && src2->getConstVal() == 0)
+            return true;
+    }
+    return false;
+}

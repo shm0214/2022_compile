@@ -75,6 +75,7 @@ class Instruction {
     }
     bool isAdd() { return isBin() && opcode == 1; }
     bool isSub() { return isBin() && opcode == 0; }
+    bool isAddZero();
     // shallow copy
     virtual Instruction* copy() = 0;
     virtual void setDef(Operand* def) {}

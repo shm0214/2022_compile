@@ -26,6 +26,7 @@ void ValueNumber::pass(BasicBlock* block,
                        set<SymbolEntry*> storeGlobals) {
     vector<Instruction*> temp;
     // cout << block->getNo() << endl;
+    set<Operand*> alreadyLoad;
     for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
         // auto str = in->getHash();
         // if (str.length())
@@ -194,6 +195,27 @@ void ValueNumber::pass(BasicBlock* block,
                                 hash[in->getHash()] = in->getDef();
                                 block->removeStore(use);
                                 continue;
+                            } else {
+                                auto blockStores = block->getStores1();
+                                auto f = false;
+                                for (auto s : blockStores) {
+                                    if (use->getDef() && s->getDef() &&
+                                        use->getDef()->isGep() &&
+                                        s->getDef()->isGep() &&
+                                        use->getDef()->getHash() ==
+                                            s->getDef()->getHash()) {
+                                        if (!alreadyLoad.count(s)) {
+                                            alreadyLoad.insert(s);
+                                            f = true;
+                                            break;
+                                        }
+                                    }
+                                }
+                                if (f) {
+                                    valueNumber[in->getDef()] = in->getDef();
+                                    hash[in->getHash()] = in->getDef();
+                                    continue;
+                                }
                             }
                         }
                     }

@@ -355,25 +355,29 @@ void TreeHeightBalance::convert(map<Operand*, int, cmp> operands,
         addDsts.push_back(imm);
     }
     Operand* res;
-    if (addDsts.size() == 1) {
-        // assert(dsts[0]->isConst());
-        res = addDsts[0];
-    } else {
-        res = new Operand(
-            new TemporarySymbolEntry(type, SymbolTable::getLabel()));
-        auto in = new BinaryInstruction(BinaryInstruction::ADD, res, addDsts[0],
-                                        addDsts[1]);
-        in->setParent(block);
-        newIns.push_back(in);
-        for (auto it = addDsts.begin() + 2; it != addDsts.end(); it++) {
-            auto newRes = new Operand(
+    if (!addDsts.empty()) {
+        if (addDsts.size() == 1) {
+            // assert(dsts[0]->isConst());
+            res = addDsts[0];
+        } else {
+            res = new Operand(
                 new TemporarySymbolEntry(type, SymbolTable::getLabel()));
-            in =
-                new BinaryInstruction(BinaryInstruction::ADD, newRes, res, *it);
+            auto in = new BinaryInstruction(BinaryInstruction::ADD, res,
+                                            addDsts[0], addDsts[1]);
             in->setParent(block);
             newIns.push_back(in);
-            res = newRes;
+            for (auto it = addDsts.begin() + 2; it != addDsts.end(); it++) {
+                auto newRes = new Operand(
+                    new TemporarySymbolEntry(type, SymbolTable::getLabel()));
+                in = new BinaryInstruction(BinaryInstruction::ADD, newRes, res,
+                                           *it);
+                in->setParent(block);
+                newIns.push_back(in);
+                res = newRes;
+            }
         }
+    } else {
+        res = new Operand(new ConstantSymbolEntry(type, 0));
     }
     if (!subDsts.empty()) {
         for (auto it = subDsts.begin(); it != subDsts.end(); it++) {

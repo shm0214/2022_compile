@@ -17,6 +17,7 @@ class Global2Local {
     void pass();
     void pass(Function* function);
     void calGlobals();
+    void unstoreGlobal2Const();
 };
 
 #endif

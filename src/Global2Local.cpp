@@ -8,6 +8,7 @@ void Global2Local::pass() {
     auto iter = unit->begin();
     while (iter != unit->end())
         pass(*iter++);
+    unstoreGlobal2Const();
 }
 
 void Global2Local::pass(Function* func) {
@@ -134,8 +135,8 @@ void Global2Local::pass(Function* func) {
 }
 
 void Global2Local::calGlobals() {
-    for (auto g : unit->getGlobals())
-        globals.insert({g, {}});
+    // for (auto g : unit->getGlobals())
+    //     globals.insert({g, {}});
     map<Function*, int> func2idx;
     int idx = 0;
     for (auto it = unit->begin(); it != unit->end(); it++) {
@@ -181,4 +182,133 @@ void Global2Local::calGlobals() {
         }
     }
     write[unit->getMain()].clear();
+}
+
+void Global2Local::unstoreGlobal2Const() {
+    for (auto it : globals) {
+        auto type = ((PointerType*)(it.first->getType()))->getType();
+        if (type->isArray()) {
+            bool store = false;
+            for (auto it1 : it.second)
+                for (auto in : it1.second)
+                    if (in->isGep()) {
+                        auto def = in->getDef();
+                        for (auto it2 = def->use_begin(); it2 != def->use_end();
+                             it2++) {
+                            if ((*it2)->isGep()) {
+                                auto gepDef = (*it2)->getDef();
+                                for (auto it3 = gepDef->use_begin();
+                                     it3 != gepDef->use_end(); it3++) {
+                                    if ((*it3)->isGep() || (*it3)->isStore()) {
+                                        // 最多考虑二维数组吧
+                                        store = true;
+                                        break;
+                                    }
+                                }
+                                if (store)
+                                    break;
+                            }
+                            if ((*it2)->isStore()) {
+                                store = true;
+                                break;
+                            }
+                        }
+                        if (store)
+                            break;
+                    }
+            if (!store) {
+                auto name = it.first->toStr();
+                auto entry = identifiers->lookup(name);
+                vector<Instruction*> rmvList;
+                for (auto it1 : it.second)
+                    for (auto in : it1.second)
+                        if (in->isGep()) {
+                            auto def = in->getDef();
+                            auto idx = in->getUse()[1];
+                            if (!idx->isConst())
+                                continue;
+                            int i = idx->getConstVal();
+                            auto elementType =
+                                ((ArrayType*)type)->getElementType();
+                            for (auto it2 = def->use_begin();
+                                 it2 != def->use_end(); it2++) {
+                                if ((*it2)->isGep()) {
+                                    i *= ((ArrayType*)elementType)->getLength();
+                                    auto idx = (*it2)->getUse()[1];
+                                    if (!idx->isConst())
+                                        break;
+                                    i += idx->getConstVal();
+                                    elementType = ((ArrayType*)elementType)
+                                                      ->getElementType();
+                                    auto gepDef = (*it2)->getDef();
+                                    for (auto it3 = gepDef->use_begin();
+                                         it3 != gepDef->use_end(); it3++) {
+                                        if ((*it3)->isLoad()) {
+                                            auto loadDst = (*it3)->getDef();
+                                            double* valArr =
+                                                ((IdentifierSymbolEntry*)entry)
+                                                    ->getArrayValue();
+                                            double val = 0;
+                                            if (valArr)
+                                                val = valArr[i];
+                                            auto operand = new Operand(
+                                                new ConstantSymbolEntry(
+                                                    elementType, val));
+                                            while (loadDst->use_begin() !=
+                                                   loadDst->use_end()) {
+                                                auto use =
+                                                    *(loadDst->use_begin());
+                                                use->replaceUse(loadDst,
+                                                                operand);
+                                            }
+                                            rmvList.push_back(*it3);
+                                        }
+                                    }
+                                }
+                                if ((*it2)->isLoad()) {
+                                    auto loadDst = (*it2)->getDef();
+                                    double* valArr =
+                                        ((IdentifierSymbolEntry*)entry)
+                                            ->getArrayValue();
+                                    double val = 0;
+                                    if (valArr)
+                                        val = valArr[i];
+                                    auto operand =
+                                        new Operand(new ConstantSymbolEntry(
+                                            elementType, val));
+                                    while (loadDst->use_begin() !=
+                                           loadDst->use_end()) {
+                                        auto use = *(loadDst->use_begin());
+                                        use->replaceUse(loadDst, operand);
+                                    }
+                                    rmvList.push_back(*it2);
+                                }
+                            }
+                        }
+            }
+        } else {
+            bool store = false;
+            for (auto it1 : it.second)
+                for (auto in : it1.second)
+                    if (in->isStore()) {
+                        store = true;
+                        break;
+                    }
+            if (!store) {
+                auto name = it.first->toStr();
+                auto entry = identifiers->lookup(name);
+                auto operand = new Operand(new ConstantSymbolEntry(
+                    type, ((IdentifierSymbolEntry*)entry)->getValue()));
+                for (auto it1 : it.second)
+                    for (auto in : it1.second) {
+                        auto def = in->getDef();
+                        while (def->use_begin() != def->use_end()) {
+                            auto use = *(def->use_begin());
+                            use->replaceUse(def, operand);
+                        }
+                        in->getParent()->remove(in);
+                    }
+            }
+        }
+    }
 }

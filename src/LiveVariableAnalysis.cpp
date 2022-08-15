@@ -22,8 +22,8 @@ void LiveVariableAnalysis::computeDefUse(MachineFunction* func) {
              inst != block->getInsts().end(); inst++) {
             auto user = (*inst)->getUse();
             std::set<MachineOperand*> temp;
-            for(auto use: user)
-                if(use->isVReg() || use->isReg())
+            for (auto use : user)
+                if (use->isVReg() || use->isReg())
                     temp.insert(use);
             set_difference(temp.begin(), temp.end(), def[block].begin(),
                            def[block].end(),
@@ -31,18 +31,18 @@ void LiveVariableAnalysis::computeDefUse(MachineFunction* func) {
             auto defs = (*inst)->getDef();
             // def应为首次出现即为定值的，就是之前不能有use的
             for (auto& d : defs) {
-                auto uses = all_uses[*d];
-                bool flag = true;
-                for (auto& u : uses) {
-                    if (u->getParent()->getParent() == block) {
-                        if (block->isBefore(u->getParent(), *inst)) {
-                            flag = false;
-                            break;
-                        }
-                    }
-                }
-                if (flag)
-                    def[block].insert(all_uses[*d].begin(), all_uses[*d].end());
+                // auto uses = all_uses[*d];
+                // bool flag = true;
+                // for (auto& u : uses) {
+                //     if (u->getParent()->getParent() == block) {
+                //         if (block->isBefore(u->getParent(), *inst)) {
+                //             flag = false;
+                //             break;
+                //         }
+                //     }
+                // }
+                // if (flag)
+                def[block].insert(all_uses[*d].begin(), all_uses[*d].end());
             }
         }
     }

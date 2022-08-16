@@ -120,7 +120,8 @@ void PeepholeForIR::pass(Function* func) {
                 again = true;
             for (auto in : rmvList)
                 in->getParent()->remove(in);
-            for (auto in : addList) {
+            for (auto it = addList.rbegin(); it != addList.rend(); it++) {
+                auto in = *it;
                 auto block = in->getParent();
                 for (auto i = block->begin(); i != block->end();
                      i = i->getNext()) {

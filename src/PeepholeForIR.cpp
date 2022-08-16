@@ -18,7 +18,47 @@ void PeepholeForIR::pass(Function* func) {
             auto next = cur->getNext();
             vector<Instruction*> rmvList;
             while (next != block->end()) {
-                if (cur->isConstExp()) {
+                if (cur->isAlloc()) {
+                    auto addr = cur->getDef();
+                    if (addr->getType()->isPtr2Array()) {
+                        vector<Instruction*> stores;
+                        vector<Instruction*> loads;
+                        bool flag = true;
+                        for (auto it = addr->use_begin(); it != addr->use_end();
+                             it++) {
+                            auto in = *it;
+                            if (in->isStore())
+                                stores.push_back(in);
+                            else if (in->isLoad())
+                                loads.push_back(in);
+                            else {
+                                flag = false;
+                                break;
+                            }
+                        }
+                        if (flag && !stores.empty()) {
+                            if (stores.size() != 1) {
+                                cout << "stores size != 1\n";
+                                assert(0);
+                            }
+                            auto storeSrc = stores[0]->getUse()[1];
+                            if (!storeSrc->isParam()) {
+                                for (auto in : loads) {
+                                    auto loadDef = in->getDef();
+                                    while (loadDef->use_begin() !=
+                                           loadDef->use_end()) {
+                                        auto use = *(loadDef->use_begin());
+                                        use->replaceUse(loadDef, storeSrc);
+                                    }
+                                }
+                                rmvList.push_back(cur);
+                                rmvList.push_back(stores[0]);
+                                rmvList.insert(rmvList.end(), loads.begin(),
+                                               loads.end());
+                            }
+                        }
+                    }
+                } else if (cur->isConstExp()) {
                     // xor性能应该不会出现 cmp出现的话处理复杂一些
                     if (!(cur->isCmp() || cur->isXor())) {
                         double val = cur->getConstVal();

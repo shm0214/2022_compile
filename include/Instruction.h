@@ -29,6 +29,7 @@ class Instruction {
     bool isCmp() const { return instType == CMP; };
     bool isGep() const { return instType == GEP; };
     bool isXor() const { return instType == XOR; };
+    bool isBitcast() const { return instType == BITCAST; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);

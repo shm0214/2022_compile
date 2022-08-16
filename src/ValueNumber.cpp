@@ -226,6 +226,8 @@ void ValueNumber::pass(BasicBlock* block,
                     }
                     valueNumber[in->getDef()] = hash[in->getHash()];
                     temp.push_back(in);
+                    auto addr = in->getUse()[0];
+                    addr->removeUse(in);
                     auto ope = in->getDef();
                     auto new_ = valueNumber[ope];
                     auto it = ope->use_begin();
@@ -245,7 +247,8 @@ void ValueNumber::pass(BasicBlock* block,
                         auto global = identifiers->lookup(name);
                         storeGlobals.insert(global);
                     } else {
-                        stores.insert(useAddr);
+                        if (!useAddr->getType()->isPtr2Array())
+                            stores.insert(useAddr);
                     }
                 }
         }

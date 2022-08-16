@@ -104,21 +104,21 @@ int main(int argc, char* argv[]) {
         Global2Local g2l(&unit);
         PeepholeForIR ph(&unit);
         g2l.pass();
-        // m2r.pass();
-        // dce.pass();
-        // ai.pass();
-        // dce.pass();
-        // cp.copy_prop();
-        // vn.pass();
-        // thb.pass();
-        // ai.pass();
-        // vn.pass();
-        // thb.pass();
-        // euc.pass();
-        // s.pass();
-        // ir.pass();
-        // ph.pass();
-        // ssad.pass();
+        m2r.pass();
+        dce.pass();
+        ai.pass();
+        dce.pass();
+        cp.copy_prop();
+        vn.pass();
+        thb.pass();
+        ai.pass();
+        vn.pass();
+        thb.pass();
+        euc.pass();
+        s.pass();
+        ir.pass();
+        ph.pass();
+        ssad.pass();
     }
     if (dump_ir) {
         unit.output();

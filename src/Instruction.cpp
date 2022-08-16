@@ -2736,3 +2736,22 @@ bool Instruction::isAddZero() {
     }
     return false;
 }
+
+std::string CallInstruction::getHash() {
+    IdentifierSymbolEntry* funcSE = (IdentifierSymbolEntry*)func;
+    if (funcSE->isSysy() || funcSE->getName() == "llvm.memset.p0.i32") {
+        return "";
+    } else {
+        auto func = funcSE->getFunction();
+        if (func->getEssential() == 1) {
+            return "";
+        } else {
+            std::stringstream s;
+            s << "call ";
+            s << funcSE->toStr();
+            for (auto it = operands.begin() + 1; it != operands.end(); it++)
+                s << " " << *it;
+            return s.str();
+        }
+    }
+}

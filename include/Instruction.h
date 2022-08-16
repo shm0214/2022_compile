@@ -338,6 +338,7 @@ class CallInstruction : public Instruction {
         def->setDef(this);
     }
     // used for auto inline
+    std::string getHash();
     void addPred();
 };
 

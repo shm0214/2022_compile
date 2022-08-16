@@ -29,7 +29,7 @@ bool Operand::isSSAName() {
 }
 
 bool Operand::isInArray() {
-    if(this->getDef()->isGep()) return true;
+    if(this->getDef() && this->getDef()->isGep()) return true;
     return false;
 }
 

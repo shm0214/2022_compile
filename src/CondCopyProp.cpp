@@ -23,8 +23,7 @@ void CondCopyProp::constantPropagation(Function *func)
             if(!inst->isGep()){
                 std::vector<Operand*> uses(inst->getUse());
                 for(auto src : uses){
-                    if(src->isInArray() && src->getEntry()->isConstant()){
-                        // 
+                    if(!src->isConst() && src->isInArray() && src->getEntry()->isConstant()){
                         double* arrayValue = ((GepInstruction*)src->getDef())->getArrayValue();
                         int idx = ((GepInstruction*)src->getDef())->getFlatIdx();
                         if(arrayValue != nullptr && idx != -1){

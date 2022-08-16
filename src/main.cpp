@@ -13,6 +13,7 @@
 #include "InsReorder.h"
 #include "InstructionScheduling.h"
 #include "LinearScan.h"
+#include "LoopOptimization.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
 #include "MachineStraighten.h"
@@ -96,6 +97,7 @@ int main(int argc, char* argv[]) {
         Mem2reg m2r(&unit);
         SSADestruction ssad(&unit);
         CopyProp cp(&unit);
+        LoopOptimization lop(&unit);
         ValueNumber vn(&unit);
         TreeHeightBalance thb(&unit);
         InsReorder ir(&unit);
@@ -103,16 +105,24 @@ int main(int argc, char* argv[]) {
         Global2Local g2l(&unit);
         g2l.pass();
         m2r.pass();
+        
         dce.pass();
-        ai.pass();
-        dce.pass();
-        cp.copy_prop();
-        vn.pass();
-        thb.pass();
-        euc.pass();
-        s.pass();
-        ir.pass();
-        ssad.pass();
+        lop.pass();//先展开 再内联
+        // // ai.pass();
+        
+        // // std::cout<<"loopop"<<std::endl;
+        // dce.pass();
+        // // // std::cout<<"dce"<<std::endl;
+        // cp.copy_prop();
+        // // std::cout<<"cp"<<std::endl;
+        // vn.pass();
+        // // std::cout<<"vn"<<std::endl;
+        // thb.pass();
+        // // std::cout<<"thb"<<std::endl;
+        // euc.pass();
+        // s.pass();
+        // ir.pass();
+        // ssad.pass();
     }
     if (dump_ir) {
         unit.output();

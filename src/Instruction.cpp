@@ -1809,6 +1809,28 @@ void PhiInstruction::addSrc(BasicBlock* block, Operand* src) {
     src->addUse(this);
 }
 
+void PhiInstruction::removeSrc(BasicBlock* block){
+    for (auto it = srcs.begin(); it != srcs.end(); it++) {
+        if(it->first==block){
+            //使用erase时容器失效
+            srcs.erase(block);
+            removeUse(it->second);
+            it->second->removeUse(this);
+            return;
+        }
+    }
+    return;
+}
+
+bool PhiInstruction::findSrc(BasicBlock* block){
+    for (auto it = srcs.begin(); it != srcs.end(); it++) {
+        if(it->first==block){
+            return true;
+        }
+    }
+    return false;
+}
+
 void PhiInstruction::replaceUse(Operand* old, Operand* new_) {
     for (auto& it : srcs) {
         if (it.second == old) {
@@ -2018,6 +2040,20 @@ bool AllocaInstruction::genNode() {
 
 bool LoadInstruction::genNode() {
     node = new SSAGraphNode(this, SSAGraphNode::LOAD);
+    if(operands[1]->getDef()==nullptr){
+        SSAGraphNode* node1;
+        if(operands[1]->getEntry()->isVariable()){
+            IdentifierSymbolEntry* idSe=(IdentifierSymbolEntry*)operands[1]->getEntry();
+            if(idSe->isGlobal()){
+                node1 = new SSAGraphNode(operands[1],SSAGraphNode::GLOBAL);
+            }
+            else if(idSe->isParam()){
+                node1 = new SSAGraphNode(operands[1],SSAGraphNode::FUNCPARA);
+            }
+        }
+        node->addChild(node1);
+        return true;
+    }
     auto node1 = operands[1]->getDef()->getNode();
     node->addChild(node1);
     return true;
@@ -2034,8 +2070,21 @@ bool BinaryInstruction::genNode() {
             node = new SSAGraphNode(val);
             return true;
         } else {
-            auto def = operands[1]->getDef();
-            node = def->getNode();
+            if(operands[1]->getDef()==nullptr){
+                if(operands[1]->getEntry()->isVariable()){
+                    IdentifierSymbolEntry* idSe=(IdentifierSymbolEntry*)operands[1]->getEntry();
+                    if(idSe->isGlobal()){
+                        node = new SSAGraphNode(operands[1],SSAGraphNode::GLOBAL);
+                    }
+                    else if(idSe->isParam()){
+                        node = new SSAGraphNode(operands[1],SSAGraphNode::FUNCPARA);
+                    }
+                }
+            }
+            else{
+                auto def = operands[1]->getDef();
+                node = def->getNode();
+            }
             return true;
         }
     }
@@ -2144,8 +2193,24 @@ bool BitcastInstruction::genNode() {
 
 bool GepInstruction::genNode() {
     node = new SSAGraphNode(this, SSAGraphNode::GEP);
-    auto node1 = operands[1]->getDef()->getNode();
-    node->addChild(node1);
+    if(operands[1]->getDef()==nullptr){
+        SSAGraphNode* node1;
+        if(operands[1]->getEntry()->isVariable()){
+            IdentifierSymbolEntry* idSe=(IdentifierSymbolEntry*)operands[1]->getEntry();
+            if(idSe->isGlobal()){
+                node1 = new SSAGraphNode(operands[1],SSAGraphNode::GLOBAL);
+            }
+            else if(idSe->isParam()){
+                node1 = new SSAGraphNode(operands[1],SSAGraphNode::FUNCPARA);
+            }
+        }
+        node->addChild(node1);
+    }
+    else{
+        auto node1 = operands[1]->getDef()->getNode();
+        node->addChild(node1);
+    }
+    
     SSAGraphNode* node2;
     auto se2 = operands[2]->getEntry();
     if (se2->isConstant()) {
@@ -2167,7 +2232,6 @@ bool PhiInstruction::genNode() {
         if (se->isConstant()) {
             int val = ((ConstantSymbolEntry*)se)->getValue();
             node1 = new SSAGraphNode(val);
-            node->addChild(node1);
         } else {
             node1 = operand->getDef()->getNode();
             if (!node1)

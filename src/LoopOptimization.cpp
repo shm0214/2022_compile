@@ -207,7 +207,7 @@ std::vector<Instruction*> LoopOptimization::calculateLoopConstant(std::vector<Ba
                         //先做int吧
                         for(auto operand:useOperands){
                             Type * operand_type=operand->getEntry()->getType();
-                            if(operand_type->isInt()/*||operand_type->isFloat()*/){
+                            if(operand_type->isInt()||operand_type->isFloat()){
                                 IntType* operand_inttype=(IntType*)operand_type;
                                 if(operand_inttype->isConst()){
                                     LoopConst[func][Loop].insert(operand);
@@ -1172,9 +1172,9 @@ void LoopOptimization::pass(){
         BackEdges=getBackEdges(*func);
         LoopList=calculateLoopList(*func,BackEdges);
         // (*func)->genSSAGraph();
-        printLoop(LoopList);
+        // printLoop(LoopList);
         //strength reduction
-        // (*func)->genSSAGraph();
+        (*func)->genSSAGraph();
         // OSR((*func)->getSSAGraph(),*func,LoopList);
     }
 }

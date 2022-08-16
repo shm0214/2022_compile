@@ -16,13 +16,14 @@ class SSAGraphNode {
     int num;
     int low;
 
+    Operand* globalOperand;
     SSAGraphNode* header;
     std::vector<SSAGraphNode*> children;
     SSAGraphNode* origin;
 
    public:
     enum {
-        CONST,
+CONST,
         ALLOCA,
         SUB,
         ADD,
@@ -37,6 +38,8 @@ class SSAGraphNode {
         LE,
         G,
         GE,
+        GLOBAL,
+        FUNCPARA,
         PHI,
         CALL,
         LOAD,
@@ -44,11 +47,13 @@ class SSAGraphNode {
         ZEXT,
         XOR,
         BITCAST,
-        RET,
+        SHL,
+        ASHR,
     };
     SSAGraphNode(){};
     SSAGraphNode(Instruction* ins, int type = -1) : ins(ins), type(type) {header=new SSAGraphNode();origin=header;}
     SSAGraphNode(int val) : val(val), type(CONST) {header=new SSAGraphNode();origin=header;}
+    SSAGraphNode(Operand* op,int type){this->type=type; this->globalOperand=op;};
     void addChild(SSAGraphNode* node) { children.push_back(node); }
     void removeChild(SSAGraphNode* node);
     std::vector<SSAGraphNode*>& getChildren() { return children; }

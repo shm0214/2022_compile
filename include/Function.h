@@ -117,7 +117,6 @@ class Function {
     void computeReverseDomFrontier();
     int getEssential();
     BasicBlock* getMarkBranch(BasicBlock* block);
-    void genSSAGraph();
     void computeStores();
     std::set<Operand*>& getStores() { return stores; }
     bool hasCall() { return call; }
@@ -130,24 +129,6 @@ class Function {
     bool hasRecur() { return recur; }
     void setInstNum(int num) { instNum = num; }
     int getInstNum() { return instNum; }
-    void computeDFSTree();
-    void search(TreeNode* node, bool* visited);
-    int getIndex(BasicBlock* block) {
-        return std::find(block_list.begin(), block_list.end(), block) -
-               block_list.begin();
-    }
-    int eval(int i, int* ancestors);
-    void computeSdom();
-    int LCA(int i, int j);
-    void computeIdom();
-    void domTest();
-    void computeDomFrontier();
-    TreeNode* getDomNode(BasicBlock* b) { return preOrder2dom[b->order]; }
-    void dfs(AsmBuilder* builder,
-             BasicBlock* block,
-             std::set<BasicBlock*>& v,
-             std::map<BasicBlock*, MachineBlock*>& map);
-    void dfs1(BasicBlock* block, std::set<BasicBlock*>& v);
     void genSSAGraph();
     std::vector<SSAGraphNode*>& getSSAGraph(){return nodes;};
     void addNodeToSSAGraph(SSAGraphNode* node){nodes.push_back(node);};

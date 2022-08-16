@@ -6,7 +6,6 @@
 #include <vector>
 #include "AsmBuilder.h"
 #include "Operand.h"
-#include "SSAGraph.h"
 #include "Type.h"
 
 class SSAGraphNode;
@@ -55,6 +54,7 @@ class Instruction {
     std::vector<Operand*> getOperands() { return operands; }
     virtual bool genNode() { return true; }
     SSAGraphNode* getNode() { return node; }
+    void setNode(SSAGraphNode* node){this->node=node;}
     virtual std::string getHash() { return ""; }
     bool isIntMul();
     bool isIntDiv();
@@ -197,19 +197,11 @@ class BinaryInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
-    bool genNode();
     std::string getHash();
     bool isConstExp();
-    Instruction* copy();
     void setDef(Operand* def) {
         operands[0] = def;
         def->setDef(this);
-    }
-    Operand* getDef() { return operands[0]; }
-    void replaceUse(Operand* old, Operand* new_);
-    void replaceDef(Operand* new_);
-    std::vector<Operand*> getUse() {
-        return std::vector<Operand*>({operands[1], operands[2]});
     }
     bool isAdd(){return this->opcode==ADD;};
     bool isSub(){return this->opcode==SUB;};
@@ -473,6 +465,8 @@ class PhiInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    void removeSrc(BasicBlock* block);
+    bool findSrc(BasicBlock* block);
     // only remove use in operands
     // used for starighten::checkphi
     void removeUse(Operand* use);

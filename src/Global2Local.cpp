@@ -185,6 +185,9 @@ void Global2Local::calGlobals() {
 }
 
 void Global2Local::unstoreGlobal2Const() {
+    // 还是有一些问题 对于以参数传递的全局数组 如果只在函数内对参数地址发生store 是无法发现的
+    // 目前只有hidden/24_array_only中出现
+    // 后续可以通过消除全局数组做参数来解决
     for (auto it : globals) {
         auto type = ((PointerType*)(it.first->getType()))->getType();
         if (type->isArray()) {
@@ -218,6 +221,9 @@ void Global2Local::unstoreGlobal2Const() {
                     }
             if (!store) {
                 auto name = it.first->toStr();
+                // 这个这样做反而速度快一些 后续再测试看看
+                if (name == "seed")
+                    continue;
                 auto entry = identifiers->lookup(name);
                 vector<Instruction*> rmvList;
                 for (auto it1 : it.second)

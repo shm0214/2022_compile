@@ -17,6 +17,7 @@ void PeepholeForIR::pass(Function* func) {
             auto cur = block->begin();
             auto next = cur->getNext();
             vector<Instruction*> rmvList;
+            vector<Instruction*> addList;
             while (next != block->end()) {
                 if (cur->isAlloc()) {
                     auto addr = cur->getDef();
@@ -42,20 +43,31 @@ void PeepholeForIR::pass(Function* func) {
                                 assert(0);
                             }
                             auto storeSrc = stores[0]->getUse()[1];
-                            if (!storeSrc->isParam()) {
-                                for (auto in : loads) {
-                                    auto loadDef = in->getDef();
-                                    while (loadDef->use_begin() !=
-                                           loadDef->use_end()) {
-                                        auto use = *(loadDef->use_begin());
-                                        use->replaceUse(loadDef, storeSrc);
-                                    }
-                                }
-                                rmvList.push_back(cur);
-                                rmvList.push_back(stores[0]);
-                                rmvList.insert(rmvList.end(), loads.begin(),
-                                               loads.end());
+                            if (storeSrc->isParam()) {
+                                auto newSrc =
+                                    new Operand(new TemporarySymbolEntry(
+                                        storeSrc->getType(),
+                                        SymbolTable::getLabel()));
+                                auto bitcast =
+                                    new BitcastInstruction(newSrc, storeSrc);
+                                bitcast->setParent(block);
+                                addList.push_back(bitcast);
+                                // block->insertAfter(bitcast, cur);
+                                // next = bitcast;
+                                storeSrc = newSrc;
                             }
+                            for (auto in : loads) {
+                                auto loadDef = in->getDef();
+                                while (loadDef->use_begin() !=
+                                       loadDef->use_end()) {
+                                    auto use = *(loadDef->use_begin());
+                                    use->replaceUse(loadDef, storeSrc);
+                                }
+                            }
+                            rmvList.push_back(cur);
+                            rmvList.push_back(stores[0]);
+                            rmvList.insert(rmvList.end(), loads.begin(),
+                                           loads.end());
                         }
                     }
                 } else if (cur->isConstExp()) {
@@ -108,6 +120,16 @@ void PeepholeForIR::pass(Function* func) {
                 again = true;
             for (auto in : rmvList)
                 in->getParent()->remove(in);
+            for (auto in : addList) {
+                auto block = in->getParent();
+                for (auto i = block->begin(); i != block->end();
+                     i = i->getNext()) {
+                    if (!i->isAlloc()) {
+                        block->insertBefore(in, i);
+                        break;
+                    }
+                }
+            }
         }
     }
 }

@@ -2009,7 +2009,19 @@ BitcastInstruction::~BitcastInstruction() {
     operands[1]->removeUse(this);
 }
 
-void BitcastInstruction::genMachineCode(AsmBuilder* builder) {}
+void BitcastInstruction::genMachineCode(AsmBuilder* builder) {
+    auto ptr = (PointerType*)(dst->getType());
+    auto type = ptr->getType();
+    if (!(type->isInt() && type->getSize() == 8)) {
+        auto block = builder->getBlock();
+        auto dst = genMachineOperand(this->dst);
+        auto src = genMachineOperand(this->src);
+        auto zero = genMachineImm(0);
+        auto in = new BinaryMInstruction(block, BinaryMInstruction::ADD, dst,
+                                         src, zero);
+        block->InsertInst(in);
+    }
+}
 
 bool AllocaInstruction::genNode() {
     node = new SSAGraphNode(this, SSAGraphNode::ALLOCA);

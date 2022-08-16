@@ -17,6 +17,9 @@ void Global2Local::pass(Function* func) {
         return;
     map<SymbolEntry*, Operand*> g2l;
     for (auto g : globals) {
+        if (((IdentifierSymbolEntry*)g)->getConst()) {
+            continue;
+        }
         auto type = ((PointerType*)(g->getType()))->getType();
         if (type->isArray())
             continue;
@@ -147,8 +150,8 @@ void Global2Local::calGlobals() {
                 for (auto u : in->getUse())
                     if (u->isGlobal()) {
                         auto entry = u->getEntry();
-                        if (((IdentifierSymbolEntry*)entry)->getConst())
-                            continue;
+                        // if (((IdentifierSymbolEntry*)entry)->getConst())
+                        //     continue;
                         globals[entry][*it].push_back(in);
                         usedGlobals[*it].insert(entry);
                         if (in->isLoad())

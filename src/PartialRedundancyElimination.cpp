@@ -346,6 +346,8 @@ void PartialRedundancyElimination::modifyCode(MachineFunction* func) {
         if (latest[block].count(expr) && !usedOut[block].count(expr))
             continue;
         auto dst = new MachineOperand(*(in->getDef()[0]));
+        if (!expr2ope.count(expr))
+            continue;
         auto src = new MachineOperand(*(expr2ope[expr]));
         auto newIn = new MovMInstruction(block, MovMInstruction::MOV, dst, src);
         block->insertBefore(newIn, in);

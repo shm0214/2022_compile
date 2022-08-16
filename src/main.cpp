@@ -19,6 +19,7 @@
 #include "MachineStraighten.h"
 #include "Mem2reg.h"
 #include "PartialRedundancyElimination.h"
+#include "PeepholeForIR.h"
 #include "PeepholeOptimization.h"
 #include "SSADestruction.h"
 #include "Starighten.h"
@@ -103,6 +104,7 @@ int main(int argc, char* argv[]) {
         InsReorder ir(&unit);
         AutoInline ai(&unit);
         Global2Local g2l(&unit);
+        PeepholeForIR ph(&unit);
         g2l.pass();
         m2r.pass();
         

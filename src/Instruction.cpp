@@ -1444,30 +1444,31 @@ void GepInstruction::replaceUse(Operand* old, Operand* new_) {
 
 double* GepInstruction::getArrayValue(){
     GepInstruction* tmp = this;
-    while(tmp->paramFirst){
+    while(!tmp->first){
         tmp = (GepInstruction*)tmp->getUse()[0]->getDef();
     }
     return ((IdentifierSymbolEntry*)tmp->getUse()[0]->getEntry())->getArrayValue();
 }
 
 int GepInstruction::getFlatIdx(){
-    if(!last) 
-        return -1;
+    if(first) 
+        return this->getUse()[1]->getConstVal();
     GepInstruction* tmp = this;
-    int res = 1;
+    int res;
     SymbolEntry* se = tmp->getUse()[1]->getEntry();
     if(se->isConstant())
-        res += ((ConstantSymbolEntry*)se)->getValue();
+        res = ((ConstantSymbolEntry*)se)->getValue();
     else if(se->isVariable())
-        res += ((IdentifierSymbolEntry*)se)->getValue();    
-    
+        res = ((IdentifierSymbolEntry*)se)->getValue();    
+    int fsize = ((ArrayType*)((PointerType*)(tmp->getUse()[0]->getEntry()->getType()))->getType())->getElementType()->getSize();
     while(!tmp->first){
-        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();
-        SymbolEntry* se = tmp->getUse()[1]->getEntry();
+        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();                
+        int len = ((ArrayType*)((PointerType*)tmp->getUse()[0]->getEntry()->getType())->getType())->getElementType()->getSize();
+        len /= fsize;
         if(se->isConstant())
-            res += ((ConstantSymbolEntry*)se)->getValue() * ((ArrayType*)tmp->getUse()[0]->getEntry()->getType())->getLength();
+            res += ((ConstantSymbolEntry*)se)->getValue() * len;
         else if(se->isVariable())
-            res += ((IdentifierSymbolEntry*)se)->getValue()  * ((ArrayType*)tmp->getUse()[0]->getEntry()->getType())->getLength();
+            res += ((IdentifierSymbolEntry*)se)->getValue()  * len;
     }
     return res;
 }

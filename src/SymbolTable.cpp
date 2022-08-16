@@ -30,7 +30,7 @@ SymbolEntry::SymbolEntry(Type* type, int kind) {
 
 ConstantSymbolEntry::ConstantSymbolEntry(Type* type, double value)
     : SymbolEntry(type, SymbolEntry::CONSTANT) {
-    assert(type->isInt() || type->isFloat());
+    // assert(type->isInt() || type->isFloat());
     this->value = value;
 }
 

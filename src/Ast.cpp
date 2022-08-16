@@ -1042,15 +1042,16 @@ ExprNode* ExprNode::const_fold() {
     ExprNode* res = this;
     res = this->alge_simple(5);  // 代数化简
     bool flag = true;
-    int fconst = res->fold_const(flag);
+    double fconst = res->fold_const(flag);
     if (flag) {
+        if(type->isInt()) fconst = int(fconst);
         SymbolEntry* se = new ConstantSymbolEntry(type, fconst);
         res = new Constant(se);
     }
     return res;
 }
 
-int ExprNode::fold_const(bool& flag) {
+double ExprNode::fold_const(bool& flag) {
     if (this->isBinaryExpr()) {
         ExprNode *lhs = ((BinaryExpr*)this)->getLeft(),
                  *rhs = ((BinaryExpr*)this)->getRight();

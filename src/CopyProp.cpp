@@ -122,7 +122,7 @@ void CopyProp::local_copy_prop(BasicBlock* bb, UOO ACP) {
                 if (flag) {
                     iter->replaceUse(opd, new_opd);
                     if(!opd->usersNum()){
-                        opd->getDef()->output();
+                        // opd->getDef()->output();
                         bb->remove(opd->getDef());
                     }
                 }

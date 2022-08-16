@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <sstream>
 #include <typeinfo>
+#include "Instruction.h"
 
 std::string Operand::toStr() const {
     std::string res = se->toStr(); // llvm ir global variable with `@0`
@@ -28,7 +29,7 @@ bool Operand::isSSAName() {
 }
 
 bool Operand::isInArray() {
-    // if(this->getDef()->isGep()) return true;
+    if(this->getDef()->isGep()) return true;
     return false;
 }
 
@@ -45,7 +46,16 @@ std::pair<int, int> Operand::getInitLatticeValue(){
         if(((IdentifierSymbolEntry*)se)->isConstant()){
             return {0, ((IdentifierSymbolEntry*)se)->getValue()};
         }
-        // else if(this->isInArray()){
+        if(this->isGlobal()){
+            PointerType* type = (PointerType*)(this->getType());
+            if(type->getType()->isInt() && ((IntType*)type->getType())->isConst()){
+                return {0, ((IdentifierSymbolEntry*)se)->getValue()};
+            }
+            else if(type->getType()->isFloat() && ((FloatType*)type->getType())->isConst()){
+                return {0, ((IdentifierSymbolEntry*)se)->getValue()};
+            }          
+        }
+        // if(this->isInArray()){
         //     double* arrayValue = ((GepInstruction*)this->getDef())->getArrayValue();
         //     int idx = ((GepInstruction*)this->getDef())->getFlatIdx();
         //     if(arrayValue != nullptr && idx != -1 && idx <= sizeof(arrayValue)/sizeof(arrayValue[0])){

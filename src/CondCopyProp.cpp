@@ -19,7 +19,34 @@ void CondCopyProp::constantPropagation(Function *func)
             Operand *def = inst->getDef();
             if (def == nullptr){
                 continue;
-            }    
+            }
+            if(!inst->isGep()){
+                std::vector<Operand*> uses(inst->getUse());
+                for(auto src : uses){
+                    if(src->isInArray()){
+                        // && src->getEntry()->isConstant()
+                        double* arrayValue = ((GepInstruction*)src->getDef())->getArrayValue();
+                        int idx = ((GepInstruction*)src->getDef())->getFlatIdx();
+                        if(arrayValue != nullptr && idx != -1){
+                            value[src] =  {0, arrayValue[idx]};
+                            inst->replaceUse(src, new Operand(new ConstantSymbolEntry(def->getType(), arrayValue[idx])));
+                            if(!src->usersNum()){
+                                GepInstruction* i = (GepInstruction*)src->getDef();
+                                while(true)
+                                {
+                                    i->getParent()->remove(i);
+                                    if(!i->getFirst()){
+                                        i = (GepInstruction*)i->getUse()[0]->getDef();
+                                    }
+                                    else
+                                        break;
+                                } 
+                            }
+                        }
+                    }
+                }
+            }
+            
             if (def->isSSAName())
             {
                 value[def] = inst->getLatticeValue(value);

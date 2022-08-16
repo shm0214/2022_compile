@@ -413,6 +413,7 @@ class GepInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     void setFirst() { first = true; };
+    bool getFirst() { return first; };
     void setLast() { last = true; };
     Operand* getInit() const { return init; };
     void setInit(Operand* init, int off = 0) {

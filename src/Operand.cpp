@@ -28,8 +28,10 @@ bool Operand::isSSAName() {
     return false; // constant
 }
 
-bool Operand::isInArray() {
-    if(this->getDef() && this->getDef()->isGep()) return true;
+bool Operand::isConArray() {
+    if(this->getDef() && this->getDef()->isGep()) {
+        return ((ArrayType*)(((PointerType*)(this->getDef()->getUse()[0]->getEntry()->getType()))->getType()))->isConst();
+    }
     return false;
 }
 
@@ -55,13 +57,6 @@ std::pair<int, int> Operand::getInitLatticeValue(){
                 return {0, ((IdentifierSymbolEntry*)se)->getValue()};
             }          
         }
-        // if(this->isInArray()){
-        //     double* arrayValue = ((GepInstruction*)this->getDef())->getArrayValue();
-        //     int idx = ((GepInstruction*)this->getDef())->getFlatIdx();
-        //     if(arrayValue != nullptr && idx != -1 && idx <= sizeof(arrayValue)/sizeof(arrayValue[0])){
-        //         return {0, arrayValue[idx]};
-        //     }
-        // }
     }
     return {-1, 0};
 }

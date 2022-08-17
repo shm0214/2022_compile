@@ -269,6 +269,7 @@ class CondBrInstruction : public Instruction {
    private:
     BasicBlock* originTrue;
     BasicBlock* originFalse;
+    Operand* cond;
 
    public:
     CondBrInstruction(BasicBlock*,
@@ -281,6 +282,7 @@ class CondBrInstruction : public Instruction {
     BasicBlock* getTrueBranch();
     void setFalseBranch(BasicBlock*);
     BasicBlock* getFalseBranch();
+    Operand* getCond() { return cond; };
     void genMachineCode(AsmBuilder*);
     void replaceUse(Operand* old, Operand* new_);
     std::vector<Operand*> getUse() {
@@ -415,6 +417,7 @@ class GepInstruction : public Instruction {
     void setFirst() { first = true; };
     bool getFirst() { return first; };
     void setLast() { last = true; };
+    bool getLast() { return last; };
     Operand* getInit() const { return init; };
     void setInit(Operand* init, int off = 0) {
         this->init = init;

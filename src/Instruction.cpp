@@ -391,9 +391,7 @@ CondBrInstruction::CondBrInstruction(BasicBlock* true_branch,
                                      BasicBlock* false_branch,
                                      Operand* cond,
                                      BasicBlock* insert_bb)
-    : Instruction(COND, insert_bb) {
-    this->true_branch = true_branch;
-    this->false_branch = false_branch;
+    : Instruction(COND, insert_bb), cond(cond), true_branch(true_branch), false_branch(false_branch) {
     cond->addUse(this);
     operands.push_back(cond);
     originTrue = originFalse = nullptr;
@@ -1462,9 +1460,10 @@ int GepInstruction::getFlatIdx(){
         res = ((IdentifierSymbolEntry*)se)->getValue();    
     int fsize = ((ArrayType*)((PointerType*)(tmp->getUse()[0]->getEntry()->getType()))->getType())->getElementType()->getSize();
     while(!tmp->first){
-        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();                
+        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();  
+        se = tmp->getUse()[1]->getEntry();              
         int len = ((ArrayType*)((PointerType*)tmp->getUse()[0]->getEntry()->getType())->getType())->getElementType()->getSize();
-        len /= fsize;
+        len /= fsize;      
         if(se->isConstant())
             res += ((ConstantSymbolEntry*)se)->getValue() * len;
         else if(se->isVariable())

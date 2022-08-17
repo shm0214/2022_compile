@@ -23,7 +23,7 @@ void CondCopyProp::constantPropagation(Function *func)
             if(!inst->isGep()){
                 std::vector<Operand*> uses(inst->getUse());
                 for(auto src : uses){
-                    if(!src->isConst() && src->isInArray() && src->getEntry()->isConstant()){
+                    if(!src->isConst() && src->isConArray()){                        
                         double* arrayValue = ((GepInstruction*)src->getDef())->getArrayValue();
                         int idx = ((GepInstruction*)src->getDef())->getFlatIdx();
                         if(arrayValue != nullptr && idx != -1){
@@ -34,9 +34,8 @@ void CondCopyProp::constantPropagation(Function *func)
                                 while(true)
                                 {
                                     i->getParent()->remove(i);
-                                    if(!i->getFirst()){
+                                    if(!i->getFirst())
                                         i = (GepInstruction*)i->getUse()[0]->getDef();
-                                    }
                                     else
                                         break;
                                 } 
@@ -44,8 +43,7 @@ void CondCopyProp::constantPropagation(Function *func)
                         }
                     }
                 }
-            }
-            
+            }            
             if (def->isSSAName())
             {
                 value[def] = inst->getLatticeValue(value);
@@ -85,14 +83,32 @@ void CondCopyProp::constantPropagation(Function *func)
         Operand *cst;
         cst = new Operand(new ConstantSymbolEntry(op.first->getType(), op.second.second));
         Instruction *def = op.first->getDef();
-        // if(!def->isCmp()){
-        std::vector<Instruction *> use = op.first->getUse();
-        delete_list.push_back(def);
-        for (auto &use_inst : use){
-            // cout<<"replace:"<<use_inst->getParent()->getNo()<<endl;
-            use_inst->replaceUse(op.first, cst);
-        }     
-        // }       
+        if(!def->isCmp()){
+            std::vector<Instruction *> use = op.first->getUse();
+            delete_list.push_back(def);
+            for (auto &use_inst : use){
+                use_inst->replaceUse(op.first, cst);
+                // if(use_inst->isCond()){
+                //     BasicBlock* bb = use_inst->getParent();
+                //     BasicBlock* true_branch = ((CondBrInstruction*)use_inst)->getTrueBranch();
+                //     BasicBlock* false_branch = ((CondBrInstruction*)use_inst)->getFalseBranch();
+                //     if(op.second.second){
+                //         Instruction* new_ = new UncondBrInstruction(true_branch, nullptr);
+                //         bb->replaceIns(use_inst, new_);
+                //         bb->removeSucc(false_branch);
+                //         false_branch->removePred(bb);
+                //         bb->getParent()->remove(false_branch);
+                //     }
+                //     else{
+                //         Instruction* new_ = new UncondBrInstruction(false_branch, nullptr);
+                //         bb->replaceIns(use_inst, new_);
+                //         bb->removeSucc(true_branch);
+                //         true_branch->removePred(bb);
+                //         bb->getParent()->remove(true_branch);
+                //     }
+                // }
+            }     
+        }       
     }
     for (auto &i : delete_list){
         // cout<<"del"<<endl;

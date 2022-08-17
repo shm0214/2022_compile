@@ -50,10 +50,10 @@ CONST,
         SHL,
         ASHR,
     };
-    SSAGraphNode(){};
-    SSAGraphNode(Instruction* ins, int type = -1) : ins(ins), type(type) {header=new SSAGraphNode();origin=header;}
-    SSAGraphNode(int val) : val(val), type(CONST) {header=new SSAGraphNode();origin=header;}
-    SSAGraphNode(Operand* op,int type){this->type=type; this->globalOperand=op;};
+    SSAGraphNode(){visited=false;};
+    SSAGraphNode(Instruction* ins, int type = -1) : ins(ins), type(type), visited(false) {header=new SSAGraphNode();origin=header;}
+    SSAGraphNode(int val) : val(val), type(CONST),visited(false) {header=new SSAGraphNode();origin=header;}
+    SSAGraphNode(Operand* op,int type):visited(false){this->type=type; this->globalOperand=op;};
     void addChild(SSAGraphNode* node) { children.push_back(node); }
     void removeChild(SSAGraphNode* node);
     std::vector<SSAGraphNode*>& getChildren() { return children; }

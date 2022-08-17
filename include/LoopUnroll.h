@@ -3,8 +3,10 @@
 
 #include"BasicBlock.h"
 #include"Instruction.h"
+#include"SSAGraph.h"
 #include<vector>
 #include<algorithm>
+#include<iostream>
 
 
 class loop{

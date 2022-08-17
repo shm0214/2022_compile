@@ -111,6 +111,24 @@ void Instruction::remove() {
     }
 }
 
+bool Instruction::reGenNode(){
+    bool ret = true;
+    auto& children = node->getChildren();
+    for (int i = 0; i < (int)children.size(); i++) {
+        auto& child = children[i];
+        if (!child) {
+            auto operand = operands[i + 1];
+            auto se = operand->getEntry();
+            assert(se->isTemporary());
+            child = operand->getDef()->getNode();
+            if (!child)
+                ret = false;
+            children[i] = child;
+        }
+    }
+    return ret;
+}
+
 BinaryInstruction::BinaryInstruction(unsigned opcode,
                                      Operand* dst,
                                      Operand* src1,
@@ -2085,7 +2103,11 @@ bool BinaryInstruction::genNode() {
                 auto def = operands[1]->getDef();
                 node = def->getNode();
             }
-            return true;
+            if(node!=nullptr)
+                return true;
+            else{
+                return false;
+            }
         }
     }
     auto se1 = operands[1]->getEntry();
@@ -2134,9 +2156,12 @@ bool BinaryInstruction::genNode() {
         node2 = new SSAGraphNode(val2);
     } else
         node2 = operands[2]->getDef()->getNode();
+    bool flag=true;
+    if(node1==nullptr||node2==nullptr)
+        flag=false;
     node->addChild(node1);
     node->addChild(node2);
-    return true;
+    return flag;
 }
 
 bool CmpInstruction::genNode() {
@@ -2154,9 +2179,12 @@ bool CmpInstruction::genNode() {
         node2 = new SSAGraphNode(val2);
     } else
         node2 = operands[2]->getDef()->getNode();
+    bool flag=true;
+    if(node1==nullptr||node2==nullptr)
+        flag=false;
     node->addChild(node1);
     node->addChild(node2);
-    return true;
+    return flag;
 }
 
 bool CallInstruction::genNode() {
@@ -2167,8 +2195,11 @@ bool CallInstruction::genNode() {
 bool ZextInstruction::genNode() {
     node = new SSAGraphNode(this, SSAGraphNode::ZEXT);
     auto node1 = operands[1]->getDef()->getNode();
+    bool flag=true;
+    if(node1==nullptr)
+        flag=false;
     node->addChild(node1);
-    return true;
+    return flag;
 }
 
 bool XorInstruction::genNode() {
@@ -2180,21 +2211,27 @@ bool XorInstruction::genNode() {
         node1 = new SSAGraphNode(val1);
     } else
         node1 = operands[1]->getDef()->getNode();
+    bool flag=true;
+    if(node1==nullptr)
+        flag=false;
     node->addChild(node1);
-    return true;
+    return flag;
 }
 
 bool BitcastInstruction::genNode() {
     node = new SSAGraphNode(this, SSAGraphNode::BITCAST);
     auto node1 = operands[1]->getDef()->getNode();
+    bool flag=true;
+    if(node1==nullptr)
+        flag=false;
     node->addChild(node1);
-    return true;
+    return flag;
 }
 
 bool GepInstruction::genNode() {
     node = new SSAGraphNode(this, SSAGraphNode::GEP);
+    SSAGraphNode* node1;
     if(operands[1]->getDef()==nullptr){
-        SSAGraphNode* node1;
         if(operands[1]->getEntry()->isVariable()){
             IdentifierSymbolEntry* idSe=(IdentifierSymbolEntry*)operands[1]->getEntry();
             if(idSe->isGlobal()){
@@ -2207,7 +2244,7 @@ bool GepInstruction::genNode() {
         node->addChild(node1);
     }
     else{
-        auto node1 = operands[1]->getDef()->getNode();
+        node1 = operands[1]->getDef()->getNode();
         node->addChild(node1);
     }
     
@@ -2219,7 +2256,10 @@ bool GepInstruction::genNode() {
     } else
         node2 = operands[2]->getDef()->getNode();
     node->addChild(node2);
-    return true;
+    bool flag=true;
+    if(node1==nullptr||node2==nullptr)
+        flag=false;
+    return flag;
 }
 
 bool PhiInstruction::genNode() {
@@ -2242,23 +2282,23 @@ bool PhiInstruction::genNode() {
     return ret;
 }
 
-bool PhiInstruction::reGenNode() {
-    bool ret = true;
-    auto& children = node->getChildren();
-    for (int i = 0; i < (int)children.size(); i++) {
-        auto& child = children[i];
-        if (!child) {
-            auto operand = operands[i + 1];
-            auto se = operand->getEntry();
-            assert(se->isTemporary());
-            child = operand->getDef()->getNode();
-            if (!child)
-                ret = false;
-            children[i] = child;
-        }
-    }
-    return ret;
-}
+// bool PhiInstruction::reGenNode() {
+//     bool ret = true;
+//     auto& children = node->getChildren();
+//     for (int i = 0; i < (int)children.size(); i++) {
+//         auto& child = children[i];
+//         if (!child) {
+//             auto operand = operands[i + 1];
+//             auto se = operand->getEntry();
+//             assert(se->isTemporary());
+//             child = operand->getDef()->getNode();
+//             if (!child)
+//                 ret = false;
+//             children[i] = child;
+//         }
+//     }
+//     return ret;
+// }
 
 std::string LoadInstruction::getHash() {
     // if (operands[1]->getEntry()->isVariable())
@@ -2454,9 +2494,12 @@ bool ShlInstruction::genNode() {
         node2 = new SSAGraphNode(val2);
     } else
         node2 = operands[2]->getDef()->getNode();
+    bool flag=true;
+    if(node1==nullptr||node2==nullptr)
+        flag=false;
     node->addChild(node1);
     node->addChild(node2);
-    return true;
+    return flag;
 }
 
 std::string ShlInstruction::getHash() {
@@ -2548,9 +2591,12 @@ bool AshrInstruction::genNode() {
         node2 = new SSAGraphNode(val2);
     } else
         node2 = operands[2]->getDef()->getNode();
+    bool flag=true;
+    if(node1==nullptr||node2==nullptr)
+        flag=false;
     node->addChild(node1);
     node->addChild(node2);
-    return true;
+    return flag;
 }
 
 std::string AshrInstruction::getHash() {

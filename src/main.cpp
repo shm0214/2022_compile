@@ -110,7 +110,7 @@ int main(int argc, char* argv[]) {
         
         dce.pass();
         lop.pass();//先展开 再内联
-        // // ai.pass();
+        // ai.pass();
         
         // // std::cout<<"loopop"<<std::endl;
         // dce.pass();

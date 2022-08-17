@@ -56,6 +56,7 @@ class Instruction {
     virtual bool genNode() { return true; }
     SSAGraphNode* getNode() { return node; }
     void setNode(SSAGraphNode* node){this->node=node;}
+    bool reGenNode();
     virtual std::string getHash() { return ""; }
     bool isIntMul();
     bool isIntDiv();
@@ -231,6 +232,7 @@ class CmpInstruction : public Instruction {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
     bool genNode();
+    bool reGenNode();
     std::string getHash();
     bool isConstExp();
     Instruction* copy();

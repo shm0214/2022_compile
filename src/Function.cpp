@@ -507,7 +507,6 @@ void Function::genSSAGraph() {
         for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
             bool flag = in->genNode();
             if (!flag) {
-                assert(in->isPhi());
                 temp.push_back(in);
                 nodes.push_back(in->getNode());
             } else {
@@ -518,19 +517,19 @@ void Function::genSSAGraph() {
             }
         }
     }
-    std::vector<Instruction*> falsePhi;
+    std::vector<Instruction*> falseIns;
     
     while(temp.size()!=0){
         for (auto in : temp) {
-            PhiInstruction* phi = (PhiInstruction*)in;
-            bool flag = phi->reGenNode();
+            bool flag;
+            flag = in->reGenNode();
             if(!flag){
-                falsePhi.push_back(phi);
+                falseIns.push_back(in);
             }
         }
         temp.clear();
-        temp.assign(falsePhi.begin(),falsePhi.end());
-        falsePhi.clear();
+        temp.assign(falseIns.begin(),falseIns.end());
+        falseIns.clear();
     }
     // for (auto in : temp) {
     //     PhiInstruction* phi = (PhiInstruction*)in;

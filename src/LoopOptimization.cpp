@@ -692,9 +692,9 @@ void LoopOptimization::DFS(SSAGraphNode* n,std::vector<SSAGraphNode*>& NodeStack
             NodeStack.pop_back();
             SCC.push_back(x);
         }
-        std::cout<<"scc"<<std::endl;
-        printSCC(SCC);
-        std::cout<<"scc end"<<std::endl;
+        // std::cout<<"scc"<<std::endl;
+        // printSCC(SCC);
+        // std::cout<<"scc end"<<std::endl;
         Process(SCC,NodeHashTable,func,NotCandidateList);
     }
     // std::cout<<"DFS ok"<<std::endl;
@@ -704,10 +704,13 @@ bool LoopOptimization::isCandidate(SSAGraphNode* n,SSAGraphNode* &iv,SSAGraphNod
     if(count(NotCandidateList.begin(),NotCandidateList.end(),n)){
         return false;
     }
-    if(n->getType()==SSAGraphNode::CONST){
+    if(n->getType()==SSAGraphNode::CONST||n->getType()==SSAGraphNode::GLOBAL||n->getType()==SSAGraphNode::CALL){
         return false;
     }
     std::vector<SSAGraphNode*> children=n->getChildren();
+    if(children.size()==1){
+        return false;
+    }
     SSAGraphNode* first=children[0];
     SSAGraphNode* second=children[1];
     if(n->getType()==SSAGraphNode::SUB){
@@ -1172,10 +1175,10 @@ void LoopOptimization::pass(){
         BackEdges=getBackEdges(*func);
         LoopList=calculateLoopList(*func,BackEdges);
         // (*func)->genSSAGraph();
-        // printLoop(LoopList);
+        printLoop(LoopList);
         //strength reduction
         (*func)->genSSAGraph();
-        // OSR((*func)->getSSAGraph(),*func,LoopList);
+        OSR((*func)->getSSAGraph(),*func,LoopList);
     }
 }
 

@@ -3,6 +3,7 @@
 
 #include <vector>
 #include "SymbolTable.h"
+#include "Type.h"
 
 class Instruction;
 class Function;
@@ -23,6 +24,7 @@ class Operand {
     void removeUse(Instruction* inst);
     void removeDef(Instruction* inst);
     int usersNum() const { return uses.size(); };
+    bool isSSAName();
     use_iterator use_begin() { return uses.begin(); };
     use_iterator use_end() { return uses.end(); };
     Type* getType() { return se->getType(); };
@@ -30,6 +32,8 @@ class Operand {
     SymbolEntry* getEntry() { return se; };
     void setEntry(SymbolEntry* se) { this->se = se; };
     Instruction* getDef() { return def; };
+    std::vector<Instruction*> getUse() { return uses; };
+    std::pair<int, int> getInitLatticeValue();
     bool isZero() const {
         if (se->isConstant()) {
             ConstantSymbolEntry* cse = (ConstantSymbolEntry*)se;
@@ -42,6 +46,7 @@ class Operand {
     double getConstVal() const {
         return ((ConstantSymbolEntry*)se)->getValue();
     }
+    bool isConArray();
     int getLabel() const { return se->getLabel(); }
     bool isParam() const {
         if (se->isVariable())

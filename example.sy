@@ -1,0 +1,6 @@
+const int a[3][3] = {1,2,3,4,5,6,7,8,9};
+int main(){
+    int b = a[2][1];
+    int c = b+a[1][2];
+    return c;
+}

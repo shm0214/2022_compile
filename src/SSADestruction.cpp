@@ -17,7 +17,7 @@ void SSADestruction::pass(Function* function) {
         for (auto pred : preds) {
             if (pred->getNumOfSucc() == 1) {
                 for (auto i = (*it)->begin(); i != (*it)->end();
-                     i = i->getNext()) {
+                    i = i->getNext()) {
                     if (!i->isPhi())
                         break;
                     auto def = i->getDef();

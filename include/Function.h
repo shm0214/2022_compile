@@ -50,7 +50,7 @@ class Function {
    private:
     std::vector<BasicBlock*> block_list;
     SymbolEntry* sym_ptr;
-    BasicBlock* entry;
+    BasicBlock *entry, *exit;
     Unit* parent;
     TreeNode* DFSTreeRoot;
     TreeNode* domTreeRoot;
@@ -76,7 +76,7 @@ class Function {
     int instNum;
 
    public:
-    Function() {}
+    Function() {};
     Function(Unit*, SymbolEntry*);
     ~Function();
     void insertBlock(BasicBlock* bb) { block_list.push_back(bb); };

@@ -16,7 +16,6 @@ class Instruction {
    public:
     Instruction(unsigned instType, BasicBlock* insert_bb = nullptr);
     virtual ~Instruction();
-    virtual std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&){return {-1,0};};
     BasicBlock* getParent();
     bool isUncond() const { return instType == UNCOND; };
     bool isCond() const { return instType == COND; };
@@ -153,8 +152,7 @@ class LoadInstruction : public Instruction {
     ~LoadInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
-    Operand* getDef() { return operands[0]; }    
-    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
+    Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
     std::vector<Operand*> getUse() {
@@ -167,8 +165,6 @@ class LoadInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src_addr;
 };
 
 class StoreInstruction : public Instruction {
@@ -198,7 +194,6 @@ class BinaryInstruction : public Instruction {
     ~BinaryInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
-    int getOp() const{return opcode;};
     enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
@@ -206,7 +201,6 @@ class BinaryInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
-    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     bool genNode();
     std::string getHash();
     bool isConstExp();
@@ -215,8 +209,6 @@ class BinaryInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src1, *src2;
 };
 
 class CmpInstruction : public Instruction {
@@ -236,9 +228,7 @@ class CmpInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
-    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     bool genNode();
-    int getOp() const{return opcode;};
     std::string getHash();
     bool isConstExp();
     Instruction* copy();
@@ -246,8 +236,6 @@ class CmpInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src1, *src2;
 };
 
 class UncondBrInstruction : public Instruction {
@@ -273,7 +261,6 @@ class CondBrInstruction : public Instruction {
    private:
     BasicBlock* originTrue;
     BasicBlock* originFalse;
-    Operand* cond;
 
    public:
     CondBrInstruction(BasicBlock*,
@@ -286,7 +273,6 @@ class CondBrInstruction : public Instruction {
     BasicBlock* getTrueBranch();
     void setFalseBranch(BasicBlock*);
     BasicBlock* getFalseBranch();
-    Operand* getCond() { return cond; };
     void genMachineCode(AsmBuilder*);
     void replaceUse(Operand* old, Operand* new_);
     std::vector<Operand*> getUse() {
@@ -420,16 +406,12 @@ class GepInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     void setFirst() { first = true; };
-    bool getFirst() { return first; };
     void setLast() { last = true; };
-    bool getLast() { return last; };
     Operand* getInit() const { return init; };
     void setInit(Operand* init, int off = 0) {
         this->init = init;
         this->off = off;
     };
-    double* getArrayValue();
-    int getFlatIdx();
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
@@ -473,7 +455,6 @@ class PhiInstruction : public Instruction {
                 ret.push_back(ope);
         return ret;
     }
-    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     bool genNode();
     bool reGenNode();
     std::string getHash();
@@ -581,7 +562,6 @@ class ShlInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
-    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     Operand* getDef() { return operands[0]; }
     bool genNode();
     std::string getHash();
@@ -593,8 +573,6 @@ class ShlInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src, *num;
 };
 
 class AshrInstruction : public Instruction {
@@ -609,7 +587,6 @@ class AshrInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
-    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     Operand* getDef() { return operands[0]; }
     bool genNode();
     std::string getHash();
@@ -621,8 +598,6 @@ class AshrInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src, *num;
 };
 
 #endif

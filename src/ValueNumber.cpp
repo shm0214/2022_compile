@@ -5,6 +5,7 @@ using namespace std;
 // ref: engineering a compiler 8.4.1 & 10.5.2
 
 void ValueNumber::pass() {
+    calFuncStoreGlobals();
     auto iter = unit->begin();
     while (iter != unit->end())
         pass(*iter++);
@@ -71,6 +72,12 @@ void ValueNumber::pass(BasicBlock* block,
                     for (auto ope : store)
                         if (ope->getEntry()->isVariable())
                             stores.insert(ope);
+                    auto globalStore = func->getStoredGlobals();
+                    for (auto ope : globalStore) {
+                        string name = ope->toStr().substr(1);
+                        auto global = identifiers->lookup(name);
+                        storeGlobals.insert(global);
+                    }
                 }
             }
             // if (in->isRet()) {
@@ -226,8 +233,10 @@ void ValueNumber::pass(BasicBlock* block,
                     }
                     valueNumber[in->getDef()] = hash[in->getHash()];
                     temp.push_back(in);
-                    auto addr = in->getUse()[0];
-                    addr->removeUse(in);
+                    // auto addr = in->getUse()[0];
+                    // addr->removeUse(in);
+                    for (auto u : in->getUse())
+                        u->removeUse(in);
                     auto ope = in->getDef();
                     auto new_ = valueNumber[ope];
                     auto it = ope->use_begin();
@@ -275,5 +284,19 @@ void ValueNumber::pass(BasicBlock* block,
     for (auto node : node->children) {
         auto b = node->block;
         pass(b, hash, valueNumber, stores, storeGlobals);
+    }
+}
+
+void ValueNumber::calFuncStoreGlobals() {
+    for (auto it = unit->begin(); it != unit->end(); it++) {
+        auto func = *it;
+        for (auto block : func->getBlockList())
+            for (auto in = block->begin(); in != block->end();
+                 in = in->getNext())
+                if (in->isStore()) {
+                    auto addr = in->getUse()[0];
+                    if (addr->isGlobal())
+                        func->addStoredGlobal(addr);
+                }
     }
 }

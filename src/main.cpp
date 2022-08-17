@@ -106,9 +106,10 @@ int main(int argc, char* argv[]) {
         g2l.pass();
         m2r.pass();
         dce.pass();
+        vn.pass();
         ai.pass();
         dce.pass();
-        cp.copy_prop();
+        cp.pass();
         vn.pass();
         thb.pass();
         ai.pass();

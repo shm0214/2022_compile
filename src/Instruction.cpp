@@ -1884,6 +1884,12 @@ void PhiInstruction::changeSrcBlock(
                                 }
                             } else {
                                 auto temp = it.first;
+                                // if (i->getOriginTrue() == this->parent) {
+                                //     i->setTrueBranch(b1);
+                                // } else if (i->getOriginFalse() == this->parent) {
+                                //     i->setFalseBranch(b1);
+                                // } else
+                                int ii = 0;
                                 while (true) {
                                     if (i->getOriginTrue() == temp) {
                                         i->setTrueBranch(b1);
@@ -1894,6 +1900,20 @@ void PhiInstruction::changeSrcBlock(
                                     }
                                     if (changes.count(temp))
                                         temp = changes[temp][0];
+                                    ii++;
+                                    if (ii == 10) {
+                                        ii = -1;
+                                        break;
+                                    }
+                                }
+                                // 没有办法的办法  phi设计太差了
+                                if (ii == -1) {
+                                    if (i->getOriginTrue() == this->parent) {
+                                        i->setTrueBranch(b1);
+                                    } else if (i->getOriginFalse() ==
+                                               this->parent) {
+                                        i->setFalseBranch(b1);
+                                    }
                                 }
                             }
                             b1->addPred(b);

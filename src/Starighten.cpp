@@ -8,6 +8,7 @@ void Starighten::pass() {
         bool again = true;
         while (again) {
             again = false;
+            checkPhiPreds(*iter);
             setOriginBranch(*iter);
             // (*iter)->output();
             changes.clear();
@@ -20,6 +21,7 @@ void Starighten::pass() {
             //     cout << it.first->getNo() << "->" << it.second[0]->getNo()
             //          << endl;
             checkPhi(*iter);
+            checkPhiPreds(*iter);
             // checkAllocAndPhi(*iter);
         }
         iter++;
@@ -139,17 +141,8 @@ void Starighten::fuseBlock(Function* func, BasicBlock* i, BasicBlock* j) {
     func->remove(j);
 }
 
-void Starighten::checkPhi(Function* func) {
+void Starighten::checkPhiPreds(Function* func) {
     auto& blocklist = func->getBlockList();
-    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
-        (*it)->cleanPhiBlocks();
-        for (auto i = (*it)->begin(); i != (*it)->end(); i = i->getNext())
-            if (i->isPhi())
-                ((PhiInstruction*)i)->changeSrcBlock(changes);
-            else
-                break;
-    }
-    // map<Instruction*, Instruction*> replaceIns;
     vector<Instruction*> removeIns;
     for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
         auto preds = (*it)->getPred();
@@ -187,10 +180,20 @@ void Starighten::checkPhi(Function* func) {
                 }
             }
     }
-    // for (auto it : replaceIns)
-    //     it.first->getParent()->replaceIns(it.first, it.second);
     for (auto it : removeIns)
         it->getParent()->remove(it);
+}
+
+void Starighten::checkPhi(Function* func) {
+    auto& blocklist = func->getBlockList();
+    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
+        (*it)->cleanPhiBlocks();
+        for (auto i = (*it)->begin(); i != (*it)->end(); i = i->getNext())
+            if (i->isPhi())
+                ((PhiInstruction*)i)->changeSrcBlock(changes);
+            else
+                break;
+    }
 }
 
 bool Starighten::pass4(Function* func) {

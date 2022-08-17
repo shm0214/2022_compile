@@ -104,6 +104,7 @@ int main(int argc, char* argv[]) {
         Global2Local g2l(&unit);
         PeepholeForIR ph(&unit);
         g2l.pass();
+        s.pass();
         m2r.pass();
         dce.pass();
         vn.pass();

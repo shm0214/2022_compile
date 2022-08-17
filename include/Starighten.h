@@ -16,6 +16,7 @@ class Starighten {
     bool pass4(Function* function);
     void fuseBlock(Function* function, BasicBlock* i, BasicBlock* j);
     void checkPhi(Function* function);
+    void checkPhiPreds(Function* function);
     void checkAllocAndPhi(Function* function);
     void setOriginBranch(Function* function);
 };

@@ -109,22 +109,22 @@ int main(int argc, char* argv[]) {
         m2r.pass();
         
         dce.pass();
-        lop.pass();//先展开 再内联
-        // ai.pass();
+        // lop.pass();//先展开 再内联
+        ai.pass();
         
-        // // std::cout<<"loopop"<<std::endl;
-        // dce.pass();
-        // // // std::cout<<"dce"<<std::endl;
-        // cp.copy_prop();
-        // // std::cout<<"cp"<<std::endl;
-        // vn.pass();
-        // // std::cout<<"vn"<<std::endl;
-        // thb.pass();
-        // // std::cout<<"thb"<<std::endl;
-        // euc.pass();
-        // s.pass();
-        // ir.pass();
-        // ssad.pass();
+        // std::cout<<"loopop"<<std::endl;
+        dce.pass();
+        // // std::cout<<"dce"<<std::endl;
+        cp.copy_prop();
+        // std::cout<<"cp"<<std::endl;
+        vn.pass();
+        // std::cout<<"vn"<<std::endl;
+        thb.pass();
+        // std::cout<<"thb"<<std::endl;
+        euc.pass();
+        s.pass();
+        ir.pass();
+        ssad.pass();
     }
     if (dump_ir) {
         unit.output();

@@ -542,6 +542,13 @@ void Function::computeStores() {
                 stores.insert(in->getUse()[0]);
             }
     }
+    for (auto block : block_list) {
+        for (auto it = block->pred_begin(); it != block->pred_end(); it++)
+            for (auto ope : (*it)->getStores1()) {
+                block->addStore1(ope);
+                stores.insert(ope);
+            }
+    }
 }
 
 void Function::addPred(Instruction* in) {

@@ -163,6 +163,7 @@ void Starighten::checkPhi(Function* func) {
                         preds.end()) {
                         rmvList.push_back(it.first);
                         phi->removeUse(it.second);
+                        it.second->removeUse(phi);
                     }
                 for (auto block : rmvList)
                     srcs.erase(block);

@@ -29,6 +29,8 @@ class Instruction {
     bool isLoad() const { return instType == LOAD; };
     bool isCmp() const { return instType == CMP; };
     bool isGep() const { return instType == GEP; };
+    bool isXor() const { return instType == XOR; };
+    bool isBitcast() const { return instType == BITCAST; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
@@ -74,6 +76,8 @@ class Instruction {
         return false;
     }
     bool isAdd() { return isBin() && opcode == 1; }
+    bool isSub() { return isBin() && opcode == 0; }
+    bool isAddZero();
     // shallow copy
     virtual Instruction* copy() = 0;
     virtual void setDef(Operand* def) {}
@@ -348,6 +352,7 @@ class CallInstruction : public Instruction {
         def->setDef(this);
     }
     // used for auto inline
+    std::string getHash();
     void addPred();
 };
 

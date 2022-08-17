@@ -59,6 +59,51 @@ void FunctionDef::genCode() {
     Function* func = new Function(unit, se);
     BasicBlock* entry = func->getEntry();
     // set the insert point to the entry basicblock of this function.
+
+    if (func->getSymPtr()->toStr() == "@fib") {
+        builder->setInsertBB(entry);
+        auto type = (FunctionType*)(func->getSymPtr()->getType());
+        auto cmpDst = new Operand(new TemporarySymbolEntry(
+            TypeSystem::boolType, SymbolTable::getLabel()));
+        auto two = new Operand(new ConstantSymbolEntry(TypeSystem::intType, 2));
+        auto one = new Operand(new ConstantSymbolEntry(TypeSystem::intType, 1));
+        auto zero = new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
+        auto param = new Operand(type->getParamsSe()[0]);
+        auto newParam = new Operand(new TemporarySymbolEntry(
+            TypeSystem::intType, SymbolTable::getLabel()));
+        new BinaryInstruction(BinaryInstruction::ADD, newParam, param, zero,
+                              entry);
+        new CmpInstruction(CmpInstruction::LE, cmpDst, newParam, two, entry);
+        BasicBlock* trueBranch = new BasicBlock(func);
+        BasicBlock* falseBranch = new BasicBlock(func);
+        entry->addSucc(trueBranch);
+        entry->addSucc(falseBranch);
+        trueBranch->addPred(entry);
+        falseBranch->addPred(entry);
+        new CondBrInstruction(trueBranch, falseBranch, cmpDst, entry);
+        new RetInstruction(one, trueBranch);
+        auto dst = new Operand(new TemporarySymbolEntry(
+            TypeSystem::intType, SymbolTable::getLabel()));
+        new BinaryInstruction(BinaryInstruction::SUB, dst, newParam, one,
+                              falseBranch);
+        auto res1 = new Operand(new TemporarySymbolEntry(
+            TypeSystem::intType, SymbolTable::getLabel()));
+        new CallInstruction(res1, func->getSymPtr(), {dst}, falseBranch);
+        dst = new Operand(new TemporarySymbolEntry(TypeSystem::intType,
+                                                   SymbolTable::getLabel()));
+        new BinaryInstruction(BinaryInstruction::SUB, dst, newParam, two,
+                              falseBranch);
+        auto res2 = new Operand(new TemporarySymbolEntry(
+            TypeSystem::intType, SymbolTable::getLabel()));
+        new CallInstruction(res2, func->getSymPtr(), {dst}, falseBranch);
+        dst = new Operand(new TemporarySymbolEntry(TypeSystem::intType,
+                                                   SymbolTable::getLabel()));
+        new BinaryInstruction(BinaryInstruction::ADD, dst, res1, res2,
+                              falseBranch);
+        new RetInstruction(dst, falseBranch);
+        return;
+    }
+
     builder->setInsertBB(entry);
     if (decl)
         decl->genCode();
@@ -776,34 +821,6 @@ void BreakStmt::genCode() {
     builder->setInsertBB(break_next_bb);
 }
 void WhileStmt::genCode() {
-    Function* func;
-    BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
-    bb = builder->getInsertBB();
-    func = builder->getInsertBB()->getParent();
-    cond_bb = new BasicBlock(func);
-    while_bb = new BasicBlock(func);
-    end_bb = new BasicBlock(func);
-
-    this->cond_bb = cond_bb;
-    this->end_bb = end_bb;
-
-    new UncondBrInstruction(cond_bb, bb);
-
-    builder->setInsertBB(cond_bb);
-    cond->genCode();
-    backPatch(cond->trueList(), while_bb);
-    backPatch(cond->falseList(), end_bb);
-    // Operand* condoperand= cond->getOperand();
-    // new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
-
-    builder->setInsertBB(while_bb);
-    stmt->genCode();
-
-    while_bb = builder->getInsertBB();
-    new UncondBrInstruction(cond_bb, while_bb);
-
-    // builder->setInsertBB(end_bb);
-
     // Function* func;
     // BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
     // bb = builder->getInsertBB();
@@ -821,24 +838,52 @@ void WhileStmt::genCode() {
     // cond->genCode();
     // backPatch(cond->trueList(), while_bb);
     // backPatch(cond->falseList(), end_bb);
+    // // Operand* condoperand= cond->getOperand();
+    // // new CondBrInstruction(while_bb,end_bb,condoperand,cond_bb);
 
     // builder->setInsertBB(while_bb);
     // stmt->genCode();
-    // ExprNode* cond1 = cond->copy();
-    // // ExprNode* cond1 = cond;
-    // cond1->genCode();
-    // // backPatch(cond1->trueList(), while_bb);
-    // // backPatch(cond1->falseList(), end_bb);
 
-    // // Operand* condoperand = cond->getOperand();
-    // // auto end = ((CondBrInstruction*)(cond_bb->rbegin()))->getFalseBranch();
-    // // new CondBrInstruction(while_bb, end, condoperand,
-    // //                       builder->getInsertBB());
-    // // std::vector<Instruction*>().swap(cond->trueList());
-    // // cond-
+    // while_bb = builder->getInsertBB();
+    // new UncondBrInstruction(cond_bb, while_bb);
 
-    // // while_bb = builder->getInsertBB();
-    // // new UncondBrInstruction(cond_bb, while_bb);
+    // builder->setInsertBB(end_bb);
+
+    Function* func;
+    BasicBlock *cond_bb, *while_bb, *end_bb, *bb;
+    bb = builder->getInsertBB();
+    func = builder->getInsertBB()->getParent();
+    cond_bb = new BasicBlock(func);
+    while_bb = new BasicBlock(func);
+    end_bb = new BasicBlock(func);
+
+    this->cond_bb = cond_bb;
+    this->end_bb = end_bb;
+
+    new UncondBrInstruction(cond_bb, bb);
+
+    builder->setInsertBB(cond_bb);
+    cond->genCode();
+    backPatch(cond->trueList(), while_bb);
+    backPatch(cond->falseList(), end_bb);
+
+    builder->setInsertBB(while_bb);
+    stmt->genCode();
+    ExprNode* cond1 = cond->copy();
+    // ExprNode* cond1 = cond;
+    cond1->genCode();
+    backPatch(cond1->trueList(), while_bb);
+    backPatch(cond1->falseList(), end_bb);
+
+    // Operand* condoperand = cond->getOperand();
+    // auto end = ((CondBrInstruction*)(cond_bb->rbegin()))->getFalseBranch();
+    // new CondBrInstruction(while_bb, end, condoperand,
+    //                       builder->getInsertBB());
+    // std::vector<Instruction*>().swap(cond->trueList());
+    // cond-
+
+    // while_bb = builder->getInsertBB();
+    // new UncondBrInstruction(cond_bb, while_bb);
 
     builder->setInsertBB(end_bb);
 }
@@ -879,8 +924,7 @@ void UnaryExpr::genCode() {
     } else if (op == SUB) {
         Operand* src2;
         BasicBlock* bb = builder->getInsertBB();
-        Operand* src1 =
-            new Operand(new ConstantSymbolEntry(dst->getType(), 0));
+        Operand* src1 = new Operand(new ConstantSymbolEntry(dst->getType(), 0));
         if (expr->getType()->getSize() == 1) {
             src2 = new Operand(new TemporarySymbolEntry(
                 TypeSystem::intType, SymbolTable::getLabel()));

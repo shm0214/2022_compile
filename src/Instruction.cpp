@@ -2157,7 +2157,19 @@ BitcastInstruction::~BitcastInstruction() {
     operands[1]->removeUse(this);
 }
 
-void BitcastInstruction::genMachineCode(AsmBuilder* builder) {}
+void BitcastInstruction::genMachineCode(AsmBuilder* builder) {
+    auto ptr = (PointerType*)(dst->getType());
+    auto type = ptr->getType();
+    if (!(type->isInt() && type->getSize() == 8)) {
+        auto block = builder->getBlock();
+        auto dst = genMachineOperand(this->dst);
+        auto src = genMachineOperand(this->src);
+        auto zero = genMachineImm(0);
+        auto in = new BinaryMInstruction(block, BinaryMInstruction::ADD, dst,
+                                         src, zero);
+        block->InsertInst(in);
+    }
+}
 
 bool AllocaInstruction::genNode() {
     node = new SSAGraphNode(this, SSAGraphNode::ALLOCA);
@@ -2931,5 +2943,33 @@ void FptosiInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[1] = new_;
         new_->addUse(this);
         src = new_;
+    }
+}
+
+bool Instruction::isAddZero() {
+    if (isAdd()) {
+        auto src2 = operands[2];
+        if (src2->isConst() && src2->getConstVal() == 0)
+            return true;
+    }
+    return false;
+}
+
+std::string CallInstruction::getHash() {
+    IdentifierSymbolEntry* funcSE = (IdentifierSymbolEntry*)func;
+    if (funcSE->isSysy() || funcSE->getName() == "llvm.memset.p0.i32") {
+        return "";
+    } else {
+        auto func = funcSE->getFunction();
+        if (func->getEssential() == 1) {
+            return "";
+        } else {
+            std::stringstream s;
+            s << "call ";
+            s << funcSE->toStr();
+            for (auto it = operands.begin() + 1; it != operands.end(); it++)
+                s << " " << *it;
+            return s.str();
+        }
     }
 }

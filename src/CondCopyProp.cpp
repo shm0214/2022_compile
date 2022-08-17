@@ -1,5 +1,4 @@
 #include "CondCopyProp.h"
-using namespace std;
 
 void CondCopyProp::pass()
 {
@@ -111,7 +110,6 @@ void CondCopyProp::constantPropagation(Function *func)
         }       
     }
     for (auto &i : delete_list){
-        // cout<<"del"<<endl;
         i->getParent()->remove(i);
     }        
 }

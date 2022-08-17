@@ -133,7 +133,7 @@ void Mem2reg::rename(BasicBlock* block) {
         }
         if (!i->isPhi())
             for (auto u : i->getUse())
-                if (stacks.find(u) != stacks.end())
+                if (stacks.find(u) != stacks.end() && !stacks[u].empty())
                     i->replaceUse(u, stacks[u].top());
     }
     for (auto it = block->succ_begin(); it != block->succ_end(); it++) {

@@ -310,8 +310,14 @@ void PartialRedundancyElimination::modifyCode(MachineFunction* func) {
                          inserter(exprs, exprs.end()));
         for (auto expr : exprs) {
             if (!expr2ope.count(expr)) {
+                bool fpu = false;
+                for (auto o : get<2>(expr))
+                    if (o.isFloat()) {
+                        fpu = true;
+                        break;
+                    }
                 auto ope = new MachineOperand(MachineOperand::VREG,
-                                              SymbolTable::getLabel());
+                                              SymbolTable::getLabel(), fpu);
                 expr2ope[expr] = ope;
             }
             auto dst = new MachineOperand(*expr2ope[expr]);
@@ -346,8 +352,14 @@ void PartialRedundancyElimination::modifyCode(MachineFunction* func) {
         if (latest[block].count(expr) && !usedOut[block].count(expr))
             continue;
         auto dst = new MachineOperand(*(in->getDef()[0]));
+        if (!expr2ope.count(expr))
+            continue;
         auto src = new MachineOperand(*(expr2ope[expr]));
-        auto newIn = new MovMInstruction(block, MovMInstruction::MOV, dst, src);
+        MachineInstruction* newIn;
+        if (src->isFloat() || dst->isFloat())
+            newIn = new MovMInstruction(block, MovMInstruction::VMOV, dst, src);
+        else
+            newIn = new MovMInstruction(block, MovMInstruction::MOV, dst, src);
         block->insertBefore(newIn, in);
         block->remove(in);
     }

@@ -26,6 +26,7 @@ void ValueNumber::pass(BasicBlock* block,
                        set<SymbolEntry*> storeGlobals) {
     vector<Instruction*> temp;
     // cout << block->getNo() << endl;
+    set<Operand*> alreadyLoad;
     for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
         // auto str = in->getHash();
         // if (str.length())
@@ -190,15 +191,43 @@ void ValueNumber::pass(BasicBlock* block,
                                 hash[in->getHash()] = in->getDef();
                                 continue;
                             } else if (block->inStore(use)) {
-                                valueNumber[in->getDef()] = in->getDef();
-                                hash[in->getHash()] = in->getDef();
-                                block->removeStore(use);
-                                continue;
+                                if (!use->getType()->isPtr2Array()) {
+                                    valueNumber[in->getDef()] = in->getDef();
+                                    hash[in->getHash()] = in->getDef();
+                                    block->removeStore(use);
+                                    continue;
+                                }
+                            } else {
+                                if (!use->getType()->isPtr2Array()) {
+                                    auto blockStores = block->getStores1();
+                                    auto f = false;
+                                    for (auto s : blockStores) {
+                                        if (use->getDef() && s->getDef() &&
+                                            use->getDef()->isGep() &&
+                                            s->getDef()->isGep() &&
+                                            use->getDef()->getHash() ==
+                                                s->getDef()->getHash()) {
+                                            if (!alreadyLoad.count(s)) {
+                                                alreadyLoad.insert(s);
+                                                f = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (f) {
+                                        valueNumber[in->getDef()] =
+                                            in->getDef();
+                                        hash[in->getHash()] = in->getDef();
+                                        continue;
+                                    }
+                                }
                             }
                         }
                     }
                     valueNumber[in->getDef()] = hash[in->getHash()];
                     temp.push_back(in);
+                    auto addr = in->getUse()[0];
+                    addr->removeUse(in);
                     auto ope = in->getDef();
                     auto new_ = valueNumber[ope];
                     auto it = ope->use_begin();
@@ -218,7 +247,8 @@ void ValueNumber::pass(BasicBlock* block,
                         auto global = identifiers->lookup(name);
                         storeGlobals.insert(global);
                     } else {
-                        stores.insert(useAddr);
+                        if (!useAddr->getType()->isPtr2Array())
+                            stores.insert(useAddr);
                     }
                 }
         }

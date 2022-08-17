@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
         s.pass();
         ir.pass();
         ph.pass();
-        vn.pass();
+        // vn.pass();
         ssad.pass();
     }
     if (dump_ir) {

@@ -851,13 +851,13 @@ void LoopOptimization::ClassifyIV(std::vector<SSAGraphNode*>& SCC,std::map<IV_re
         // }
     }
     if(IsIV){
-        std::cout<<"iv"<<std::endl;
+        // std::cout<<"iv"<<std::endl;
         for(auto node:SCC){
             node->setHeader(header);
         }
     }
     else{
-        std::cout<<"else iv"<<std::endl;
+        // std::cout<<"else iv"<<std::endl;
         for(auto node:SCC){
             SSAGraphNode* iv;
             SSAGraphNode* rc;
@@ -1175,10 +1175,10 @@ void LoopOptimization::pass(){
         BackEdges=getBackEdges(*func);
         LoopList=calculateLoopList(*func,BackEdges);
         // (*func)->genSSAGraph();
-        printLoop(LoopList);
+        // printLoop(LoopList);
         //strength reduction
-        (*func)->genSSAGraph();
-        OSR((*func)->getSSAGraph(),*func,LoopList);
+        // (*func)->genSSAGraph();
+        // OSR((*func)->getSSAGraph(),*func,LoopList);
     }
 }
 

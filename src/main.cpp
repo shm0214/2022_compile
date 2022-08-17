@@ -118,7 +118,6 @@ int main(int argc, char* argv[]) {
         cp.copy_prop();
         // std::cout<<"cp"<<std::endl;
         vn.pass();
-        std::cout<<"vn"<<std::endl;
         thb.pass();
         // std::cout<<"thb"<<std::endl;
         euc.pass();

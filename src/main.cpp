@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) {
         m2r.pass();
         
         dce.pass();
-        // lop.pass();//先展开 再内联
+        lop.pass();//先展开 再内联
         ai.pass();
         
         // std::cout<<"loopop"<<std::endl;
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
         cp.copy_prop();
         // std::cout<<"cp"<<std::endl;
         vn.pass();
-        // std::cout<<"vn"<<std::endl;
+        std::cout<<"vn"<<std::endl;
         thb.pass();
         // std::cout<<"thb"<<std::endl;
         euc.pass();

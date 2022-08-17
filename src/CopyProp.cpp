@@ -1,13 +1,49 @@
 #include "CopyProp.h"
 #include <queue>
+#include <set>
 #include <vector>
-typedef vector<BasicBlock*>::iterator bb_iterator;
 using namespace std;
-bool st[10000000];
-unordered_map<int, UOO> CPin, CPout;
+const int N = 10000000;
+typedef vector<BasicBlock*>::iterator bb_iterator;
+bool st[N];  // 标记基本块是否已遍历过
 
-UOO map_intersection(UOO u1, UOO u2) {
-    UOO res;
+unordered_map<int, USS> COPY, KILL, CPin, CPout, load_sym;
+unordered_map<int, USO> opds;
+
+void remove_ACP(USS& ACP, SymbolEntry* sym) {
+    for (auto iter = ACP.begin(); iter != ACP.end();) {
+        if (iter->first == sym || iter->second == sym) {
+            ACP.erase(iter++);
+        } else {
+            ++iter;
+        }
+    }
+}
+
+SymbolEntry* copy_value(Operand* opd, USS ACP, bool& flag) {
+    SymbolEntry* sym = NULL;
+    if (opd) {
+        sym = opd->getEntry();
+        bool nconst = !sym->isConstant();
+        if (nconst) {
+            for (auto iter = ACP.begin(); iter != ACP.end(); iter++) {
+                SymbolEntry* key = iter->first;
+                SymbolEntry* value = iter->second;
+                if (sym == key) {
+                    flag = true;
+                    return value;
+                }
+            }
+        }
+    }
+    flag = false;
+    return sym;
+}
+
+/* 工具函数: 求交集 */
+//两个map求交集
+USS map_intersection(USS u1, USS u2) {
+    USS res;
     for (auto i : u1) {
         if (u2.find(i.first) != u2.end()) {
             if (u2[i.first] == i.second) {
@@ -18,8 +54,8 @@ UOO map_intersection(UOO u1, UOO u2) {
     return res;
 }
 
-UOO map_union(UOO u1, UOO u2) {
-    UOO res;
+USS map_union(USS u1, USS u2) {
+    USS res;
     for (auto v : u1) {
         res[v.first] = v.second;
     }
@@ -30,11 +66,11 @@ UOO map_union(UOO u1, UOO u2) {
 }
 
 //多个map求交集
-UOO intersection(BasicBlock* bb) {
-    UOO res;
+USS intersection(BasicBlock* bb) {
+    USS res;
     bb_iterator iter = bb->pred_begin();
     bb_iterator end = bb->pred_end();
-    vector<UOO> tmp;
+    vector<USS> tmp;
     while (iter != end) {
         int no = (*iter)->getNo();
         if (st[no]) {
@@ -45,32 +81,13 @@ UOO intersection(BasicBlock* bb) {
     return res;
 }
 
-
-void remove_ACP(UOO& ACP, Operand* opd) {
-    for (auto iter = ACP.begin(); iter != ACP.end(); ++iter) {
-        if (iter->first == opd || iter->second == opd) {
-            ACP.erase(iter);
-        }
-    }
-}
-
-Operand* copy_value(Operand* opd, UOO& ACP, bool& flag) {
-    for (auto iter = ACP.begin(); iter != ACP.end(); iter++) {
-        if (opd == iter->first) {
-            flag = true;
-            return iter->second;
-        }
-    }
-    flag = false;
-    return opd;
-}
-
-
-void CopyProp::pass(){
+void CopyProp::copy_prop() {
     auto iter = unit->begin();
-    UOO ACP;
+    USS ACP;
     while (iter != unit->end()) {
-        BasicBlock* bb = (*iter)->getEntry();
+        vector<BasicBlock*> block_list = (*iter)->getBlockList();
+        BasicBlock* bb = (*iter)->getEntry();  // 函数入口基本块
+        COPY[bb->getNo()];
         queue<BasicBlock*> q;
         q.push(bb);
         bool first = true;
@@ -107,32 +124,66 @@ void CopyProp::pass(){
         }
         iter++;
     }
-
 }
 
-void CopyProp::local_copy_prop(BasicBlock* bb, UOO ACP) {
+void CopyProp::local_copy_prop(BasicBlock* bb, USS ACP) {
     int no = bb->getNo();
+    opds[no];
+    load_sym[no];
     bool flag;
     for (auto iter = bb->begin(); iter != bb->end(); iter = iter->getNext()) {
-        Operand* def = iter->getDef();
-        vector<Operand*> uses(iter->getUse());
-        for(auto opd : uses) {
-            if (!opd->isConst()) {
-                Operand* new_opd = copy_value(opd, ACP, flag);
-                if (flag) {
-                    iter->replaceUse(opd, new_opd);
-                    if(!opd->usersNum()){
-                        // opd->getDef()->output();
-                        bb->remove(opd->getDef());
+        vector<Operand*> operands(iter->getOperands());
+        if (iter->isBin()) {
+            if (!operands[1]->getEntry()->isConstant()) {
+                auto iter_def = operands[1]->getDef();
+                if (iter_def) {
+                    vector<Operand*> def_operands(iter_def->getOperands());
+                    SymbolEntry* sym1 = copy_value(def_operands[1], ACP, flag);
+                    // 多余load指令删除
+                    if (flag) {
+                        operands[1]->setEntry(load_sym[no][sym1]);
+                        iter_def->remove();
+                        opds[no][sym1]->addUse(iter);
+                        operands[1]->setDef(opds[no][sym1]->getDef());
                     }
                 }
             }
-        } 
-        if(def){
-            remove_ACP(ACP, def);
-            if(iter->isStore())
-                ACP[def] = ((StoreInstruction*)iter)->getSrc();
+            if (!operands[2]->getEntry()->isConstant()) {
+                auto iter_def = operands[2]->getDef();
+                if (iter_def) {
+                    vector<Operand*> def_operands(iter_def->getOperands());
+                    SymbolEntry* sym2 = copy_value(def_operands[1], ACP, flag);
+                    if (flag) {
+                        operands[2]->setEntry(load_sym[no][sym2]);
+                        iter_def->remove();
+                        opds[no][sym2]->addUse(iter);
+                        operands[2]->setDef(opds[no][sym2]->getDef());
+                    }
+                }
+            }
+        } else if (iter->isStore()) {
+            if (!operands[1]->getEntry()->isConstant()) {
+                auto iter_def = operands[1]->getDef();
+                if (iter_def && iter_def->isLoad()) {
+                    SymbolEntry* sym1 = operands[0]->getEntry();
+                    remove_ACP(ACP, sym1);
+                    remove_ACP(CPin[no], sym1);  // cpin[i]-kill[i]
+                    vector<Operand*> prev_operands(iter_def->getOperands());
+                    SymbolEntry* sym2 = copy_value(prev_operands[1], ACP, flag);
+                    if (flag) {
+                        operands[1]->setEntry(load_sym[no][sym2]);
+                        iter_def->remove();
+                        opds[no][sym2]->addUse(iter);
+                        operands[1]->setDef(opds[no][sym2]->getDef());
+                    } else {
+                        opds[no][sym2] = prev_operands[0];
+                        load_sym[no][sym2] = prev_operands[0]->getEntry();
+                    }
+                    ACP[sym1] = sym2;
+                }
+            }
         }
+        operands.clear();
     }
 
     CPout[no] = map_union(ACP, CPin[no]);
@@ -140,5 +191,6 @@ void CopyProp::local_copy_prop(BasicBlock* bb, UOO ACP) {
 }
 
 CopyProp::~CopyProp() {
-    CPin.clear(), CPout.clear();
+    COPY.clear(), KILL.clear(), CPin.clear(), CPout.clear(), load_sym.clear(),
+        opds.clear();
 }

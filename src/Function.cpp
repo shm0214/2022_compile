@@ -11,7 +11,6 @@ extern FILE* yyout;
 
 Function::Function(Unit* u, SymbolEntry* s) {
     entry = new BasicBlock(this);
-    exit = new BasicBlock(this);
     sym_ptr = s;
     parent = u;
     ((IdentifierSymbolEntry*)s)->setFunction(this);
@@ -513,9 +512,9 @@ void Function::genSSAGraph() {
                 nodes.push_back(in->getNode());
             } else {
                 auto node = in->getNode();
-                if (node && find(nodes.begin(), nodes.end(), node) == nodes.end()){
+                if (node &&
+                    find(nodes.begin(), nodes.end(), node) == nodes.end())
                     nodes.push_back(node);
-                }
             }
         }
     }

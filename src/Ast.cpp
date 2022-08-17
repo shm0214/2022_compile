@@ -110,6 +110,7 @@ void FunctionDef::genCode() {
     // function中的stmt节点是用compoundstmt进行初始化的
     if (stmt)
         stmt->genCode();
+
     /**
      * Construct control flow graph. You need do set successors and predecessors
      * for each basic block. Todo
@@ -164,6 +165,7 @@ void FunctionDef::genCode() {
                     new RetInstruction(nullptr, dst);
                 }
             }
+
         }
         //最后一条语句不是返回以及跳转
         else if (!last->isRet()) {
@@ -328,9 +330,6 @@ BinaryExpr::BinaryExpr(SymbolEntry* se,
         this->expr1 = temp;
         type = TypeSystem::floatType;
     } else if (expr1->getType()->isFloat() && expr2->getType()->isFloat()) {
-        if (op == BinaryExpr::MOD) {
-            fprintf(stderr, "Operands of `mod` must be both integers");
-        }
         type = TypeSystem::floatType;
     } else {
         type = TypeSystem::intType;
@@ -1086,16 +1085,15 @@ ExprNode* ExprNode::const_fold() {
     ExprNode* res = this;
     res = this->alge_simple(5);  // 代数化简
     bool flag = true;
-    double fconst = res->fold_const(flag);
+    int fconst = res->fold_const(flag);
     if (flag) {
-        if(type->isInt()) fconst = int(fconst);
-        SymbolEntry* se = new ConstantSymbolEntry(type, fconst);
+        SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
         res = new Constant(se);
     }
     return res;
 }
 
-double ExprNode::fold_const(bool& flag) {
+int ExprNode::fold_const(bool& flag) {
     if (this->isBinaryExpr()) {
         ExprNode *lhs = ((BinaryExpr*)this)->getLeft(),
                  *rhs = ((BinaryExpr*)this)->getRight();
@@ -1111,13 +1109,10 @@ double ExprNode::fold_const(bool& flag) {
         hs->fold_const(flag);
         if (flag) {
             return ((UnaryExpr*)this)->getValue();
-        }
-        else return 0;
-    }
-    else if(this->isExpr()){
-        SymbolEntry* sym = this->getSymbolEntry();
-        if(sym->isConstant())
-            return ((ConstantSymbolEntry*)sym)->getValue();
+        } else
+            return 0;
+    } else if (this->isExpr() && this->getSymbolEntry()->isConstant()) {
+        return ((ConstantSymbolEntry*)(this->getSymbolEntry()))->getValue();
     }
     flag = 0;
     return 0;
@@ -1385,8 +1380,6 @@ AssignStmt::AssignStmt(ExprNode* lval, ExprNode* expr)
                     ((IdentifierSymbolEntry*)se)->toStr().c_str(),
                     type->toStr().c_str());
             flag = false;
-        } else{
-            ((IdentifierSymbolEntry*)se)->setValue(expr->getValue());
         }
     } else if (type->isFloat()) {
         if (((FloatType*)type)->isConst()) {
@@ -1396,8 +1389,6 @@ AssignStmt::AssignStmt(ExprNode* lval, ExprNode* expr)
                     ((IdentifierSymbolEntry*)se)->toStr().c_str(),
                     type->toStr().c_str());
             flag = false;
-        } else{
-            ((IdentifierSymbolEntry*)se)->setValue(expr->getValue());
         }
     } else if (type->isArray()) {
         fprintf(stderr, "array type \'%s\' is not assignable\n",
@@ -1590,8 +1581,7 @@ double BinaryExpr::getValue() {
                 value = expr1->getValue() / expr2->getValue();
             break;
         case MOD:
-            if(expr2->getValue())
-                value = (int)(expr1->getValue()) % (int)(expr2->getValue());
+            value = (int)(expr1->getValue()) % (int)(expr2->getValue());
             break;
         case AND:
             value = expr1->getValue() && expr2->getValue();

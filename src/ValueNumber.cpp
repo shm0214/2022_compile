@@ -271,8 +271,8 @@ void ValueNumber::pass(BasicBlock* block,
         in->getParent()->remove(in);
     }
     auto func = block->getParent();
-    auto nodes = func->getDomNode(block);
-    for (auto node : nodes->children) {
+    auto node = func->getDomNode(block);
+    for (auto node : node->children) {
         auto b = node->block;
         pass(b, hash, valueNumber, stores, storeGlobals);
     }

@@ -39,8 +39,8 @@ void Div2Mul::div2mul(Function* func){
                 Operand* dst = new Operand(new TemporarySymbolEntry(
                 inst->getDef()->getType(), SymbolTable::getLabel()));
 
-                Instruction* new1 = new BinaryInstruction(BinaryInstruction::MUL, dst, inst->getUse()[0], opd1, nullptr)
-                Instruction* new2 = new BinaryInstruction(BinaryInstruction::ASHR, inst->getDef(), dst, opd2, nullptr)
+                Instruction* new1 = new BinaryInstruction(BinaryInstruction::MUL, dst, inst->getUse()[0], opd1, nullptr);
+                Instruction* new2 = new BinaryInstruction(BinaryInstruction::ASHR, inst->getDef(), dst, opd2, nullptr);
                 inst->getParent()->insertBefore(new1, inst);
                 inst->getParent()->insertBefore(new2, inst);
                 inst->getParent()->remove(inst);

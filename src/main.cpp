@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
         Starighten s(&unit);
         Mem2reg m2r(&unit);
         SSADestruction ssad(&unit);
-        Div2Mul d2m(&unit);
+        // Div2Mul d2m(&unit);
         CopyProp cp(&unit);
         ValueNumber vn(&unit);
         CondCopyProp cc(&unit);
@@ -115,10 +115,9 @@ int main(int argc, char* argv[]) {
         ai.pass();
         dce.pass();
 
-        unit.output();
-        d2m.pass();
-        unit.output();
-        return 0;
+        // d2m.pass();
+        // unit.output();
+        // return 0;
 
         cp.pass();
         vn.pass();

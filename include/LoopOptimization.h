@@ -12,6 +12,7 @@
 #include "Operand.h"
 #include "IV_record.h"
 #include "reduceOperate.h"
+#include "LoopUnroll.h"
 
 #define min(a,b)    (((a) < (b)) ? (a) : (b))
 

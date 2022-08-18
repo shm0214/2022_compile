@@ -1175,10 +1175,18 @@ void LoopOptimization::pass(){
         BackEdges=getBackEdges(*func);
         LoopList=calculateLoopList(*func,BackEdges);
         // (*func)->genSSAGraph();
-        // printLoop(LoopList);
+        printLoop(LoopList);
         //strength reduction
         // (*func)->genSSAGraph();
         // OSR((*func)->getSSAGraph(),*func,LoopList);
+        LoopUnroll Ln;
+        Ln.setDomBBset(DomBBSet);
+        std::vector<std::vector<BasicBlock*>> InnerLoopList = Ln.calculateInnerLoop(LoopList);
+        Ln.findLoop(InnerLoopList);
+        std::cout<<InnerLoopList.size()<<std::endl;
+        std::cout<<"begin Unroll"<<std::endl;
+        Ln.Unroll();
+
     }
 }
 

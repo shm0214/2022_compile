@@ -132,7 +132,7 @@ int main(int argc, char* argv[]) {
         ConstAsm ca(&mUnit);
         PeepholeOptimization po(&mUnit);
         PartialRedundancyElimination pre(&mUnit);
-        caaz.pass();
+        // caaz.pass();
         ca.pass();
         // 效果一般 而且会导致编译时间长一些
         pre.pass();

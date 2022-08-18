@@ -593,8 +593,8 @@ static const yytype_int16 yyrline[] =
      421,   422,   425,   428,   434,   438,   441,   445,   448,   456,
      483,   499,   499,   537,   563,   563,   612,   615,   621,   677,
      703,   703,   741,   800,   826,   826,   863,   866,   871,   874,
-     880,   888,   880,   915,   916,   918,   922,   927,   948,   979,
-     982
+     880,   888,   880,   915,   916,   918,   922,   927,   950,   982,
+     985
 };
 #endif
 
@@ -2835,14 +2835,16 @@ yyreduce:
         SymbolEntry* se;
         if ((yyvsp[-1].type)->isFloat()) {
             se = new IdentifierSymbolEntry((yyvsp[-1].type), (yyvsp[0].strtype), identifiers->getLevel(), fpParamNo++);
+            ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
             if (fpParamNo > 4){
-                ((IdentifierSymbolEntry*)se)->setAllParamNo(stackParamNo);
+                ((IdentifierSymbolEntry*)se)->setStackParamNo(stackParamNo);
                 stackParamNo++;
             }
         } else {
             se = new IdentifierSymbolEntry((yyvsp[-1].type), (yyvsp[0].strtype), identifiers->getLevel(), paramNo++);
+            ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
             if (paramNo > 4){
-                ((IdentifierSymbolEntry*)se)->setAllParamNo(stackParamNo);
+                ((IdentifierSymbolEntry*)se)->setStackParamNo(stackParamNo);
                 stackParamNo++;
             }
         }
@@ -2852,11 +2854,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se));
         delete [](yyvsp[0].strtype);
     }
-#line 2856 "src/parser.cpp"
+#line 2858 "src/parser.cpp"
     break;
 
   case 108:
-#line 948 "src/parser.y"
+#line 950 "src/parser.y"
                                {
         // 这里也需要求值
         SymbolEntry* se;
@@ -2876,8 +2878,9 @@ yyreduce:
             stk.pop();
         }
         se = new IdentifierSymbolEntry(arr, (yyvsp[-1].strtype), identifiers->getLevel(), paramNo++);
+        ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
         if (paramNo > 4){
-            ((IdentifierSymbolEntry*)se)->setAllParamNo(stackParamNo);
+            ((IdentifierSymbolEntry*)se)->setStackParamNo(stackParamNo);
             stackParamNo++;
         }
         identifiers->install((yyvsp[-1].strtype), se);
@@ -2886,28 +2889,28 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se));
         delete [](yyvsp[-1].strtype);
     }
-#line 2890 "src/parser.cpp"
+#line 2893 "src/parser.cpp"
     break;
 
   case 109:
-#line 979 "src/parser.y"
+#line 982 "src/parser.y"
                         {
         (yyval.exprtype) = new ExprNode(nullptr);
     }
-#line 2898 "src/parser.cpp"
+#line 2901 "src/parser.cpp"
     break;
 
   case 110:
-#line 982 "src/parser.y"
+#line 985 "src/parser.y"
                                              {
         (yyval.exprtype) = (yyvsp[-3].exprtype);
         (yyval.exprtype)->setNext((yyvsp[-1].exprtype));
     }
-#line 2907 "src/parser.cpp"
+#line 2910 "src/parser.cpp"
     break;
 
 
-#line 2911 "src/parser.cpp"
+#line 2914 "src/parser.cpp"
 
       default: break;
     }
@@ -3139,7 +3142,7 @@ yyreturn:
 #endif
   return yyresult;
 }
-#line 986 "src/parser.y"
+#line 989 "src/parser.y"
 
 
 int yyerror(char const* message)

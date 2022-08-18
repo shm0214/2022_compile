@@ -928,14 +928,16 @@ FuncFParam
         SymbolEntry* se;
         if ($1->isFloat()) {
             se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), fpParamNo++);
+            ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
             if (fpParamNo > 4){
-                ((IdentifierSymbolEntry*)se)->setAllParamNo(stackParamNo);
+                ((IdentifierSymbolEntry*)se)->setStackParamNo(stackParamNo);
                 stackParamNo++;
             }
         } else {
             se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), paramNo++);
+            ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
             if (paramNo > 4){
-                ((IdentifierSymbolEntry*)se)->setAllParamNo(stackParamNo);
+                ((IdentifierSymbolEntry*)se)->setStackParamNo(stackParamNo);
                 stackParamNo++;
             }
         }
@@ -964,8 +966,9 @@ FuncFParam
             stk.pop();
         }
         se = new IdentifierSymbolEntry(arr, $2, identifiers->getLevel(), paramNo++);
+        ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
         if (paramNo > 4){
-            ((IdentifierSymbolEntry*)se)->setAllParamNo(stackParamNo);
+            ((IdentifierSymbolEntry*)se)->setStackParamNo(stackParamNo);
             stackParamNo++;
         }
         identifiers->install($2, se);

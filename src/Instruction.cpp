@@ -528,7 +528,7 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
                 mope->setParam();
                 mope->setParamNo(no);
             }
-            mope->setAllParamNo(id_se->getAllParamNo());
+            mope->setAllParamNo(id_se->getStackParamNo());
         } else
             exit(0);
     }
@@ -565,7 +565,7 @@ MachineOperand* Instruction::genMachineFloatOperand(Operand* ope) {
                 mope->setParam();
                 mope->setParamNo(no);
             }
-            mope->setAllParamNo(id_se->getAllParamNo());
+            mope->setAllParamNo(id_se->getStackParamNo());
         }
     }
     return mope;

@@ -117,6 +117,7 @@ class IdentifierSymbolEntry : public SymbolEntry {
     Function* func = nullptr;
     // used for auto inline
     int allParamNo;
+    int stackParamNo;
 
    public:
     IdentifierSymbolEntry(Type* type,
@@ -143,7 +144,9 @@ class IdentifierSymbolEntry : public SymbolEntry {
     bool isAllZero() const { return allZero; };
     int getParamNo() const { return paramNo; };
     int getAllParamNo() const { return allParamNo; };
+    int getStackParamNo() const { return stackParamNo; };
     void setAllParamNo(int no) { allParamNo = no; }
+    void setStackParamNo(int no) { stackParamNo = no; }
     void setConst() { constant = true; };
     bool getConst() const { return constant; };
     int getNotZeroNum() const { return notZeroNum; }

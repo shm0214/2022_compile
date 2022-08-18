@@ -811,7 +811,7 @@ void MachineBlock::output() {
         (parent->getSavedRegs().size() + parent->getSavedFpRegs().size() + 2) *
         4;
     int baseOffset = offset;
-    int num = parent->getParamsNum();
+    // int num = parent->getParamsNum();
     int count = 0;
     // if (!inst_list.empty()) {
     fprintf(yyout, ".L%d:\n", this->no);

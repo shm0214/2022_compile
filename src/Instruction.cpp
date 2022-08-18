@@ -528,6 +528,7 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
                 mope->setParam();
                 mope->setParamNo(no);
             }
+            mope->setAllParamNo(id_se->getAllParamNo());
         } else
             exit(0);
     }
@@ -555,12 +556,16 @@ MachineOperand* Instruction::genMachineFloatOperand(Operand* ope) {
         if (id_se->isGlobal()) {
             mope = new MachineOperand(id_se->toStr().c_str());
         } else if (id_se->isParam()) {
+            auto no = id_se->getParamNo();
             if (id_se->getParamNo() < 4) {
                 mope = new MachineOperand(MachineOperand::REG,
                                           id_se->getParamNo() + 16, true);
             } else {
-                mope = new MachineOperand(MachineOperand::REG, 19, true);
+                mope = new MachineOperand(MachineOperand::REG, 20, true);
+                mope->setParam();
+                mope->setParamNo(no);
             }
+            mope->setAllParamNo(id_se->getAllParamNo());
         }
     }
     return mope;
@@ -1525,8 +1530,11 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
 
     int fpreg_cnt = 1;
     for (idx = 1; idx < operands.size(); idx++) {
-        if (fpreg_cnt == 5)
+        if (fpreg_cnt == 5 && !need_align)
             break;
+        if (fpreg_cnt == 6 && need_align) {
+            break;
+        }
         if (!operands[idx]->getType()->isFloat()) {
             continue;
         }
@@ -1550,12 +1558,12 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
 
     size_t float_idx = idx;
 
-    if (need_align) {
-        cur_inst = new StackMInstruction(cur_block, StackMInstruction::PUSH,
-                                         vec, genMachineReg(0));
-        cur_block->InsertInst(cur_inst);
-        stk_cnt++;
-    }
+    // if (need_align) {
+    //     cur_inst = new StackMInstruction(cur_block, StackMInstruction::PUSH,
+    //                                      vec, genMachineReg(0));
+    //     cur_block->InsertInst(cur_inst);
+    //     stk_cnt++;
+    // }
 
     idx = std::min(float_idx, int_idx);
 

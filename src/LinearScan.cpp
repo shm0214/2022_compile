@@ -9,7 +9,7 @@ LinearScan::LinearScan(MachineUnit* unit) {
     for (int i = 4; i < 11; i++) {
         regs.push_back(i);
     }
-    for (int i = 4; i < 32; i++) {
+    for (int i = 5; i < 32; i++) {
         fpregs.push_back(i + 16);
     }
 }
@@ -150,7 +150,7 @@ bool LinearScan::linearScanRegisterAllocation() {
     fpregs.clear();
     for (int i = 4; i < 11; i++)
         regs.push_back(i);
-    for (int i = 4; i < 32; i++) {
+    for (int i = 5; i < 32; i++) {
         fpregs.push_back(i + 16);
     }
     for (auto& i : intervals) {

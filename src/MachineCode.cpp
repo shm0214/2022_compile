@@ -807,24 +807,27 @@ void MachineBlock::output() {
                 operand->isParam()) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto r3 = new MachineOperand(MachineOperand::REG, 3);
-                int temp = baseOffset + operand->getOffset();
-                auto off = new MachineOperand(MachineOperand::IMM, temp);
-                // auto off = new MachineOperand(MachineOperand::IMM, offset);
-                // offset += 4; // FIXME
+                // int temp = baseOffset + operand->getOffset();
+                // auto off = new MachineOperand(MachineOperand::IMM, temp);
+                auto off = new MachineOperand(MachineOperand::IMM, offset);
+                offset += 4; // FIXME
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();
-            } else if (operand->isReg() && operand->getReg() == 19) {
+            } else if (operand->isReg() && operand->getReg() == 20) {
                 // floating point
                 if (first) {
                     first = false;
                 } else {
                     auto fp = new MachineOperand(MachineOperand::REG, 11);
-                    auto s3 = new MachineOperand(MachineOperand::REG, 19, true);
+                    auto s4 = new MachineOperand(MachineOperand::REG, 20, true);
+                    
+                    // int temp = baseOffset + operand->getOffset();
+                    // auto off = new MachineOperand(MachineOperand::IMM, temp);
                     auto off = new MachineOperand(MachineOperand::IMM, offset);
                     offset += 4;
                     auto cur_inst = new LoadMInstruction(
-                        this, LoadMInstruction::VLDR, s3, fp, off);
+                        this, LoadMInstruction::VLDR, s4, fp, off);
                     cur_inst->output();
                 }
             }
@@ -835,10 +838,10 @@ void MachineBlock::output() {
                 uses[1]->getVal() == 0) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto r3 = new MachineOperand(MachineOperand::REG, 3);
-                int temp = baseOffset + uses[0]->getOffset();
-                auto off = new MachineOperand(MachineOperand::IMM, temp);
-                // auto off = new MachineOperand(MachineOperand::IMM, offset);
-                // offset += 4;
+                // int temp = baseOffset + uses[0]->getOffset();
+                // auto off = new MachineOperand(MachineOperand::IMM, temp);
+                auto off = new MachineOperand(MachineOperand::IMM, offset);
+                offset += 4;
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();

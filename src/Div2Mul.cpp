@@ -34,8 +34,8 @@ void Div2Mul::div2mul(Function* func){
             if(inst->isDivConst()){
                 uint32_t divisor = int(inst->getUse()[1]->getConstVal());
                 Multiplier res = chooseMultiplier(divisor);
-                Operand* opd1 = new Operand(new ConstantSymbolEntry(inst->getDef()->getType, res.m));
-                Operand* opd2 = new Operand(new ConstantSymbolEntry(inst->getDef()->getType, res.l));
+                Operand* opd1 = new Operand(new ConstantSymbolEntry(inst->getDef()->getType(), res.m));
+                Operand* opd2 = new Operand(new ConstantSymbolEntry(inst->getDef()->getType(), res.l));
                 Operand* dst = new Operand(new TemporarySymbolEntry(
                 inst->getDef()->getType(), SymbolTable::getLabel()));
 

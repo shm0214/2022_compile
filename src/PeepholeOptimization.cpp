@@ -1,9 +1,5 @@
 #include "PeepholeOptimization.h"
 
-int log2(int value);
-inline bool is2Exp(int val) {
-    return !(val & (val - 1));
-}
 
 PeepholeOptimization::PeepholeOptimization(MachineUnit* mUnit) {
     this->mUnit = mUnit;
@@ -36,32 +32,6 @@ void PeepholeOptimization::pass() {
                     auto src = curr_inst->getUse()[0];
                     if (*dst == *src) {
                         instToRemove.insert(curr_inst);
-                    }
-                }
-                if (curr_inst->isMov() && next_inst->isMul()) {
-                    auto movDst = curr_inst->getDef()[0];
-                    auto movSrc = curr_inst->getUse()[0];
-                    if (movSrc->isImm()) {
-                        int val = movSrc->getVal();
-                        if (val && !movSrc->isFloat() && is2Exp(val)) {
-                            int log = log2(val);
-                            auto mulDst = next_inst->getDef()[0];
-                            auto mulSrc1 = next_inst->getUse()[0];
-                            auto mulSrc2 = next_inst->getUse()[1];
-                            MachineOperand* lslSrc = nullptr;
-                            if (*mulSrc1 == *movDst)
-                                lslSrc = mulSrc2;
-                            if (*mulSrc2 == *movDst)
-                                lslSrc = mulSrc1;
-                            if (lslSrc) {
-                                auto imm = new MachineOperand(
-                                    MachineOperand::IMM, log);
-                                auto lsl = new MovMInstruction(
-                                    block, MovMInstruction::MOVLSL, mulDst,
-                                    lslSrc, 6, imm);
-                                *next_inst_iter = lsl;
-                            }
-                        }
                     }
                 }
 

@@ -11,6 +11,7 @@ class LocalValueNumber {
     void pass();
     void pass(MachineFunction* func);
     void pass(MachineBlock* block);
+    void changeMul2Exp2LSL();
 };
 
 #endif

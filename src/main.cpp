@@ -10,6 +10,7 @@
 #include "DeadCodeElimination.h"
 #include "CondCopyProp.h"
 #include "ElimUnreachCode.h"
+#include "Div2Mul.h"
 #include "Global2Local.h"
 #include "GraphColor.h"
 #include "InsReorder.h"
@@ -98,6 +99,7 @@ int main(int argc, char* argv[]) {
         Starighten s(&unit);
         Mem2reg m2r(&unit);
         SSADestruction ssad(&unit);
+        Div2Mul d2m(&unit);
         CopyProp cp(&unit);
         ValueNumber vn(&unit);
         CondCopyProp cc(&unit);
@@ -112,6 +114,12 @@ int main(int argc, char* argv[]) {
         dce.pass();
         ai.pass();
         dce.pass();
+
+        unit.output();
+        d2m.pass();
+        unit.output();
+        return 0;
+
         cp.pass();
         vn.pass();
         cc.pass();

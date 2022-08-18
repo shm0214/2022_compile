@@ -198,11 +198,11 @@ class BinaryInstruction : public Instruction {
     ~BinaryInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
-    int getOp() const{return opcode;};
     enum { SUB, ADD, AND, OR, MUL, DIV, MOD };
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
+    bool isDivConst() { return opcode==DIV && src2->isConst(); }
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
@@ -238,7 +238,6 @@ class CmpInstruction : public Instruction {
     }
     std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     bool genNode();
-    int getOp() const{return opcode;};
     std::string getHash();
     bool isConstExp();
     Instruction* copy();

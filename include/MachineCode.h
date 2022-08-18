@@ -37,6 +37,7 @@ class MachineOperand {
     float fval;
     // 用于计算栈内偏移
     int paramNo;
+    int allParamNo;
 
    public:
     enum { IMM, VREG, REG, LABEL };
@@ -74,7 +75,9 @@ class MachineOperand {
     void setParam() { param = true; }
     bool isParam() { return param; }
     void setParamNo(int no) { paramNo = no; }
-    int getOffset() { return 4 * (paramNo - 4); };
+    void setAllParamNo(int no) { allParamNo = no; }
+    int getAllParamNo() { return allParamNo; }
+    int getOffset() { return 4 * (paramNo - 4); }; 
 };
 
 class MachineInstruction {
@@ -355,6 +358,8 @@ class MachineFunction {
     MachineBlock* entry;
     std::map<int, MachineBlock*> no2Block;
 
+    bool need_align;
+
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };
     std::vector<MachineBlock*>::iterator begin() { return block_list.begin(); };
@@ -394,6 +399,7 @@ class MachineFunction {
     MachineBlock* getNext(MachineBlock* block);
     // insert b after a
     void InsertAfter(MachineBlock* a, MachineBlock* b);
+    bool needAlign() { return need_align; }
 };
 
 class MachineUnit {

@@ -31,7 +31,7 @@ void Div2Mul::div2mul(Function* func){
     std::vector<BasicBlock*> block_list = func->getBlockList();
     for(auto bb : block_list){
         for(auto inst = bb->begin(); inst != bb->end(); inst = inst->getNext()){
-            if(inst->isDivConst()){
+            if(((BinaryInstruction*)inst)->isDivConst()){
                 uint32_t divisor = int(inst->getUse()[1]->getConstVal());
                 Multiplier res = chooseMultiplier(divisor);
                 Operand* opd1 = new Operand(new ConstantSymbolEntry(inst->getDef()->getType(), res.m));

@@ -9,4 +9,6 @@ class Div2Mul {
     void pass();
     void div2mul(Function *);
     ~Div2Mul();
-}
+};
+
+#endif

@@ -18,5 +18,6 @@ class Mem2reg {
     void rename(Function* function);
     Operand* newName(Operand* old);
     void cleanAddZeroIns(Function* function);
+    void checkCondBranch(Function* function);
 };
 #endif

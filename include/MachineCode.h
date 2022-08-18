@@ -41,6 +41,7 @@ class MachineOperand {
 
    public:
     enum { IMM, VREG, REG, LABEL };
+    MachineOperand() = default;
     MachineOperand(int tp, int val, bool fpu = false);
     MachineOperand(std::string label);
     MachineOperand(int tp, float fval);
@@ -77,7 +78,9 @@ class MachineOperand {
     void setParamNo(int no) { paramNo = no; }
     void setAllParamNo(int no) { allParamNo = no; }
     int getAllParamNo() { return allParamNo; }
-    int getOffset() { return 4 * (paramNo - 4); }; 
+    int getOffset() { return 4 * allParamNo; };
+    // used for local value number
+    std::string toStr();
 };
 
 class MachineInstruction {
@@ -162,6 +165,7 @@ class MachineInstruction {
         }
         return false;
     }
+    virtual std::string getHash() { return ""; }
 };
 
 class FuseMInstruction : public MachineInstruction {
@@ -188,6 +192,7 @@ class BinaryMInstruction : public MachineInstruction {
                        int cond = MachineInstruction::NONE);
     void output();
     int latency();
+    std::string getHash();
 };
 
 class LoadMInstruction : public MachineInstruction {
@@ -206,6 +211,7 @@ class LoadMInstruction : public MachineInstruction {
     void setNeedModify() { needModify = true; }
     bool isNeedModify() { return needModify; }
     int latency();
+    std::string getHash();
 };
 
 class StoreMInstruction : public MachineInstruction {
@@ -232,6 +238,7 @@ class MovMInstruction : public MachineInstruction {
                     MachineOperand* num = nullptr);
     void output();
     int latency();
+    std::string getHash();
 };
 
 class BranchMInstruction : public MachineInstruction {

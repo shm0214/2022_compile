@@ -20,6 +20,7 @@
     int whileCnt = 0;
     int paramNo = 0;
     int fpParamNo = 0;
+    int stackParamNo = 0;
     int notZeroNum = 0;
     extern int yylineno;
     #include <iostream>
@@ -881,6 +882,7 @@ FuncDef
         identifiers = new SymbolTable(identifiers);
         paramNo = 0;
         fpParamNo = 0;
+        stackParamNo = 0;
         funcRetType = $1;
     }
       LPAREN MaybeFuncFParams RPAREN {
@@ -927,9 +929,17 @@ FuncFParam
         if ($1->isFloat()) {
             se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), fpParamNo++);
             ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
+            if (fpParamNo > 4){
+                ((IdentifierSymbolEntry*)se)->setStackParamNo(stackParamNo);
+                stackParamNo++;
+            }
         } else {
             se = new IdentifierSymbolEntry($1, $2, identifiers->getLevel(), paramNo++);
             ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
+            if (paramNo > 4){
+                ((IdentifierSymbolEntry*)se)->setStackParamNo(stackParamNo);
+                stackParamNo++;
+            }
         }
         identifiers->install($2, se);
         ((IdentifierSymbolEntry*)se)->setLabel();
@@ -957,6 +967,10 @@ FuncFParam
         }
         se = new IdentifierSymbolEntry(arr, $2, identifiers->getLevel(), paramNo++);
         ((IdentifierSymbolEntry*)se)->setAllParamNo(fpParamNo + paramNo - 1);
+        if (paramNo > 4){
+            ((IdentifierSymbolEntry*)se)->setStackParamNo(stackParamNo);
+            stackParamNo++;
+        }
         identifiers->install($2, se);
         ((IdentifierSymbolEntry*)se)->setLabel();
         ((IdentifierSymbolEntry*)se)->setAddr(new Operand(se));

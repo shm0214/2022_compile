@@ -528,7 +528,7 @@ MachineOperand* Instruction::genMachineOperand(Operand* ope) {
                 mope->setParam();
                 mope->setParamNo(no);
             }
-            mope->setAllParamNo(id_se->getAllParamNo());
+            mope->setAllParamNo(id_se->getStackParamNo());
         } else
             exit(0);
     }
@@ -565,7 +565,7 @@ MachineOperand* Instruction::genMachineFloatOperand(Operand* ope) {
                 mope->setParam();
                 mope->setParamNo(no);
             }
-            mope->setAllParamNo(id_se->getAllParamNo());
+            mope->setAllParamNo(id_se->getStackParamNo());
         }
     }
     return mope;
@@ -955,22 +955,23 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
                 break;
             case MOD: {
                 // c = a % b
-                // c = a / b
+                // c1 = a / b
+                auto dst1 = genMachineVReg();
                 cur_inst = new BinaryMInstruction(
-                    cur_block, BinaryMInstruction::DIV, dst, src1, src2);
-                MachineOperand* dst1 = new MachineOperand(*dst);
+                    cur_block, BinaryMInstruction::DIV, dst1, src1, src2);
                 src1 = new MachineOperand(*src1);
                 src2 = new MachineOperand(*src2);
-                auto temp = new MachineOperand(*dst);
+                auto temp = new MachineOperand(*dst1);
                 cur_block->InsertInst(cur_inst);
-                // c = c * b
+                // c2 = c1 * b
+                auto dst2 = genMachineVReg();
                 cur_inst = new BinaryMInstruction(
-                    cur_block, BinaryMInstruction::MUL, dst1, temp, src2);
+                    cur_block, BinaryMInstruction::MUL, dst2, temp, src2);
                 cur_block->InsertInst(cur_inst);
-                dst = new MachineOperand(*dst1);
-                // c = a - c
+                dst2 = new MachineOperand(*dst2);
+                // c = a - c2
                 cur_inst = new BinaryMInstruction(
-                    cur_block, BinaryMInstruction::SUB, dst, src1, dst1);
+                    cur_block, BinaryMInstruction::SUB, dst, src1, dst2);
                 break;
             }
             default:
@@ -1773,20 +1774,40 @@ void GepInstruction::genMachineCode(AsmBuilder* builder) {
                                           dst, arr, off);
         cur_block->InsertInst(cur_inst);
     } else {
+        // auto addr = genMachineVReg();
+        // auto base1 = new MachineOperand(*base);
+        // cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
+        //                                   addr, base1, off);
+        // cur_block->InsertInst(cur_inst);
+        // addr = new MachineOperand(*addr);
+        // if (operands[1]->getEntry()->isVariable() &&
+        //     ((IdentifierSymbolEntry*)(operands[1]->getEntry()))->isGlobal()) {
+        //     cur_inst =
+        //         new MovMInstruction(cur_block, MovMInstruction::MOV, dst, addr);
+        // } else {
+        //     auto fp = genMachineReg(11);
+        //     cur_inst = new BinaryMInstruction(
+        //         cur_block, BinaryMInstruction::ADD, dst, fp, addr);
+        // }
+        // cur_block->InsertInst(cur_inst);
         auto addr = genMachineVReg();
         auto base1 = new MachineOperand(*base);
-        cur_inst = new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
-                                          addr, base1, off);
-        cur_block->InsertInst(cur_inst);
-        addr = new MachineOperand(*addr);
         if (operands[1]->getEntry()->isVariable() &&
             ((IdentifierSymbolEntry*)(operands[1]->getEntry()))->isGlobal()) {
+            cur_inst = new BinaryMInstruction(
+                cur_block, BinaryMInstruction::ADD, addr, base1, off);
+            cur_block->InsertInst(cur_inst);
+            addr = new MachineOperand(*addr);
             cur_inst =
                 new MovMInstruction(cur_block, MovMInstruction::MOV, dst, addr);
         } else {
             auto fp = genMachineReg(11);
             cur_inst = new BinaryMInstruction(
-                cur_block, BinaryMInstruction::ADD, dst, fp, addr);
+                cur_block, BinaryMInstruction::ADD, addr, fp, base1);
+            cur_block->InsertInst(cur_inst);
+            addr = new MachineOperand(*addr);
+            cur_inst = new BinaryMInstruction(
+                cur_block, BinaryMInstruction::ADD, dst, addr, off);
         }
         cur_block->InsertInst(cur_inst);
     }
@@ -1909,6 +1930,12 @@ void PhiInstruction::changeSrcBlock(
                                 }
                             } else {
                                 auto temp = it.first;
+                                // if (i->getOriginTrue() == this->parent) {
+                                //     i->setTrueBranch(b1);
+                                // } else if (i->getOriginFalse() == this->parent) {
+                                //     i->setFalseBranch(b1);
+                                // } else
+                                int ii = 0;
                                 while (true) {
                                     if (i->getOriginTrue() == temp) {
                                         i->setTrueBranch(b1);
@@ -1919,6 +1946,20 @@ void PhiInstruction::changeSrcBlock(
                                     }
                                     if (changes.count(temp))
                                         temp = changes[temp][0];
+                                    ii++;
+                                    if (ii == 10) {
+                                        ii = -1;
+                                        break;
+                                    }
+                                }
+                                // 没有办法的办法  phi设计太差了
+                                if (ii == -1) {
+                                    if (i->getOriginTrue() == this->parent) {
+                                        i->setTrueBranch(b1);
+                                    } else if (i->getOriginFalse() ==
+                                               this->parent) {
+                                        i->setFalseBranch(b1);
+                                    }
                                 }
                             }
                             b1->addPred(b);

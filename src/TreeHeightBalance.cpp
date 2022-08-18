@@ -328,8 +328,9 @@ void TreeHeightBalance::convert(map<Operand*, int, cmp> operands,
             val += it.first->getConstVal() * it.second;
         else if (it.second != 1 && it.second != -1) {
             auto src1 = it.first;
-            auto src2 = new Operand(
-                new ConstantSymbolEntry(TypeSystem::intType, it.second));
+            auto num = abs(it.second);
+            auto src2 =
+                new Operand(new ConstantSymbolEntry(TypeSystem::intType, num));
             if (type->isFloat()) {
                 auto sitofpDst = new Operand(
                     new TemporarySymbolEntry(type, SymbolTable::getLabel()));
@@ -344,7 +345,10 @@ void TreeHeightBalance::convert(map<Operand*, int, cmp> operands,
                 new BinaryInstruction(BinaryInstruction::MUL, dst, src1, src2);
             in->setParent(block);
             newIns.push_back(in);
-            addDsts.push_back(dst);
+            if (it.second > 0)
+                addDsts.push_back(dst);
+            else
+                subDsts.push_back(dst);
         } else if (it.second == 1)
             addDsts.push_back(it.first);
         else if (it.second == -1)

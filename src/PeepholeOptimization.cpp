@@ -1,5 +1,6 @@
 #include "PeepholeOptimization.h"
 
+
 PeepholeOptimization::PeepholeOptimization(MachineUnit* mUnit) {
     this->mUnit = mUnit;
 }
@@ -79,7 +80,7 @@ void PeepholeOptimization::pass() {
                     auto fused_inst = new FuseMInstruction(
                         block, FuseMInstruction::MLA, rd, rn, rm, ra);
                     *next_inst_iter = fused_inst;
-                    instToRemove.insert(curr_inst);
+                    // instToRemove.insert(curr_inst);
 
                 } else if (curr_inst->isMul() && next_inst->isSub()) {
                     auto mul_dst = curr_inst->getDef()[0];
@@ -95,7 +96,7 @@ void PeepholeOptimization::pass() {
                     auto fused_inst = new FuseMInstruction(
                         block, FuseMInstruction::MLS, rd, rn, rm, ra);
                     *next_inst_iter = fused_inst;
-                    instToRemove.insert(curr_inst);
+                    // instToRemove.insert(curr_inst);
                 } else if (curr_inst->isStore() && next_inst->isLoad()) {
                     // convert store and load into store and move
                     //     str v355, [v11]

@@ -13,6 +13,7 @@
 #include "InsReorder.h"
 #include "InstructionScheduling.h"
 #include "LinearScan.h"
+#include "LocalValueNumber.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
 #include "MachineStraighten.h"
@@ -104,11 +105,13 @@ int main(int argc, char* argv[]) {
         Global2Local g2l(&unit);
         PeepholeForIR ph(&unit);
         g2l.pass();
+        s.pass();
         m2r.pass();
         dce.pass();
+        vn.pass();
         ai.pass();
         dce.pass();
-        cp.copy_prop();
+        cp.pass();
         vn.pass();
         thb.pass();
         ai.pass();
@@ -118,6 +121,7 @@ int main(int argc, char* argv[]) {
         s.pass();
         ir.pass();
         ph.pass();
+        vn.pass();
         ssad.pass();
     }
     if (dump_ir) {
@@ -132,10 +136,14 @@ int main(int argc, char* argv[]) {
         ConstAsm ca(&mUnit);
         PeepholeOptimization po(&mUnit);
         PartialRedundancyElimination pre(&mUnit);
-        // caaz.pass();
+        LocalValueNumber lvn(&mUnit);
+        caaz.pass();
         ca.pass();
         // 效果一般 而且会导致编译时间长一些
         pre.pass();
+        mdce.pass();
+        ms.pass();
+        lvn.pass();
         mdce.pass();
         po.pass();
         mdce.pass();

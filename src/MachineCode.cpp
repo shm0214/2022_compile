@@ -4,6 +4,9 @@
 #include "Type.h"
 extern FILE* yyout;
 
+using std::string;
+using std::stringstream;
+
 int MachineBlock::label = 0;
 
 MachineOperand::MachineOperand(int tp, int val, bool fpu) {
@@ -141,6 +144,45 @@ void MachineOperand::output() {
         default:
             break;
     }
+}
+
+string MachineOperand::toStr() {
+    stringstream ss;
+    switch (this->type) {
+        case IMM:
+            if (!fpu) {
+                ss << "#" << this->val;
+            } else {
+                uint32_t temp = reinterpret_cast<uint32_t&>(this->fval);
+                ss << "#" << temp;
+            }
+            break;
+        case VREG:
+            ss << "v" << this->reg_no;
+            break;
+        case REG:
+            if (reg_no >= 16) {
+                int sreg_no = reg_no - 16;
+                if (sreg_no <= 31) {
+                    ss << "s" << sreg_no;
+                } else if (sreg_no == 32) {
+                    ss << "FPSCR";
+                }
+            } else if (reg_no == 11) {
+                ss << "fp";
+            } else if (reg_no == 13) {
+                ss << "sp";
+            } else if (reg_no == 14) {
+                ss << "lr";
+            } else if (reg_no == 15) {
+                ss << "pc";
+            } else {
+                ss << "r" << reg_no;
+            }
+        default:
+            break;
+    }
+    return ss.str();
 }
 
 void MachineInstruction::PrintCond() {
@@ -832,10 +874,10 @@ void MachineBlock::output() {
                 operand->isParam()) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto r3 = new MachineOperand(MachineOperand::REG, 3);
-                // int temp = baseOffset + operand->getOffset();
-                // auto off = new MachineOperand(MachineOperand::IMM, temp);
-                auto off = new MachineOperand(MachineOperand::IMM, offset);
-                offset += 4;
+                int temp = baseOffset + operand->getOffset();
+                auto off = new MachineOperand(MachineOperand::IMM, temp);
+                // auto off = new MachineOperand(MachineOperand::IMM, offset);
+                // offset += 4;
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();
@@ -848,10 +890,10 @@ void MachineBlock::output() {
                     auto fp = new MachineOperand(MachineOperand::REG, 11);
                     auto s4 = new MachineOperand(MachineOperand::REG, 20, true);
 
-                    // int temp = baseOffset + operand->getOffset();
-                    // auto off = new MachineOperand(MachineOperand::IMM, temp);
-                    auto off = new MachineOperand(MachineOperand::IMM, offset);
-                    offset += 4;
+                    int temp = baseOffset + operand->getOffset();
+                    auto off = new MachineOperand(MachineOperand::IMM, temp);
+                    // auto off = new MachineOperand(MachineOperand::IMM, offset);
+                    // offset += 4;
                     auto cur_inst = new LoadMInstruction(
                         this, LoadMInstruction::VLDR, s4, fp, off);
                     cur_inst->output();
@@ -864,10 +906,10 @@ void MachineBlock::output() {
                 uses[1]->getVal() == 0) {
                 auto fp = new MachineOperand(MachineOperand::REG, 11);
                 auto r3 = new MachineOperand(MachineOperand::REG, 3);
-                // int temp = baseOffset + uses[0]->getOffset();
-                // auto off = new MachineOperand(MachineOperand::IMM, temp);
-                auto off = new MachineOperand(MachineOperand::IMM, offset);
-                offset += 4;
+                int temp = baseOffset + uses[0]->getOffset();
+                auto off = new MachineOperand(MachineOperand::IMM, temp);
+                // auto off = new MachineOperand(MachineOperand::IMM, offset);
+                // offset += 4;
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();
@@ -1324,4 +1366,107 @@ int VcvtMInstruction::latency() {
 
 int VmrsMInstruction::latency() {
     return 1;
+}
+
+string BinaryMInstruction::getHash() {
+    auto dst = def_list[0];
+    auto src1 = use_list[0];
+    auto src2 = use_list[1];
+    auto src1Flag = (src1->isReg() && src1->getReg() == 11) || !src1->isReg();
+    auto src2Flag = (src2->isReg() && src2->getReg() == 11) || !src2->isReg();
+    if (!dst->isReg() && src1Flag && src2Flag) {
+        stringstream ss;
+        switch (op) {
+            case ADD:
+                ss << "add";
+                break;
+            case SUB:
+                ss << "sub";
+                break;
+            case MUL:
+                ss << "mul";
+                break;
+            case DIV:
+                ss << "div";
+                break;
+            case AND:
+                ss << "and";
+                break;
+            case OR:
+                ss << "or";
+                break;
+            case VADD:
+                ss << "vadd";
+                break;
+            case VSUB:
+                ss << "vsub";
+                break;
+            case VMUL:
+                ss << "vmul";
+                break;
+            case VDIV:
+                ss << "vdiv";
+                break;
+        }
+        ss << " " << src1->toStr() << " " << src2->toStr();
+        return ss.str();
+    }
+    return "";
+}
+
+string LoadMInstruction::getHash() {
+    stringstream ss;
+    auto dst = def_list[0];
+    auto src = use_list[0];
+    if (!dst->isReg() && src->isImm()) {
+        if (op == LDR)
+            ss << "ldr";
+        else
+            ss << "vldr";
+        ss << " " << src->toStr();
+    }
+    return ss.str();
+}
+
+string MovMInstruction::getHash() {
+    stringstream ss;
+    if (cond != condType::NONE)
+        return ss.str();
+    auto dst = def_list[0];
+    auto src1 = use_list[0];
+    auto src2 = use_list[1];
+    if (!dst->isReg() && !src1->isReg()) {
+        switch (op) {
+            case MOV:
+                ss << "mov";
+                break;
+            case MVN:
+                ss << "mvn";
+                break;
+            case MOVT:
+                ss << "movt";
+                break;
+            case VMOV:
+                ss << "vmov";
+                break;
+            case VMOVF32:
+                ss << "vmovf32";
+                break;
+            case MOVLSL:
+                ss << "movlsl";
+                break;
+            case MOVASR:
+                ss << "movasr";
+                break;
+        }
+        if (op < MOVLSL) {
+            ss << " " << src1->toStr();
+        } else {
+            if (!src2->isReg())
+                ss << " " << src1->toStr() << " " << src2->toStr();
+            else
+                ss.str("");
+        }
+    }
+    return ss.str();
 }

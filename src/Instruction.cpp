@@ -657,9 +657,16 @@ void LoadInstruction::genMachineCode(AsmBuilder* builder) {
                 cur_block->InsertInst((new LoadMInstruction(
                     cur_block, LoadMInstruction::LDR, operand, src2)));
                 src2 = new MachineOperand(*operand);
+                operand = genMachineVReg();
+                cur_block->InsertInst((new BinaryMInstruction(
+                    cur_block, BinaryMInstruction::ADD, operand, src1, src2)));
+                cur_inst =
+                    new LoadMInstruction(cur_block, LoadMInstruction::VLDR, dst,
+                                         new MachineOperand(*operand));
+            } else {
+                cur_inst = new LoadMInstruction(
+                    cur_block, LoadMInstruction::VLDR, dst, src1, src2);
             }
-            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::VLDR,
-                                            dst, src1, src2);
             cur_block->InsertInst(cur_inst);
         } else {
             auto dst = genMachineOperand(operands[0]);
@@ -755,8 +762,18 @@ void StoreInstruction::genMachineCode(AsmBuilder* builder) {
             src2 = operand;
         }
         if (src_float) {
-            cur_inst = new StoreMInstruction(cur_block, StoreMInstruction::VSTR,
-                                             src, src1, src2);
+            if (off > 255 || off < -255) {
+                auto reg = genMachineVReg();
+                cur_inst = new BinaryMInstruction(
+                    cur_block, BinaryMInstruction::ADD, reg, src1, src2);
+                cur_block->InsertInst(cur_inst);
+                cur_inst =
+                    new StoreMInstruction(cur_block, StoreMInstruction::VSTR,
+                                          src, new MachineOperand(*reg));
+            } else {
+                cur_inst = new StoreMInstruction(
+                    cur_block, StoreMInstruction::VSTR, src, src1, src2);
+            }
         } else {
             cur_inst = new StoreMInstruction(cur_block, StoreMInstruction::STR,
                                              src, src1, src2);

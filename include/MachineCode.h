@@ -358,6 +358,8 @@ class MachineFunction {
     MachineBlock* entry;
     std::map<int, MachineBlock*> no2Block;
 
+    bool need_align;
+
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };
     std::vector<MachineBlock*>::iterator begin() { return block_list.begin(); };
@@ -397,6 +399,7 @@ class MachineFunction {
     MachineBlock* getNext(MachineBlock* block);
     // insert b after a
     void InsertAfter(MachineBlock* a, MachineBlock* b);
+    bool needAlign() { return need_align; }
 };
 
 class MachineUnit {

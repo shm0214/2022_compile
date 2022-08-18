@@ -215,9 +215,15 @@ void LinearScan::genSpillCode() {
                     use->getParent()->insertBefore(inst);
 
                 } else {
-                    auto inst = new LoadMInstruction(
-                        use->getParent()->getParent(), LoadMInstruction::VLDR,
-                        temp, fp, new MachineOperand(*operand));
+                    auto reg = new MachineOperand(MachineOperand::VREG,
+                                                  SymbolTable::getLabel());
+                    MachineInstruction* inst = new BinaryMInstruction(
+                        use->getParent()->getParent(), BinaryMInstruction::ADD,
+                        reg, fp, new MachineOperand(*operand));
+                    use->getParent()->insertBefore(inst);
+                    inst = new LoadMInstruction(use->getParent()->getParent(),
+                                                LoadMInstruction::VLDR, temp,
+                                                new MachineOperand(*reg));
                     use->getParent()->insertBefore(inst);
                 }
             } else {
@@ -241,10 +247,10 @@ void LinearScan::genSpillCode() {
             MachineInstruction *inst1 = nullptr, *inst = nullptr;
             if (interval->disp > 255 || interval->disp < -255) {
                 operand = new MachineOperand(MachineOperand::VREG,
-                                                SymbolTable::getLabel());
-                inst1 = new LoadMInstruction(def->getParent()->getParent(),
-                                                LoadMInstruction::LDR, operand,
-                                                off);
+                                             SymbolTable::getLabel());
+                inst1 =
+                    new LoadMInstruction(def->getParent()->getParent(),
+                                         LoadMInstruction::LDR, operand, off);
                 def->getParent()->insertAfter(inst1);
             }
             if (operand) {
@@ -253,9 +259,19 @@ void LinearScan::genSpillCode() {
                         def->getParent()->getParent(), StoreMInstruction::STR,
                         temp, fp, new MachineOperand(*operand));
                 } else {
+                    
+                    auto reg = new MachineOperand(MachineOperand::VREG,
+                                                  SymbolTable::getLabel());
+                    MachineInstruction* tmp_inst = new BinaryMInstruction(
+                        def->getParent()->getParent(), BinaryMInstruction::ADD,
+                        reg, fp, new MachineOperand(*operand));
+                    
+                    inst1->insertAfter(tmp_inst);
+                    inst1 = tmp_inst;
+
                     inst = new StoreMInstruction(
                         def->getParent()->getParent(), StoreMInstruction::VSTR,
-                        temp, fp, new MachineOperand(*operand));
+                        temp, new MachineOperand(*reg));
                 }
             } else {
                 if (!def->isFloat()) {

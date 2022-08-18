@@ -758,6 +758,31 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
     this->stack_size = 0;
     this->paramsNum =
         ((FunctionType*)(sym_ptr->getType()))->getParamsSe().size();
+
+    auto paramsSe = ((FunctionType*)(sym_ptr->getType()))->getParamsSe();
+
+    int float_num = 0;
+    int int_num = 0;
+    int push_num = 0;
+    for (auto se : paramsSe) {
+        if (se->getType()->isFloat()) {
+            float_num++;
+        } else {
+            int_num++;
+        }
+    }
+
+    if (float_num > 4) {
+        push_num += float_num - 4;
+    }
+    if (int_num > 4) {
+        push_num += int_num - 4;
+    }
+    if (push_num % 2 != 0) {
+        need_align = true;
+    } else {
+        need_align = false;
+    }
 };
 
 std::string MachineBlock::getLabel() {
@@ -801,7 +826,7 @@ void MachineBlock::output() {
                                              parent->getSavedRegs(), fp, lr);
             cur_inst->output();
         }
-        if (num > 4 && (*it)->isStore()) {
+        if ((*it)->isStore()) {
             MachineOperand* operand = (*it)->getUse()[0];
             if (operand->isReg() && operand->getReg() == 3 &&
                 operand->isParam()) {
@@ -810,18 +835,19 @@ void MachineBlock::output() {
                 // int temp = baseOffset + operand->getOffset();
                 // auto off = new MachineOperand(MachineOperand::IMM, temp);
                 auto off = new MachineOperand(MachineOperand::IMM, offset);
-                offset += 4; // FIXME
+                offset += 4;
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();
-            } else if (operand->isReg() && operand->getReg() == 20) {
-                // floating point
-                if (first) {
+            } else if (operand->isReg() && operand->getReg() == 20 &&
+                       operand->isParam()) {
+                if (parent->needAlign() && first) {
                     first = false;
                 } else {
+                    // floating point
                     auto fp = new MachineOperand(MachineOperand::REG, 11);
                     auto s4 = new MachineOperand(MachineOperand::REG, 20, true);
-                    
+
                     // int temp = baseOffset + operand->getOffset();
                     // auto off = new MachineOperand(MachineOperand::IMM, temp);
                     auto off = new MachineOperand(MachineOperand::IMM, offset);
@@ -832,7 +858,7 @@ void MachineBlock::output() {
                 }
             }
         }
-        if (num > 4 && (*it)->isAdd()) {
+        if ((*it)->isAdd()) {
             auto uses = (*it)->getUse();
             if (uses[0]->isParam() && uses[1]->isImm() &&
                 uses[1]->getVal() == 0) {
@@ -1275,7 +1301,7 @@ int BranchMInstruction::latency() {
 }
 
 int CmpMInstruction::latency() {
-    if (this->op==CmpMInstruction::VCMP) {
+    if (this->op == CmpMInstruction::VCMP) {
         return 3;
     }
     return 1;

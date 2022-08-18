@@ -156,14 +156,14 @@ BinaryInstruction::~BinaryInstruction() {
 std::pair<int, int> BinaryInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
     std::pair<int, int> res, val1, val2;
-    if (value.find(src1) == value.end())
-        val1 = src1->getInitLatticeValue();
+    if (value.find(this->getUse()[0]) == value.end())
+        val1 = this->getUse()[0]->getInitLatticeValue();
     else
-        val1 = value[src1];
-    if (value.find(src2) == value.end())
-        val2 = src2->getInitLatticeValue();
+        val1 = value[this->getUse()[0]];
+    if (value.find(this->getUse()[1]) == value.end())
+        val2 = this->getUse()[1]->getInitLatticeValue();
     else
-        val2 = value[src2];
+        val2 = value[this->getUse()[1]];
 
     if (val1.first == -1 || val2.first == -1)
         res = {-1, 0};
@@ -252,7 +252,7 @@ CmpInstruction::CmpInstruction(unsigned opcode,
                                Operand* src1,
                                Operand* src2,
                                BasicBlock* insert_bb)
-    : Instruction(CMP, insert_bb), dst(dst), src1(src1), src2(src2) {
+    : Instruction(CMP, insert_bb) {
     this->opcode = opcode;
     operands.push_back(dst);
     operands.push_back(src1);
@@ -326,14 +326,14 @@ void CmpInstruction::output() const {
 std::pair<int, int> CmpInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
     std::pair<int, int> res, val1, val2;
-    if (value.find(src1) == value.end())
-        val1 = src1->getInitLatticeValue();
+    if (value.find(this->getUse()[0]) == value.end())
+        val1 = this->getUse()[0]->getInitLatticeValue();
     else
-        val1 = value[src1];
-    if (value.find(src2) == value.end())
-        val2 = src2->getInitLatticeValue();
+        val1 = value[this->getUse()[0]];
+    if (value.find(this->getUse()[1]) == value.end())
+        val2 = this->getUse()[1]->getInitLatticeValue();
     else
-        val2 = value[src2];
+        val2 = value[this->getUse()[1]];
     if (val1.first == -1 || val2.first == -1){
         res = {-1, 0};
     }
@@ -2186,10 +2186,10 @@ bool LoadInstruction::genNode() {
 std::pair<int, int> LoadInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
     std::pair<int, int> l;
-    if (value.find(src_addr) == value.end())
-        l = src_addr->getInitLatticeValue();
+    if (value.find(this->getUse()[0]) == value.end())
+        l = this->getUse()[0]->getInitLatticeValue();
     else
-        l = value[src_addr];
+        l = value[this->getUse()[0]];
     return l;
 }
 
@@ -2575,10 +2575,10 @@ std::string ShlInstruction::getHash() {
 std::pair<int, int> ShlInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
     std::pair<int, int> res, val1, val2;
-    if (value.find(src) == value.end())
-        val1 = src->getInitLatticeValue();
+    if (value.find(this->getUse()[0]) == value.end())
+        val1 = this->getUse()[0]->getInitLatticeValue();
     else
-        val1 = value[src];
+        val1 = value[this->getUse()[0]];
     if (value.find(num) == value.end())
         val2 = num->getInitLatticeValue();
     else
@@ -2656,10 +2656,10 @@ AshrInstruction::~AshrInstruction() {
 std::pair<int, int> AshrInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
 {
     std::pair<int, int> res, val1, val2;
-    if (value.find(src) == value.end())
-        val1 = src->getInitLatticeValue();
+    if (value.find(this->getUse()[0]) == value.end())
+        val1 = this->getUse()[0]->getInitLatticeValue();
     else
-        val1 = value[src];
+        val1 = value[this->getUse()[0]];
     if (value.find(num) == value.end())
         val2 = num->getInitLatticeValue();
     else

@@ -93,7 +93,7 @@ int main(int argc, char* argv[]) {
         ast.output();
     ast.typeCheck();
     ast.genCode(&unit);
-    if (optimize && false) {
+    if (optimize) {
         ElimUnreachCode euc(&unit);
         DeadCodeElimination dce(&unit);
         Starighten s(&unit);

@@ -62,9 +62,9 @@
 #line 1 "src/parser.y" /* yacc.c:316  */
 
     #include <iostream>
+    #include <cstring>
     #include <assert.h>
     #include "parser.h"
-    #include <cstring>
     #include <stack>
     extern Ast ast;
 

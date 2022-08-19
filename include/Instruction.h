@@ -236,6 +236,23 @@ class CmpInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    void swapSrc() {
+        switch (opcode) {
+            case L:
+                opcode = G;
+                break;
+            case LE:
+                opcode = GE;
+                break;
+            case G:
+                opcode = L;
+                break;
+            case GE:
+                opcode = LE;
+                break;
+        }
+        std::swap(operands[1], operands[2]);
+    }
 };
 
 class UncondBrInstruction : public Instruction {

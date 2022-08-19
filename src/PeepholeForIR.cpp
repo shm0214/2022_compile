@@ -4,12 +4,15 @@ using namespace std;
 
 void PeepholeForIR::pass() {
     auto iter = unit->begin();
-    while (iter != unit->end())
-        pass(*iter++);
+    while (iter != unit->end()) {
+        pass1(*iter);
+        pass2(*iter);
+        iter++;
+    }
     cleanOnlyStore();
 }
 
-void PeepholeForIR::pass(Function* func) {
+void PeepholeForIR::pass1(Function* func) {
     bool again = true;
     while (again) {
         again = false;
@@ -160,4 +163,16 @@ void PeepholeForIR::cleanOnlyStore() {
                 use->removeUse(in);
                 in->getParent()->remove(in);
             }
+}
+
+void PeepholeForIR::pass2(Function* func) {
+    for (auto block : func->getBlockList()) {
+        auto in = block->rbegin();
+        if (!in->isCond())
+            continue;
+        auto cmp = (CmpInstruction*)(in->getPrev());
+        auto uses = cmp->getUse();
+        if (uses[0]->isConst() && uses[0]->getConstVal() == 0)
+            cmp->swapSrc();
+    }
 }

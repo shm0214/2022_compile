@@ -140,6 +140,7 @@ class AllocaInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    SymbolEntry* getEntry() { return se; }
 
    private:
     SymbolEntry* se;

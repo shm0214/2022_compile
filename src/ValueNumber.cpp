@@ -226,8 +226,10 @@ void ValueNumber::pass(BasicBlock* block,
                     }
                     valueNumber[in->getDef()] = hash[in->getHash()];
                     temp.push_back(in);
-                    auto addr = in->getUse()[0];
-                    addr->removeUse(in);
+                    // auto addr = in->getUse()[0];
+                    // addr->removeUse(in);
+                    for (auto u : in->getUse())
+                        u->removeUse(in);
                     auto ope = in->getDef();
                     auto new_ = valueNumber[ope];
                     auto it = ope->use_begin();

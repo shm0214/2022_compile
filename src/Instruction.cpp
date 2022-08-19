@@ -131,7 +131,7 @@ void BinaryInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[1]->removeUse(this);
         operands[1] = new_;
         new_->addUse(this);
-    } 
+    }
     if (operands[2] == old) {
         operands[2]->removeUse(this);
         operands[2] = new_;
@@ -153,8 +153,8 @@ BinaryInstruction::~BinaryInstruction() {
     operands[2]->removeUse(this);
 }
 
-std::pair<int, int> BinaryInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
-{
+std::pair<int, int> BinaryInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
     std::pair<int, int> res, val1, val2;
     if (value.find(this->getUse()[0]) == value.end())
         val1 = this->getUse()[0]->getInitLatticeValue();
@@ -167,37 +167,34 @@ std::pair<int, int> BinaryInstruction::getLatticeValue(std::map<Operand *, std::
 
     if (val1.first == -1 || val2.first == -1)
         res = {-1, 0};
-    else if (val1.first == 0 && val2.first == 0)
-    {
+    else if (val1.first == 0 && val2.first == 0) {
         res.first = 0;
-        switch (opcode)
-        {
-        case ADD:
-            res.second = val1.second + val2.second;
-            break;
-        case SUB:
-            res.second = val1.second - val2.second;
-            break;
-        case MUL:
-            res.second = val1.second * val2.second;
-            break;
-        case DIV:
-            res.second = val1.second / val2.second;
-            break;
-        case MOD:
-            res.second = val1.second % val2.second;
-            break;
-        case AND:
-            res.second = val1.second & val2.second;
-            break;
-        case OR:
-            res.second = val1.second | val2.second;
-            break;
-        default:
-            break;
+        switch (opcode) {
+            case ADD:
+                res.second = val1.second + val2.second;
+                break;
+            case SUB:
+                res.second = val1.second - val2.second;
+                break;
+            case MUL:
+                res.second = val1.second * val2.second;
+                break;
+            case DIV:
+                res.second = val1.second / val2.second;
+                break;
+            case MOD:
+                res.second = val1.second % val2.second;
+                break;
+            case AND:
+                res.second = val1.second & val2.second;
+                break;
+            case OR:
+                res.second = val1.second | val2.second;
+                break;
+            default:
+                break;
         }
-    }
-    else
+    } else
         res.first = 1;
     return res;
 }
@@ -323,8 +320,8 @@ void CmpInstruction::output() const {
             type.c_str(), s2.c_str(), s3.c_str());
 }
 
-std::pair<int, int> CmpInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
-{
+std::pair<int, int> CmpInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
     std::pair<int, int> res, val1, val2;
     if (value.find(this->getUse()[0]) == value.end())
         val1 = this->getUse()[0]->getInitLatticeValue();
@@ -334,37 +331,33 @@ std::pair<int, int> CmpInstruction::getLatticeValue(std::map<Operand *, std::pai
         val2 = this->getUse()[1]->getInitLatticeValue();
     else
         val2 = value[this->getUse()[1]];
-    if (val1.first == -1 || val2.first == -1){
+    if (val1.first == -1 || val2.first == -1) {
         res = {-1, 0};
-    }
-    else if (val1.first == 0 && val2.first == 0)
-    {
+    } else if (val1.first == 0 && val2.first == 0) {
         res.first = 0;
-        switch (opcode)
-        {
-        case E:
-            res.second = val1.second == val2.second;
-            break;
-        case NE:
-            res.second = val1.second != val2.second;
-            break;
-        case L:
-            res.second = val1.second < val2.second;
-            break;
-        case GE:
-            res.second = val1.second >= val2.second;
-            break;
-        case G:
-            res.second = val1.second > val2.second;
-            break;
-        case LE:
-            res.second = val1.second <= val2.second;
-            break;
-        default:
-            break;
+        switch (opcode) {
+            case E:
+                res.second = val1.second == val2.second;
+                break;
+            case NE:
+                res.second = val1.second != val2.second;
+                break;
+            case L:
+                res.second = val1.second < val2.second;
+                break;
+            case GE:
+                res.second = val1.second >= val2.second;
+                break;
+            case G:
+                res.second = val1.second > val2.second;
+                break;
+            case LE:
+                res.second = val1.second <= val2.second;
+                break;
+            default:
+                break;
         }
-    }
-    else{
+    } else {
         res.first = 1;
     }
     return res;
@@ -391,7 +384,10 @@ CondBrInstruction::CondBrInstruction(BasicBlock* true_branch,
                                      BasicBlock* false_branch,
                                      Operand* cond,
                                      BasicBlock* insert_bb)
-    : Instruction(COND, insert_bb), cond(cond), true_branch(true_branch), false_branch(false_branch) {
+    : Instruction(COND, insert_bb),
+      cond(cond),
+      true_branch(true_branch),
+      false_branch(false_branch) {
     cond->addUse(this);
     operands.push_back(cond);
     originTrue = originFalse = nullptr;
@@ -572,7 +568,7 @@ void StoreInstruction::replaceUse(Operand* old, Operand* new_) {
         operands[0]->removeUse(this);
         operands[0] = new_;
         new_->addUse(this);
-    } 
+    }
     if (operands[1] == old) {
         operands[1]->removeUse(this);
         operands[1] = new_;
@@ -1448,34 +1444,47 @@ void GepInstruction::replaceUse(Operand* old, Operand* new_) {
     }
 }
 
-double* GepInstruction::getArrayValue(){
+double* GepInstruction::getArrayValue() {
     GepInstruction* tmp = this;
-    while(!tmp->first){
+    while (!tmp->first) {
         tmp = (GepInstruction*)tmp->getUse()[0]->getDef();
     }
-    return ((IdentifierSymbolEntry*)tmp->getUse()[0]->getEntry())->getArrayValue();
+    auto in = tmp->getUse()[0]->getDef();
+    if (in->isAlloc()) {
+        auto alloca = (AllocaInstruction*)in;
+        return ((IdentifierSymbolEntry*)(alloca->getEntry()))->getArrayValue();
+    }
+    return nullptr;
 }
 
-int GepInstruction::getFlatIdx(){
-    if(first) 
+int GepInstruction::getFlatIdx() {
+    if (first)
         return this->getUse()[1]->getConstVal();
     GepInstruction* tmp = this;
     int res;
     SymbolEntry* se = tmp->getUse()[1]->getEntry();
-    if(se->isConstant())
+    if (se->isConstant())
         res = ((ConstantSymbolEntry*)se)->getValue();
-    else if(se->isVariable())
-        res = ((IdentifierSymbolEntry*)se)->getValue();    
-    int fsize = ((ArrayType*)((PointerType*)(tmp->getUse()[0]->getEntry()->getType()))->getType())->getElementType()->getSize();
-    while(!tmp->first){
-        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();  
-        se = tmp->getUse()[1]->getEntry();              
-        int len = ((ArrayType*)((PointerType*)tmp->getUse()[0]->getEntry()->getType())->getType())->getElementType()->getSize();
-        len /= fsize;      
-        if(se->isConstant())
+    else if (se->isVariable())
+        res = ((IdentifierSymbolEntry*)se)->getValue();
+    int fsize =
+        ((ArrayType*)((PointerType*)(tmp->getUse()[0]->getEntry()->getType()))
+             ->getType())
+            ->getElementType()
+            ->getSize();
+    while (!tmp->first) {
+        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();
+        se = tmp->getUse()[1]->getEntry();
+        int len =
+            ((ArrayType*)((PointerType*)tmp->getUse()[0]->getEntry()->getType())
+                 ->getType())
+                ->getElementType()
+                ->getSize();
+        len /= fsize;
+        if (se->isConstant())
             res += ((ConstantSymbolEntry*)se)->getValue() * len;
-        else if(se->isVariable())
-            res += ((IdentifierSymbolEntry*)se)->getValue()  * len;
+        else if (se->isVariable())
+            res += ((IdentifierSymbolEntry*)se)->getValue() * len;
     }
     return res;
 }
@@ -1934,8 +1943,8 @@ void PhiInstruction::output() const {
     fprintf(yyout, "\n");
 }
 
-std::pair<int, int> PhiInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
-{
+std::pair<int, int> PhiInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
     std::pair<int, int> res, tmp;
     res = {1, 0};
     /*
@@ -2191,8 +2200,8 @@ bool LoadInstruction::genNode() {
     return true;
 }
 
-std::pair<int, int> LoadInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
-{
+std::pair<int, int> LoadInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
     std::pair<int, int> l;
     if (value.find(this->getUse()[0]) == value.end())
         l = this->getUse()[0]->getInitLatticeValue();
@@ -2580,8 +2589,8 @@ std::string ShlInstruction::getHash() {
     return s.str();
 }
 
-std::pair<int, int> ShlInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
-{
+std::pair<int, int> ShlInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
     std::pair<int, int> res, val1, val2;
     if (value.find(this->getUse()[0]) == value.end())
         val1 = this->getUse()[0]->getInitLatticeValue();
@@ -2594,12 +2603,10 @@ std::pair<int, int> ShlInstruction::getLatticeValue(std::map<Operand *, std::pai
 
     if (val1.first == -1 || val2.first == -1)
         res = {-1, 0};
-    else if (val1.first == 0 && val2.first == 0)
-    {
+    else if (val1.first == 0 && val2.first == 0) {
         res.first = 0;
         res.second = val1.second << val2.second;
-    }
-    else
+    } else
         res.first = 1;
     return res;
 }
@@ -2661,8 +2668,8 @@ AshrInstruction::~AshrInstruction() {
     operands[2]->removeUse(this);
 }
 
-std::pair<int, int> AshrInstruction::getLatticeValue(std::map<Operand *, std::pair<int, int>> &value)
-{
+std::pair<int, int> AshrInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
     std::pair<int, int> res, val1, val2;
     if (value.find(this->getUse()[0]) == value.end())
         val1 = this->getUse()[0]->getInitLatticeValue();
@@ -2675,12 +2682,10 @@ std::pair<int, int> AshrInstruction::getLatticeValue(std::map<Operand *, std::pa
 
     if (val1.first == -1 || val2.first == -1)
         res = {-1, 0};
-    else if (val1.first == 0 && val2.first == 0)
-    {
+    else if (val1.first == 0 && val2.first == 0) {
         res.first = 0;
         res.second = val1.second >> val2.second;
-    }
-    else
+    } else
         res.first = 1;
     return res;
 }

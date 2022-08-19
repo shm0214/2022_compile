@@ -1022,14 +1022,14 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
             case MOD: {
                 // c = a % b
                 // c = a / b
-                if(operands[2]->isConst()){
-                    int b = operands[2]->getConstVal();
-                    if((b & (b-1)) == 0){
-                        cur_inst = new BinaryMInstruction(
-                            cur_block, BinaryMInstruction::MOD, dst, src1, src2);
-                        break;
-                    }
-                }
+                // if(operands[2]->isConst()){
+                //     int b = operands[2]->getConstVal();
+                //     if((b & (b-1)) == 0){
+                //         cur_inst = new BinaryMInstruction(
+                //             cur_block, BinaryMInstruction::MOD, dst, src1, src2);
+                //         break;
+                //     }
+                // }
                 cur_inst = new BinaryMInstruction(
                     cur_block, BinaryMInstruction::DIV, dst, src1, src2);
                 MachineOperand* dst1 = new MachineOperand(*dst);

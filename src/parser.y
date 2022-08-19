@@ -898,6 +898,8 @@ FuncDef
         funcType = new FunctionType($1, vec, vec1);
         SymbolEntry* se = new IdentifierSymbolEntry(
             funcType, $2, identifiers->getPrev()->getLevel());
+        ((IdentifierSymbolEntry*)se)->setIntParamNo(paramNo);
+        ((IdentifierSymbolEntry*)se)->setFloatParamNo(fpParamNo);
         if (!identifiers->getPrev()->install($2, se)) {
             fprintf(stderr, "redefinition of \'%s %s\'\n", $2, se->getType()->toStr().c_str());
         }

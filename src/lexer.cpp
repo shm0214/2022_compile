@@ -1295,13 +1295,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-#line 304 "src/lexer.l"
+#line 306 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1316,13 +1318,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(0);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-#line 321 "src/lexer.l"
+#line 325 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1338,13 +1342,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-#line 339 "src/lexer.l"
+#line 345 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1359,13 +1365,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(0);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-#line 357 "src/lexer.l"
+#line 365 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1381,13 +1389,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(0);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(1);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-#line 376 "src/lexer.l"
+#line 386 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1402,13 +1412,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(0);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-#line 393 "src/lexer.l"
+#line 405 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1426,13 +1438,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(2);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-#line 414 "src/lexer.l"
+#line 428 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1449,13 +1463,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-#line 433 "src/lexer.l"
+#line 449 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1473,13 +1489,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(2);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-#line 454 "src/lexer.l"
+#line 472 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1497,13 +1515,15 @@ YY_RULE_SETUP
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-#line 475 "src/lexer.l"
+#line 495 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1526,7 +1546,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-#line 494 "src/lexer.l"
+#line 514 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1546,13 +1566,15 @@ YY_RULE_SETUP
     char *temp = new char[6+strlen(yytext)];
     memcpy(temp, lexeme, 6+strlen(yytext));
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, temp, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(temp, se);
     return ID;
 }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-#line 516 "src/lexer.l"
+#line 538 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1572,13 +1594,15 @@ YY_RULE_SETUP
     char *temp = new char[6+strlen(yytext)];
     memcpy(temp, lexeme, 14);
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, temp, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(temp, se);
     return ID;
 }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-#line 539 "src/lexer.l"
+#line 563 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1591,7 +1615,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-#line 548 "src/lexer.l"
+#line 572 "src/lexer.l"
 {
     if(dump_tokens)
         DUMP_TOKEN(yytext);
@@ -1605,7 +1629,7 @@ YY_RULE_SETUP
 case 54:
 /* rule 54 can match eol */
 YY_RULE_SETUP
-#line 557 "src/lexer.l"
+#line 581 "src/lexer.l"
 {
     chars += strlen(yytext);
     yylineno++;
@@ -1614,35 +1638,35 @@ YY_RULE_SETUP
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-#line 562 "src/lexer.l"
+#line 586 "src/lexer.l"
 
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-#line 563 "src/lexer.l"
+#line 587 "src/lexer.l"
 {}
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-#line 564 "src/lexer.l"
+#line 588 "src/lexer.l"
 {BEGIN BLOCKCOMMENT;}
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-#line 565 "src/lexer.l"
+#line 589 "src/lexer.l"
 {}
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-#line 566 "src/lexer.l"
+#line 590 "src/lexer.l"
 {BEGIN INITIAL;}
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-#line 569 "src/lexer.l"
+#line 593 "src/lexer.l"
 ECHO;
 	YY_BREAK
-#line 1646 "src/lexer.cpp"
+#line 1670 "src/lexer.cpp"
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(BLOCKCOMMENT):
 	yyterminate();
@@ -2648,6 +2672,6 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 569 "src/lexer.l"
+#line 593 "src/lexer.l"
 
 

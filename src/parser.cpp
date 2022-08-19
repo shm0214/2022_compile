@@ -615,8 +615,8 @@ static const yytype_int16 yyrline[] =
      421,   422,   425,   428,   434,   438,   441,   445,   448,   456,
      483,   499,   499,   537,   563,   563,   612,   615,   621,   677,
      703,   703,   741,   800,   826,   826,   863,   866,   871,   874,
-     880,   888,   880,   915,   916,   918,   922,   927,   950,   982,
-     985
+     880,   888,   880,   917,   918,   920,   924,   929,   952,   984,
+     987
 };
 #endif
 
@@ -2570,6 +2570,8 @@ yyreduce:
         funcType = new FunctionType((yyvsp[-5].type), vec, vec1);
         SymbolEntry* se = new IdentifierSymbolEntry(
             funcType, (yyvsp[-4].strtype), identifiers->getPrev()->getLevel());
+        ((IdentifierSymbolEntry*)se)->setIntParamNo(paramNo);
+        ((IdentifierSymbolEntry*)se)->setFloatParamNo(fpParamNo);
         if (!identifiers->getPrev()->install((yyvsp[-4].strtype), se)) {
             fprintf(stderr, "redefinition of \'%s %s\'\n", (yyvsp[-4].strtype), se->getType()->toStr().c_str());
         }
@@ -2591,15 +2593,15 @@ yyreduce:
     break;
 
   case 103: /* MaybeFuncFParams: FuncFParams  */
-#line 915 "src/parser.y"
+#line 917 "src/parser.y"
                   { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 2597 "src/parser.cpp"
+#line 2599 "src/parser.cpp"
     break;
 
   case 104: /* MaybeFuncFParams: %empty  */
-#line 916 "src/parser.y"
+#line 918 "src/parser.y"
              { (yyval.stmttype) = nullptr; }
-#line 2603 "src/parser.cpp"
+#line 2605 "src/parser.cpp"
     break;
 
   case 105: /* FuncFParams: FuncFParams COMMA FuncFParam  */
@@ -2612,11 +2614,11 @@ yyreduce:
     break;
 
   case 106: /* FuncFParams: FuncFParam  */
-#line 922 "src/parser.y"
+#line 924 "src/parser.y"
                  {
         (yyval.stmttype) = (yyvsp[0].stmttype);
     }
-#line 2620 "src/parser.cpp"
+#line 2622 "src/parser.cpp"
     break;
 
   case 107: /* FuncFParam: Type ID  */
@@ -2683,11 +2685,11 @@ yyreduce:
     break;
 
   case 109: /* FuncArrayIndices: LBRACKET RBRACKET  */
-#line 982 "src/parser.y"
+#line 984 "src/parser.y"
                         {
         (yyval.exprtype) = new ExprNode(nullptr);
     }
-#line 2691 "src/parser.cpp"
+#line 2693 "src/parser.cpp"
     break;
 
   case 110: /* FuncArrayIndices: FuncArrayIndices LBRACKET Exp RBRACKET  */

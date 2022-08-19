@@ -528,6 +528,7 @@ class BitcastInstruction : public Instruction {
    private:
     Operand* dst;
     Operand* src;
+    bool flag;
 
    public:
     BitcastInstruction(Operand* dst,
@@ -548,6 +549,8 @@ class BitcastInstruction : public Instruction {
         def->setDef(this);
     }
     void replaceUse(Operand* old, Operand* new_);
+    void setFlag() { flag = true; }
+    bool getFlag() { return flag; }
 };
 
 class ShlInstruction : public Instruction {

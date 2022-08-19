@@ -22,6 +22,7 @@
 #include "PeepholeForIR.h"
 #include "PeepholeOptimization.h"
 #include "SSADestruction.h"
+#include "SpecialOptimize.h"
 #include "Starighten.h"
 #include "TreeHeightBalance.h"
 #include "Unit.h"
@@ -104,11 +105,14 @@ int main(int argc, char* argv[]) {
         AutoInline ai(&unit);
         Global2Local g2l(&unit);
         PeepholeForIR ph(&unit);
+        SpecialOptimize so(&unit);
         g2l.pass();
         s.pass();
         m2r.pass();
         dce.pass();
         vn.pass();
+        // 速度较慢 
+        so.pass();
         ai.pass();
         dce.pass();
         cp.pass();

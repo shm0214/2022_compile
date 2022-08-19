@@ -1,13 +1,13 @@
 #ifndef __DIV_TO_MUL_H
 #define __DIV_TO_MUL_H
 
-#include "Unit.h"
+#include "MachineCode.h"
 class Div2Mul {
-    Unit* unit;
+    MachineUnit* unit;
    public:
-    Div2Mul(Unit* unit) : unit(unit){};
+    Div2Mul(MachineUnit* unit) : unit(unit){};
     void pass();
-    void div2mul(Function *);
+    void div2mul(MachineFunction *);
     ~Div2Mul();
 };
 

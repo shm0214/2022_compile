@@ -27,6 +27,7 @@ class MachineInstruction;
 
 class MachineOperand {
    private:
+    MachineInstruction* def = nullptr;
     MachineInstruction* parent;
     int type;
     int val;            // value of immediate number
@@ -56,6 +57,8 @@ class MachineOperand {
         this->fval = fval;
         this->fpu = true;
     }
+    void setDef(MachineInstruction* inst) { def = inst; };
+    MachineInstruction* getDef() { return def; };
     uint32_t getBinVal();
     bool isFloat() { return this->fpu; }
     int getReg() { return this->reg_no; };
@@ -127,10 +130,14 @@ class MachineInstruction {
     bool isStore() const { return type == STORE; };
     bool isBinary() const { return type == BINARY; }
     bool isAdd() const { return type == BINARY && op == 0; };
-    bool isVAdd() const { return type == BINARY && op == 6; };
+    bool isVAdd() const { return type == BINARY && op == 7; };
     bool isSub() const { return type == BINARY && op == 1; };
     bool isMul() const { return type == BINARY && op == 2; };
     bool isDiv() const { return type == BINARY && op == 3; };
+    bool isDivConst() const { return type == BINARY && op == 3 && use_list[1]->getDef() && use_list[1]->getDef()->getUse()[0]->isImm(); };
+    bool isMod() const { return type == BINARY && op == 4; };
+    bool isModConst() const { return type == BINARY && op == 4 && use_list[1]->getDef() && use_list[1]->getDef()->getUse()[0]->isImm(); };
+    
     bool isMov() const { return type == MOV && op == 0; };
     bool isVMov() const { return type == MOV && op == 3; };
     bool isCondMov() const { return type == MOV && op == 0 && cond != NONE; };
@@ -176,7 +183,7 @@ class FuseMInstruction : public MachineInstruction {
 
 class BinaryMInstruction : public MachineInstruction {
    public:
-    enum opType { ADD, SUB, MUL, DIV, AND, OR, VADD, VSUB, VMUL, VDIV };
+    enum opType { ADD, SUB, MUL, DIV, MOD, AND, OR, VADD, VSUB, VMUL, VDIV };
     BinaryMInstruction(MachineBlock* p,
                        int op,
                        MachineOperand* dst,
@@ -220,7 +227,7 @@ class StoreMInstruction : public MachineInstruction {
 
 class MovMInstruction : public MachineInstruction {
    public:
-    enum opType { MOV, MVN, MOVT, VMOV, VMOVF32, MOVLSL, MOVASR };
+    enum opType { MOV, MVN, MOVT, VMOV, VMOVF32, MOVLSL, MOVLSR, MOVASR };
     MovMInstruction(MachineBlock* p,
                     int op,
                     MachineOperand* dst,

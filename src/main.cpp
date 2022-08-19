@@ -99,7 +99,6 @@ int main(int argc, char* argv[]) {
         Starighten s(&unit);
         Mem2reg m2r(&unit);
         SSADestruction ssad(&unit);
-        // Div2Mul d2m(&unit);
         CopyProp cp(&unit);
         ValueNumber vn(&unit);
         CondCopyProp cc(&unit);
@@ -114,9 +113,6 @@ int main(int argc, char* argv[]) {
         dce.pass();
         ai.pass();
         dce.pass();
-
-        // d2m.pass();
-
         cp.pass();
         vn.pass();
         cc.pass();
@@ -137,12 +133,14 @@ int main(int argc, char* argv[]) {
     }
     unit.genMachineCode(&mUnit);
     if (optimize) {
+        Div2Mul d2m(&mUnit);
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         CleanAsmAddZero caaz(&mUnit);
         ConstAsm ca(&mUnit);
         PeepholeOptimization po(&mUnit);
         PartialRedundancyElimination pre(&mUnit);
+        // d2m.pass();
         caaz.pass();
         ca.pass();
         // 效果一般 而且会导致编译时间长一些

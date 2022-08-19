@@ -1463,22 +1463,29 @@ void CallInstruction::genMachineCode(AsmBuilder* builder) {
         auto r2 = genMachineReg(2);
         auto int8Ptr = operands[1];
         auto bitcast = (BitcastInstruction*)(int8Ptr->getDef());
-        auto arraySE =
-            (TemporarySymbolEntry*)(bitcast->getUse()[0]->getEntry());
-        int offset = arraySE->getOffset();
-        operand = genMachineVReg();
-        auto fp = genMachineReg(11);
-        if (offset > -255 && offset < 255) {
-            cur_block->InsertInst(
-                new BinaryMInstruction(cur_block, BinaryMInstruction::ADD, r0,
-                                       fp, genMachineImm(offset)));
+        if (!bitcast->getFlag()) {
+            auto arraySE =
+                (TemporarySymbolEntry*)(bitcast->getUse()[0]->getEntry());
+            int offset = arraySE->getOffset();
+            operand = genMachineVReg();
+            auto fp = genMachineReg(11);
+            if (offset > -255 && offset < 255) {
+                cur_block->InsertInst(
+                    new BinaryMInstruction(cur_block, BinaryMInstruction::ADD,
+                                           r0, fp, genMachineImm(offset)));
+            } else {
+                cur_inst =
+                    new LoadMInstruction(cur_block, LoadMInstruction::LDR,
+                                         operand, genMachineImm(offset));
+                operand = new MachineOperand(*operand);
+                cur_block->InsertInst(cur_inst);
+                cur_block->InsertInst(new BinaryMInstruction(
+                    cur_block, BinaryMInstruction::ADD, r0, fp, operand));
+            }
         } else {
-            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
-                                            operand, genMachineImm(offset));
-            operand = new MachineOperand(*operand);
-            cur_block->InsertInst(cur_inst);
-            cur_block->InsertInst(new BinaryMInstruction(
-                cur_block, BinaryMInstruction::ADD, r0, fp, operand));
+            cur_block->InsertInst(
+                new MovMInstruction(cur_block, MovMInstruction::MOV, r0,
+                                    genMachineOperand(bitcast->getUse()[0])));
         }
         cur_block->InsertInst(new MovMInstruction(
             cur_block, MovMInstruction::MOV, r1, genMachineImm(0)));
@@ -2058,6 +2065,7 @@ BitcastInstruction::BitcastInstruction(Operand* dst,
     operands.push_back(src);
     dst->setDef(this);
     src->addUse(this);
+    flag = false;
 }
 
 void BitcastInstruction::output() const {
@@ -2080,8 +2088,8 @@ void BitcastInstruction::genMachineCode(AsmBuilder* builder) {
     auto type = ptr->getType();
     if (!(type->isInt() && type->getSize() == 8)) {
         auto block = builder->getBlock();
-        auto dst = genMachineOperand(this->dst);
-        auto src = genMachineOperand(this->src);
+        auto dst = genMachineOperand(operands[0]);
+        auto src = genMachineOperand(operands[1]);
         auto zero = genMachineImm(0);
         auto in = new BinaryMInstruction(block, BinaryMInstruction::ADD, dst,
                                          src, zero);

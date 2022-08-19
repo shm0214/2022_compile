@@ -6,8 +6,6 @@ using Uint64 = unsigned long long;
 using Int32 = int;
 using Int64 = long long;
 
-using namespace std;
-
 const int N = 32;
 inline int clz(Uint32 x) { return __builtin_clz(x); }
 inline int ctz(Uint32 x) { return __builtin_ctz(x); }

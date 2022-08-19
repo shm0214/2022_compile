@@ -1,6 +1,5 @@
 #include "PeepholeOptimization.h"
 
-
 PeepholeOptimization::PeepholeOptimization(MachineUnit* mUnit) {
     this->mUnit = mUnit;
 }
@@ -123,8 +122,14 @@ void PeepholeOptimization::pass() {
                             ldr_stk_src2 == nullptr) {
                             dst = new MachineOperand(*dst);
                             src = new MachineOperand(*src);
-                            auto new_inst = new MovMInstruction(
-                                block, MovMInstruction::MOV, dst, src);
+                            MachineInstruction* new_inst;
+                            if (dst->isFloat() && src->isFloat()) {
+                                new_inst = new MovMInstruction(
+                                    block, MovMInstruction::VMOVF32, dst, src);
+                            } else {
+                                new_inst = new MovMInstruction(
+                                    block, MovMInstruction::MOV, dst, src);
+                            }
                             // cannot determine whether the stack will be used
                             // again or not.
                             *next_inst_iter = new_inst;
@@ -134,8 +139,14 @@ void PeepholeOptimization::pass() {
                             // for offset
                             dst = new MachineOperand(*dst);
                             src = new MachineOperand(*src);
-                            auto new_inst = new MovMInstruction(
-                                block, MovMInstruction::MOV, dst, src);
+                            MachineInstruction* new_inst;
+                            if (dst->isFloat() && src->isFloat()) {
+                                new_inst = new MovMInstruction(
+                                    block, MovMInstruction::VMOVF32, dst, src);
+                            } else {
+                                new_inst = new MovMInstruction(
+                                    block, MovMInstruction::MOV, dst, src);
+                            }
                             // cannot determine whether the stack will be
                             // used again or not.
                             *next_inst_iter = new_inst;
@@ -169,8 +180,14 @@ void PeepholeOptimization::pass() {
                         auto dst = next_inst->getDef()[0];
                         src = new MachineOperand(*src);
                         dst = new MachineOperand(*dst);
-                        auto new_inst = new MovMInstruction(
-                            block, MovMInstruction::MOV, dst, src);
+                        MachineInstruction* new_inst;
+                        if (dst->isFloat() && src->isFloat()) {
+                            new_inst = new MovMInstruction(
+                                block, MovMInstruction::VMOVF32, dst, src);
+                        } else {
+                            new_inst = new MovMInstruction(
+                                block, MovMInstruction::MOV, dst, src);
+                        }
                         *next_inst_iter = new_inst;
                     }
                 } else if (curr_inst->isMov() && next_inst->isAdd()) {
@@ -195,6 +212,57 @@ void PeepholeOptimization::pass() {
                         auto new_inst = new BinaryMInstruction(
                             block, BinaryMInstruction::ADD, dst, src1, src2);
                         *next_inst_iter = new_inst;
+                    }
+                } else if (curr_inst->isLoad() && next_inst->isVMov()) {
+                    // ldr r4, =0
+                    // vmov s5, r4
+                    // vsub.f32 s7, s5, s6
+                    // -----
+                    // vneg.f32 s7, s6
+                    if (curr_inst->getUse().size() != 1) {
+                        continue;
+                    }
+                    auto src = curr_inst->getUse()[0];
+
+                    if (!src->isImm()) {
+                        continue;
+                    }
+
+                    if (src->getVal() != 0) {
+                        continue;
+                    }
+
+                    if (next_inst_iter + 1 == block->end()) {
+                        continue;
+                    }
+
+                    auto maybe_sub_inst = *(next_inst_iter + 1);
+
+                    if (!maybe_sub_inst->isVSub()) {
+                        continue;
+                    }
+
+                    auto ldr_dst = curr_inst->getDef()[0];
+                    auto vmov_dst = next_inst->getDef()[0];
+                    auto vmov_src = next_inst->getUse()[0];
+
+                    if (ldr_dst->getReg() != vmov_src->getReg()) {
+                        continue;
+                    }
+
+                    auto vsub_dst = maybe_sub_inst->getDef()[0];
+                    auto vsub_src1 = maybe_sub_inst->getUse()[0];
+                    auto vsub_src2 = maybe_sub_inst->getUse()[1];
+
+                    if (vmov_dst->getReg() == vsub_src1->getReg()) {
+                        auto dst = new MachineOperand(*vsub_dst);
+                        auto src = new MachineOperand(*vsub_src2);
+                        auto new_inst = new VNegMInstruction(
+                            block, VNegMInstruction::F32, dst, src);
+
+                        *(next_inst_iter + 1) = new_inst;
+                        // instToRemove.insert(curr_inst);
+                        // instToRemove.insert(next_inst);
                     }
                 }
             }
@@ -290,6 +358,86 @@ void PeepholeOptimization::pass() {
                         *next_inst_iter = new_inst;
                         if (add_dst->isReg() && *add_dst == *load_dst)
                             instToRemove.insert(curr_inst);
+                    }
+                }
+            }
+            for (auto inst : instToRemove) {
+                block->remove(inst);
+            }
+        }
+    }
+}
+
+void PeepholeOptimization::pass1() {
+    for (auto func_iter = mUnit->begin(); func_iter != mUnit->end();
+         func_iter++) {
+        auto func = *func_iter;
+        for (auto block_iter = func->begin(); block_iter != func->end();
+             block_iter++) {
+            auto block = *block_iter;
+            if (block->getInsts().empty()) {
+                continue;
+            }
+            auto curr_inst_iter = block->begin();
+            auto next_inst_iter = next(curr_inst_iter, 1);
+
+            std::set<MachineInstruction*> instToRemove;
+
+            for (; next_inst_iter != block->end();
+                 curr_inst_iter++, next_inst_iter++) {
+                auto curr_inst = *curr_inst_iter;
+                auto next_inst = *next_inst_iter;
+
+                if (curr_inst->isLoad() && next_inst->isVMov()) {
+                    // ldr r4, =0
+                    // vmov s5, r4
+                    // vsub.f32 s7, s5, s6
+                    // -----
+                    // vneg.f32 s7, s6
+                    if (curr_inst->getUse().size() != 1) {
+                        continue;
+                    }
+                    auto src = curr_inst->getUse()[0];
+
+                    if (!src->isImm()) {
+                        continue;
+                    }
+
+                    if (src->getVal() != 0) {
+                        continue;
+                    }
+
+                    if (next_inst_iter + 1 == block->end()) {
+                        continue;
+                    }
+
+                    auto maybe_sub_inst = *(next_inst_iter + 1);
+
+                    if (!maybe_sub_inst->isVSub()) {
+                        continue;
+                    }
+
+                    auto ldr_dst = curr_inst->getDef()[0];
+                    auto vmov_dst = next_inst->getDef()[0];
+                    auto vmov_src = next_inst->getUse()[0];
+
+                    if (ldr_dst->getReg() != vmov_src->getReg()) {
+                        continue;
+                    }
+
+                    auto vsub_dst = maybe_sub_inst->getDef()[0];
+                    auto vsub_src1 = maybe_sub_inst->getUse()[0];
+                    auto vsub_src2 = maybe_sub_inst->getUse()[1];
+
+                    if (vmov_dst->getReg() == vsub_src1->getReg()) {
+                        auto dst = new MachineOperand(*vsub_dst);
+                        auto src = new MachineOperand(*vsub_src2);
+                        auto new_inst = new VNegMInstruction(
+                            block, VNegMInstruction::F32, dst, src);
+
+                        *(next_inst_iter + 1) = new_inst;
+                        instToRemove.insert(curr_inst);
+                        instToRemove.insert(next_inst);
                     }
                 }
             }

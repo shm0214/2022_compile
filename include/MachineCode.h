@@ -111,7 +111,8 @@ class MachineInstruction {
         STACK,
         VCVT,
         VMRS,
-        FUSE
+        FUSE,
+        VNEG,
     };
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
     virtual void output() = 0;
@@ -135,6 +136,7 @@ class MachineInstruction {
     bool isAdd() const { return type == BINARY && op == 0; };
     bool isVAdd() const { return type == BINARY && op == 6; };
     bool isSub() const { return type == BINARY && op == 1; };
+    bool isVSub() const { return type == BINARY && op == 7; }
     bool isMul() const { return type == BINARY && op == 2; };
     bool isDiv() const { return type == BINARY && op == 3; };
     bool isMov() const { return type == MOV && op == 0; };
@@ -166,6 +168,14 @@ class MachineInstruction {
         return false;
     }
     virtual std::string getHash() { return ""; }
+};
+
+class VNegMInstruction : public MachineInstruction {
+   public:
+    enum opType { S32, F32 };
+    VNegMInstruction(MachineBlock* p, int op, MachineOperand* dst, MachineOperand *src);
+    void output();
+    int latency();
 };
 
 class FuseMInstruction : public MachineInstruction {

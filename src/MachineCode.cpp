@@ -240,6 +240,44 @@ void MachineInstruction::replaceUse(MachineOperand* old, MachineOperand* new_) {
         }
 }
 
+VNegMInstruction::VNegMInstruction(MachineBlock* p,
+                                   int op,
+                                   MachineOperand* dst,
+                                   MachineOperand* src) {
+    this->parent = p;
+    this->type = MachineInstruction::VNEG;
+    this->op = op;
+    this->def_list.push_back(dst);
+    this->use_list.push_back(src);
+    dst->setParent(this);
+    src->setParent(this);
+}
+
+void VNegMInstruction::output() {
+    fprintf(yyout, "\tvneg.");
+    switch (this->op) {
+        case VNegMInstruction::F32:
+            fprintf(yyout, "f32 ");
+            break;
+        case VNegMInstruction::S32:
+            fprintf(yyout, "s32 "); // need neon registers
+            break;
+
+        default:
+            break;
+    }
+
+    this->PrintCond();
+    this->def_list[0]->output();
+    fprintf(yyout, ", ");
+    this->use_list[0]->output();
+    fprintf(yyout, "\n");
+}
+
+int VNegMInstruction::latency() {
+    return 3;
+}
+
 FuseMInstruction::FuseMInstruction(MachineBlock* p,
                                    int op,
                                    MachineOperand* dst,
@@ -892,8 +930,8 @@ void MachineBlock::output() {
 
                     int temp = baseOffset + operand->getOffset();
                     auto off = new MachineOperand(MachineOperand::IMM, temp);
-                    // auto off = new MachineOperand(MachineOperand::IMM, offset);
-                    // offset += 4;
+                    // auto off = new MachineOperand(MachineOperand::IMM,
+                    // offset); offset += 4;
                     auto cur_inst = new LoadMInstruction(
                         this, LoadMInstruction::VLDR, s4, fp, off);
                     cur_inst->output();

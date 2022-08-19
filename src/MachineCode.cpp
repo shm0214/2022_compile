@@ -555,54 +555,82 @@ BranchMInstruction::BranchMInstruction(MachineBlock* p,
     dst->setParent(this);
     // }else{
     if (op == BL) {
-        // auto r0d = new MachineOperand(MachineOperand::REG, 0);
-        auto r0u = new MachineOperand(MachineOperand::REG, 0);
-        // auto r1d = new MachineOperand(MachineOperand::REG, 1);
-        auto r1u = new MachineOperand(MachineOperand::REG, 1);
-        // auto r2d = new MachineOperand(MachineOperand::REG, 2);
-        auto r2u = new MachineOperand(MachineOperand::REG, 2);
-        // auto r3d = new MachineOperand(MachineOperand::REG, 3);
-        auto r3u = new MachineOperand(MachineOperand::REG, 3);
-        // r0d->setParent(this);
-        r0u->setParent(this);
-        // r1d->setParent(this);
-        r1u->setParent(this);
-        // r2d->setParent(this);
-        r2u->setParent(this);
-        // r3d->setParent(this);
-        r3u->setParent(this);
-        // this->def_list.push_back(r0d);
-        // this->def_list.push_back(r1d);
-        // this->def_list.push_back(r2d);
-        // this->def_list.push_back(r3d);
-        this->use_list.push_back(r0u);
-        this->use_list.push_back(r1u);
-        this->use_list.push_back(r2u);
-        this->use_list.push_back(r3u);
-        // auto s0d = new MachineOperand(MachineOperand::REG, 16, true);
+        auto label = dst->getLabel().substr(1);
+        int intParamNo;
+        // int floatParamNo;
+        auto r0d = new MachineOperand(MachineOperand::REG, 0);
+        auto r1d = new MachineOperand(MachineOperand::REG, 1);
+        auto r2d = new MachineOperand(MachineOperand::REG, 2);
+        auto r3d = new MachineOperand(MachineOperand::REG, 3);
+        r0d->setParent(this);
+        r1d->setParent(this);
+        r2d->setParent(this);
+        r3d->setParent(this);
+        this->def_list.push_back(r0d);
+        this->def_list.push_back(r1d);
+        this->def_list.push_back(r2d);
+        this->def_list.push_back(r3d);
+        auto s0d = new MachineOperand(MachineOperand::REG, 16, true);
+        auto s1d = new MachineOperand(MachineOperand::REG, 17, true);
+        auto s2d = new MachineOperand(MachineOperand::REG, 18, true);
+        auto s3d = new MachineOperand(MachineOperand::REG, 19, true);
+        s0d->setParent(this);
+        s1d->setParent(this);
+        s2d->setParent(this);
+        s3d->setParent(this);
+        this->def_list.push_back(s0d);
+        this->def_list.push_back(s1d);
+        this->def_list.push_back(s2d);
+        this->def_list.push_back(s3d);
+        if (label == "memset") {
+            intParamNo = 3;
+            // floatParamNo = 0;
+        } else {
+            auto entry = (IdentifierSymbolEntry*)(identifiers->lookup(label));
+            intParamNo = entry->getIntParamNo();
+            // floatParamNo = entry->getFloatParamNo();
+        }
+        if (intParamNo > 0) {
+            auto r0u = new MachineOperand(MachineOperand::REG, 0);
+            r0u->setParent(this);
+            this->use_list.push_back(r0u);
+        }
+        if (intParamNo > 1) {
+            auto r1u = new MachineOperand(MachineOperand::REG, 1);
+            r1u->setParent(this);
+            this->use_list.push_back(r1u);
+        }
+        if (intParamNo > 2) {
+            auto r2u = new MachineOperand(MachineOperand::REG, 2);
+            this->use_list.push_back(r2u);
+            r2u->setParent(this);
+        }
+        if (intParamNo > 3) {
+            auto r3u = new MachineOperand(MachineOperand::REG, 3);
+            r3u->setParent(this);
+            this->use_list.push_back(r3u);
+        }
+        // 浮点貌似有些问题 不过寄存器多 也无所谓
+        // if (floatParamNo > 1) {
         auto s0u = new MachineOperand(MachineOperand::REG, 16, true);
-        // auto s1d = new MachineOperand(MachineOperand::REG, 17, true);
-        auto s1u = new MachineOperand(MachineOperand::REG, 17, true);
-        // auto s2d = new MachineOperand(MachineOperand::REG, 18, true);
-        auto s2u = new MachineOperand(MachineOperand::REG, 18, true);
-        // auto s3d = new MachineOperand(MachineOperand::REG, 19, true);
-        auto s3u = new MachineOperand(MachineOperand::REG, 19, true);
-        // s0d->setParent(this);
         s0u->setParent(this);
-        // s1d->setParent(this);
-        s1u->setParent(this);
-        // s2d->setParent(this);
-        s2u->setParent(this);
-        // s3d->setParent(this);
-        s3u->setParent(this);
-        // this->def_list.push_back(s0d);
-        // this->def_list.push_back(s1d);
-        // this->def_list.push_back(s2d);
-        // this->def_list.push_back(s3d);
         this->use_list.push_back(s0u);
+        // }
+        // if (floatParamNo > 2) {
+        auto s1u = new MachineOperand(MachineOperand::REG, 17, true);
+        s1u->setParent(this);
         this->use_list.push_back(s1u);
+        // }
+        // if (floatParamNo > 3) {
+        auto s2u = new MachineOperand(MachineOperand::REG, 18, true);
+        s2u->setParent(this);
         this->use_list.push_back(s2u);
+        // }
+        // if (floatParamNo > 4) {
+        auto s3u = new MachineOperand(MachineOperand::REG, 19, true);
+        s3u->setParent(this);
         this->use_list.push_back(s3u);
+        // }
     } else if (op == BX) {
         auto r0 = new MachineOperand(MachineOperand::REG, 0);
         auto s0 = new MachineOperand(MachineOperand::REG, 16, true);

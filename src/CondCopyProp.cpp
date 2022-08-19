@@ -19,30 +19,32 @@ void CondCopyProp::constantPropagation(Function *func)
             if (def == nullptr){
                 continue;
             }
-            if(!inst->isGep()){
-                std::vector<Operand*> uses(inst->getUse());
-                for(auto src : uses){
-                    if(!src->isConst() && src->isConArray()){                        
-                        double* arrayValue = ((GepInstruction*)src->getDef())->getArrayValue();
-                        int idx = ((GepInstruction*)src->getDef())->getFlatIdx();
-                        if(arrayValue != nullptr && idx != -1){
-                            value[src] =  {0, arrayValue[idx]};
-                            inst->replaceUse(src, new Operand(new ConstantSymbolEntry(def->getType(), arrayValue[idx])));
-                            if(!src->usersNum()){
-                                GepInstruction* i = (GepInstruction*)src->getDef();
-                                while(true)
-                                {
-                                    i->getParent()->remove(i);
-                                    if(!i->getFirst())
-                                        i = (GepInstruction*)i->getUse()[0]->getDef();
-                                    else
-                                        break;
-                                } 
-                            }
-                        }
-                    }
-                }
-            }            
+            // if(!inst->isGep()){
+            //     std::vector<Operand*> uses(inst->getUse());
+            //     for(auto src : uses){
+            //         if(!src->isConst() && src->isConArray()){                        
+            //             double* arrayValue = ((GepInstruction*)src->getDef())->getArrayValue();
+            //             if(!arrayValue)
+            //                 continue;
+            //             int idx = ((GepInstruction*)src->getDef())->getFlatIdx();
+            //             if(arrayValue != nullptr && idx != -1){
+            //                 value[src] =  {0, arrayValue[idx]};
+            //                 inst->replaceUse(src, new Operand(new ConstantSymbolEntry(def->getType(), arrayValue[idx])));
+            //                 if(!src->usersNum()){
+            //                     GepInstruction* i = (GepInstruction*)src->getDef();
+            //                     while(true)
+            //                     {
+            //                         i->getParent()->remove(i);
+            //                         if(!i->getFirst())
+            //                             i = (GepInstruction*)i->getUse()[0]->getDef();
+            //                         else
+            //                             break;
+            //                     } 
+            //                 }
+            //             }
+            //         }
+            //     }
+            // }            
             if (def->isSSAName())
             {
                 value[def] = inst->getLatticeValue(value);
@@ -87,6 +89,7 @@ void CondCopyProp::constantPropagation(Function *func)
             delete_list.push_back(def);
             for (auto &use_inst : use){
                 use_inst->replaceUse(op.first, cst);
+                // parser中存值有问题
                 // if(use_inst->isCond()){
                 //     BasicBlock* bb = use_inst->getParent();
                 //     BasicBlock* true_branch = ((CondBrInstruction*)use_inst)->getTrueBranch();

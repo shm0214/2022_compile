@@ -177,7 +177,7 @@ int main(int argc, char* argv[]) {
         GraphColor GraphColor(&mUnit);
         GraphColor.allocateRegisters();
     }
-    if (optimize && !flag) {
+    if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);

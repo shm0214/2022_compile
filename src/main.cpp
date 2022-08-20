@@ -109,6 +109,7 @@ int main(int argc, char* argv[]) {
         m2r.pass();
         
         dce.pass();
+        s.pass();
         lop.pass();//先展开 再内联
         // ai.pass();
         // dce.pass();
@@ -116,7 +117,7 @@ int main(int argc, char* argv[]) {
         // vn.pass();
         // thb.pass();
         // euc.pass();
-        // s.pass();
+        
         // ir.pass();
         // ssad.pass();
     }

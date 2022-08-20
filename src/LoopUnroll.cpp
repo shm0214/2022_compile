@@ -148,7 +148,7 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
 
     for(auto preIns:preInstructionList){
         if(!preIns->isStore()){
-            Operand* newDef = new Operand(new TemporarySymbolEntry(TypeSystem::intType,SymbolTable::getLabel()));
+            Operand* newDef = new Operand(new TemporarySymbolEntry(preIns->getDef()->getType(),SymbolTable::getLabel()));
             begin_final_Map[preIns->getDef()]=newDef;
             finalOperands.push_back(preIns->getDef());
             preIns->replaceDef(newDef);
@@ -307,7 +307,7 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
         countDef = binPlusOne->getDef();
     }
     BinaryInstruction* binMod = new BinaryInstruction(BinaryInstruction::MOD,new Operand(new TemporarySymbolEntry(TypeSystem::intType,SymbolTable::getLabel())),countDef,new Operand(new ConstantSymbolEntry(TypeSystem::intType,UNROLLNUM)),nullptr);
-    CmpInstruction* cmpEZero = new CmpInstruction(CmpInstruction::E,new Operand(new TemporarySymbolEntry(TypeSystem::int8Type,SymbolTable::getLabel())),binMod->getDef(),new Operand(new ConstantSymbolEntry(TypeSystem::intType,0)),nullptr);
+    CmpInstruction* cmpEZero = new CmpInstruction(CmpInstruction::E,new Operand(new TemporarySymbolEntry(TypeSystem::boolType,SymbolTable::getLabel())),binMod->getDef(),new Operand(new ConstantSymbolEntry(TypeSystem::intType,0)),nullptr);
     CondBrInstruction* condBr = new CondBrInstruction(bodybb,resBodyBB,cmpEZero->getDef(),nullptr); 
 
     condbb->addSucc(newCondBB);
@@ -371,7 +371,7 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
     resNumPhi->addSrc(newCondBB,new Operand(new ConstantSymbolEntry(TypeSystem::intType,0)));
     resNumPhi->addSrc(resBodyBB,binIncDef);
     BinaryInstruction* binInc = new BinaryInstruction(BinaryInstruction::ADD,binIncDef,resNumPhi->getDef(),new Operand(new ConstantSymbolEntry(TypeSystem::intType,1)),nullptr);
-    CmpInstruction* resBodyCmp = new CmpInstruction(CmpInstruction::NE,new Operand(new TemporarySymbolEntry(TypeSystem::int8Type,SymbolTable::getLabel())),binIncDef,binMod->getDef(),nullptr);
+    CmpInstruction* resBodyCmp = new CmpInstruction(CmpInstruction::NE,new Operand(new TemporarySymbolEntry(TypeSystem::boolType,SymbolTable::getLabel())),binIncDef,binMod->getDef(),nullptr);
     CondBrInstruction* resBodyBr = new CondBrInstruction(resBodyBB,resOutCond,resBodyCmp->getDef(),nullptr);
 
     for(auto resIns:resBodyInstList){
@@ -391,18 +391,19 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
     }
 
     //resoutcond
-   
-    CmpInstruction* resOutCondCmp =(CmpInstruction*) cmp->copy();
-    resOutCondCmp->replaceUse(strideOp,resBodyReplaceMap[strideOp]);
-    CondBrInstruction* resOutCondBr = new CondBrInstruction(bodybb,resoutCondSucc,resOutCondCmp->getDef(),nullptr);
-    resOutCond->insertBack(resOutCondBr);
-    resOutCond->insertBefore(resBodyCmp,resOutCondBr);
 
     resOutCond->addPred(resBodyBB);
     resOutCond->addSucc(resoutCondSucc);
     resoutCondSucc->addPred(resOutCond);
 
+    CmpInstruction* resOutCondCmp =(CmpInstruction*) cmp->copy();
+    resOutCondCmp->replaceDef(new Operand(new TemporarySymbolEntry(TypeSystem::boolType,SymbolTable::getLabel())));
+    resOutCondCmp->replaceUse(strideOp,resBodyReplaceMap[strideOp]);
+    CondBrInstruction* resOutCondBr = new CondBrInstruction(bodybb,resoutCondSucc,resOutCondCmp->getDef(),nullptr);
+    resOutCond->insertBack(resOutCondBr);
+    resOutCond->insertBefore(resOutCondCmp,resOutCondBr);
 
+    
 
     bodybb->removePred(condbb);
     bodybb->addPred(newCondBB);
@@ -421,6 +422,14 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
 
     specialCopyInstructions(bodybb,UNROLLNUM,endOp,strideOp);
 
+    //更改resoutSucc
+    for(auto bodyinstr = resoutCondSucc->begin(); bodyinstr != resoutCondSucc->end(); bodyinstr = bodyinstr->getNext()){
+        if(bodyinstr->isPhi()){
+            PhiInstruction* phi = (PhiInstruction*) bodyinstr;
+            Operand* originalOperand = phi->getSrc(bodybb);
+            phi->addSrc(resOutCond,resBodyReplaceMap[originalOperand]);
+        }
+    }
 }
 
 

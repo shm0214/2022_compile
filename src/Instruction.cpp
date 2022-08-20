@@ -828,6 +828,7 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
      * too.*/
 
     if (operands[0]->getType()->isFloat()) {
+        auto flag = false;
         auto dst = genMachineFloatOperand(operands[0]);
         auto src1 = genMachineFloatOperand(operands[1]);
         auto src2 = genMachineFloatOperand(operands[2]);
@@ -845,22 +846,30 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
             src1 = new MachineOperand(*tmp_reg);
         }
         if (src2->isImm()) {
-            auto tmp_reg = genMachineVReg(true);
-            auto internal_reg = genMachineVReg();
-            cur_inst = new LoadMInstruction(cur_block, LoadMInstruction::LDR,
-                                            internal_reg, src2);
-            cur_block->InsertInst(cur_inst);
-            internal_reg = new MachineOperand(*internal_reg);
-            cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
-                                           tmp_reg, internal_reg);
-            cur_block->InsertInst(cur_inst);
-            src2 = new MachineOperand(*tmp_reg);
+            if (src2->getFVal() == 0 && opcode == ADD)
+                flag = true;
+            else {
+                auto tmp_reg = genMachineVReg(true);
+                auto internal_reg = genMachineVReg();
+                cur_inst = new LoadMInstruction(
+                    cur_block, LoadMInstruction::LDR, internal_reg, src2);
+                cur_block->InsertInst(cur_inst);
+                internal_reg = new MachineOperand(*internal_reg);
+                cur_inst = new MovMInstruction(cur_block, MovMInstruction::VMOV,
+                                               tmp_reg, internal_reg);
+                cur_block->InsertInst(cur_inst);
+                src2 = new MachineOperand(*tmp_reg);
+            }
         }
 
         switch (opcode) {
             case ADD:
-                cur_inst = new BinaryMInstruction(
-                    cur_block, BinaryMInstruction::VADD, dst, src1, src2);
+                if (flag)
+                    cur_inst = new MovMInstruction(
+                        cur_block, MovMInstruction::VMOVF32, dst, src1);
+                else
+                    cur_inst = new BinaryMInstruction(
+                        cur_block, BinaryMInstruction::VADD, dst, src1, src2);
                 break;
             case SUB:
                 cur_inst = new BinaryMInstruction(
@@ -1908,7 +1917,6 @@ void PhiInstruction::changeSrcBlock(
                 auto src = srcs[it.first];
                 for (auto b : vec) {
                     if (srcs.find(b) != srcs.end() && srcs[b] != src) {
-                        
                         auto& phiBlocks = parent->getPhiBlocks();
                         auto iter = phiBlocks.find(b);
                         BasicBlock* b1;

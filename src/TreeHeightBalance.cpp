@@ -272,6 +272,8 @@ void TreeHeightBalance::pass(BasicBlock* block) {
             // copy param
             if (in->getUse()[0]->getEntry()->isVariable())
                 continue;
+            if (!in->getDef()->getType()->isInt())
+                continue;
             auto next = in->getNext();
             auto def = in->getDef();
             if (!lastDef) {

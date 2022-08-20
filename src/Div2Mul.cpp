@@ -34,9 +34,17 @@ void Div2Mul::div2mul(MachineFunction* func){
                 if(inst->isDivConst()){
                     int d = inst->getUse()[1]->getDef()->getUse()[0]->getVal();
                     int s = ctz(d);
+                    // auto off1 = new MachineOperand(MachineOperand::IMM, 31);
+                    // auto tmp = new MachineOperand(
+                    //             MachineOperand::VREG,
+                    //             SymbolTable::getLabel());
+                    // MachineInstruction* inst1 = new MovMInstruction(nullptr, MovMInstruction::MOVLSR,
+                    //                             tmp, inst->getUse()[0], MachineInstruction::NONE, off1);
+                    // bb->insertBefore(inst1, inst);
 
                     if(d == (int(1) << s)){
                         // d = 2**n
+
                         auto off1 = new MachineOperand(MachineOperand::IMM, 31);
                         auto tmp = new MachineOperand(
                                     MachineOperand::VREG,
@@ -49,9 +57,9 @@ void Div2Mul::div2mul(MachineFunction* func){
                                                 inst->getDef()[0], inst->getUse()[0], MachineInstruction::NONE, off);                   
                         bb->insertBefore(inst2, inst);
 
-                        MachineInstruction* inst4 = new BinaryMInstruction(nullptr, BinaryMInstruction::ADD,
-                                            inst->getDef()[0], inst->getDef()[0], tmp);
-                        bb->insertBefore(inst4, inst);
+                        MachineInstruction* inst5 = new BinaryMInstruction(nullptr, BinaryMInstruction::ADD,
+                                                inst->getDef()[0], inst->getDef()[0], tmp);
+                        bb->insertBefore(inst5, inst);
                         bb->remove(inst);
                     }
                     // else {
@@ -65,16 +73,32 @@ void Div2Mul::div2mul(MachineFunction* func){
                     //     printf("m:%lld, l:%d\n", multi.m, multi.l+a);
                     //     if(multi.m < (LL(1) << N)){
                     //         auto m = new MachineOperand(MachineOperand::IMM, multi.m);
-                    //         auto l = new MachineOperand(MachineOperand::IMM, 32 + multi.l + a);
-                            
-                    //         MachineInstruction* inst2 = new BinaryMInstruction(nullptr, BinaryMInstruction::MUL,
-                    //                             inst->getDef()[0], inst->getUse()[0], m);
-                    //         MachineInstruction* inst3 = new MovMInstruction(nullptr, MovMInstruction::MOVASR,
-                    //                             inst->getDef()[0], inst->getDef()[0], MachineInstruction::NONE, l);
-                    //         bb->insertBefore(inst2, inst);
-                    //         bb->insertBefore(inst3, inst);                   
+                    //         auto l = new MachineOperand(MachineOperand::IMM, multi.l + a);
+                    //         auto t = new MachineOperand(
+                    //             MachineOperand::VREG,
+                    //             SymbolTable::getLabel());
+                    //         auto rh = new MachineOperand(
+                    //             MachineOperand::VREG,
+                    //             SymbolTable::getLabel());
+                    //         auto rl = new MachineOperand(
+                    //             MachineOperand::VREG,
+                    //             SymbolTable::getLabel());
+                    //         // MachineInstruction* inst2 = new LoadMInstruction(nullptr, LoadMInstruction::LDR, t, m);
+                    //         // MachineInstruction* inst3 = new SmullMInstruction(nullptr, rl, rh, inst->getUse()[0], t);
+                    //         // MachineInstruction* inst4 = new MovMInstruction(nullptr, MovMInstruction::MOVASR,
+                    //         //                     inst->getDef()[0], rh, MachineInstruction::NONE, l);
+                    //         // bb->insertBefore(inst2, inst);
+                    //         // bb->insertBefore(inst3, inst);
+                    //         MachineInstruction* inst4 = new MovMInstruction(nullptr, MovMInstruction::MOVASR,
+                    //                             inst->getDef()[0], inst->getUse()[0], MachineInstruction::NONE, l);
+                    //         bb->insertBefore(inst4, inst);
+                    //         printf("h4\n");
                     //     }
                     // }
+                    // MachineInstruction* inst5 = new BinaryMInstruction(nullptr, BinaryMInstruction::ADD,
+                    //                         inst->getDef()[0], inst->getDef()[0], tmp);
+                    // bb->insertBefore(inst5, inst);
+                    // bb->remove(inst);
                 }
                 else if(inst->isModConst()){
                     int d = inst->getUse()[1]->getDef()->getUse()[0]->getVal();

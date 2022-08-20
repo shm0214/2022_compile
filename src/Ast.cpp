@@ -441,26 +441,17 @@ void BinaryExpr::genCode() {
                 opcode = BinaryInstruction::MOD;
                 break;
         }
-        // if(opcode == BinaryInstruction::MOD){
-        //     if(expr2->getSymbolEntry()->isConstant()){
-        //         int b = expr2->getValue();
-        //         if((b & (b-1)) == 0){
-        //             new BinaryInstruction(opcode, dst, src1, src2, bb);
-        //             return;
-        //         }
-        //     }
+        // if(opcode == BinaryInstruction::MOD && !(expr2->getSymbolEntry()->isConstant() && (int(expr2->getValue()) & int(expr2->getValue() - 1)) == 0)){
+        //     // c1 = a / b
         //     new BinaryInstruction(BinaryInstruction::DIV, dst, src1, src2, bb);
-        //     Operand* dst1 = new Operand(*dst);
-        //     src1 = new Operand(*src1);
-        //     src2 = new Operand(*src2);
-        //     auto temp = new Operand(*dst);
-        //     // c = c * b
-        //     new BinaryInstruction(BinaryInstruction::MUL, dst1, temp, src2, bb);
-        //     dst = new Operand(*dst1);
-        //     // c = a - c
+        //     Operand* dst1 = new Operand(new TemporarySymbolEntry(
+        //         TypeSystem::intType, SymbolTable::getLabel()));
+        //     // c2 = c1 * b
+        //     new BinaryInstruction(BinaryInstruction::MUL, dst1, dst, src2, bb);
+        //     // c = a - c2
         //     new BinaryInstruction(BinaryMInstruction::SUB, dst, src1, dst1, bb);
-        //     return;
         // }
+        // else
         new BinaryInstruction(opcode, dst, src1, src2, bb);
     }
 }

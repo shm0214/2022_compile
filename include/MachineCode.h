@@ -218,6 +218,18 @@ class BinaryMInstruction : public MachineInstruction {
     std::string getHash();
 };
 
+class SmullMInstruction : public MachineInstruction {
+   public:
+    SmullMInstruction(MachineBlock* p,
+                       MachineOperand* dst,
+                       MachineOperand* dst1,
+                       MachineOperand* src1,
+                       MachineOperand* src2,
+                       int cond = MachineInstruction::NONE);
+    void output();
+    int latency();
+};
+
 class LoadMInstruction : public MachineInstruction {
    private:
     bool needModify;

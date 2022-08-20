@@ -404,6 +404,41 @@ void BinaryMInstruction::output() {
     fprintf(yyout, "\n");
 }
 
+SmullMInstruction::SmullMInstruction(MachineBlock* p,
+                                       MachineOperand* dst,
+                                       MachineOperand* dst1,
+                                       MachineOperand* src1,
+                                       MachineOperand* src2,
+                                       int cond) {
+    this->parent = p;
+    this->type = MachineInstruction::BINARY;
+    this->cond = cond;
+    this->def_list.push_back(dst);
+    this->def_list.push_back(dst1);
+    this->use_list.push_back(src1);
+    this->use_list.push_back(src2);
+    dst->setParent(this);
+    dst1->setParent(this);
+    src1->setParent(this);
+    src2->setParent(this);
+    dst->setDef(this);
+    dst1->setDef(this);
+}
+
+void SmullMInstruction::output() {
+    // 这里面PrintCond应该是用不到的啊
+    fprintf(yyout, "\tsmull ");
+    this->PrintCond();
+    this->def_list[0]->output();
+    fprintf(yyout, ", ");
+    this->def_list[1]->output();
+    fprintf(yyout, ", ");
+    this->use_list[0]->output();
+    fprintf(yyout, ", ");
+    this->use_list[1]->output();
+    fprintf(yyout, "\n");
+}
+
 LoadMInstruction::LoadMInstruction(MachineBlock* p,
                                    int op,
                                    MachineOperand* dst,
@@ -1373,8 +1408,10 @@ MachineBlock* MachineFunction::getNext(MachineBlock* block) {
 
 void MachineBlock::insertBefore(MachineInstruction* a, MachineInstruction* b) {
     auto it = find(inst_list.begin(), inst_list.end(), b);
-    if (it != inst_list.end())
+    if (it != inst_list.end()){
         inst_list.insert(it, a);
+        a->setParent(b->getParent());
+    }        
 }
 
 void MachineFunction::InsertAfter(MachineBlock* a, MachineBlock* b) {
@@ -1391,6 +1428,10 @@ void MachineBlock::insertFront(MachineInstruction* in) {
 
 int FuseMInstruction::latency() {
     return 3;
+}
+
+int SmullMInstruction::latency(){
+    return 4;
 }
 
 int BinaryMInstruction::latency() {

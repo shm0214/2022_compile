@@ -7,6 +7,7 @@ class PeepholeOptimization {
    public:
     PeepholeOptimization(MachineUnit* mUnit);
     void pass();
+    void pass1();
    private:
     MachineUnit* mUnit;
 };

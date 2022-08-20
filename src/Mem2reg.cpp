@@ -13,6 +13,7 @@ void Mem2reg::pass() {
 }
 
 void Mem2reg::pass(Function* function) {
+    checkCondBranch(function);
     function->computeDFSTree();
     function->computeSdom();
     function->computeIdom();
@@ -133,7 +134,7 @@ void Mem2reg::rename(BasicBlock* block) {
         }
         if (!i->isPhi())
             for (auto u : i->getUse())
-                if (stacks.find(u) != stacks.end())
+                if (stacks.find(u) != stacks.end() && !stacks[u].empty())
                     i->replaceUse(u, stacks[u].top());
     }
     for (auto it = block->succ_begin(); it != block->succ_end(); it++) {
@@ -199,5 +200,22 @@ void Mem2reg::cleanAddZeroIns(Function* func) {
         i->getParent()->remove(i);
         use->removeUse(i);
         delete i;
+    }
+}
+
+void Mem2reg::checkCondBranch(Function* func) {
+    for (auto block : func->getBlockList()) {
+        auto in = block->rbegin();
+        if (in->isCond()) {
+            auto cond = (CondBrInstruction*)in;
+            auto trueBlock = cond->getTrueBranch();
+            auto falseBlock = cond->getFalseBranch();
+            if (trueBlock == falseBlock) {
+                block->removeSucc(trueBlock);
+                trueBlock->removePred(block);
+                new UncondBrInstruction(trueBlock, block);
+                block->remove(in);
+            }
+        }
     }
 }

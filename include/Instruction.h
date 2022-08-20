@@ -28,6 +28,7 @@ class Instruction {
     bool isCmp() const { return instType == CMP; };
     bool isGep() const { return instType == GEP; };
     bool isXor() const { return instType == XOR; };
+    bool isBitcast() const { return instType == BITCAST; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);
@@ -76,6 +77,7 @@ class Instruction {
     }
     bool isAdd() { return isBin() && opcode == 1; }
     bool isSub() { return isBin() && opcode == 0; }
+    bool isAddZero();
     // shallow copy
     virtual Instruction* copy() = 0;
     virtual void setDef(Operand* def) {}
@@ -240,6 +242,23 @@ class CmpInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    void swapSrc() {
+        switch (opcode) {
+            case L:
+                opcode = G;
+                break;
+            case LE:
+                opcode = GE;
+                break;
+            case G:
+                opcode = L;
+                break;
+            case GE:
+                opcode = LE;
+                break;
+        }
+        std::swap(operands[1], operands[2]);
+    }
 };
 
 class UncondBrInstruction : public Instruction {
@@ -342,6 +361,7 @@ class CallInstruction : public Instruction {
         def->setDef(this);
     }
     // used for auto inline
+    std::string getHash();
     void addPred();
 };
 
@@ -533,6 +553,7 @@ class BitcastInstruction : public Instruction {
    private:
     Operand* dst;
     Operand* src;
+    bool flag;
 
    public:
     BitcastInstruction(Operand* dst,
@@ -553,6 +574,8 @@ class BitcastInstruction : public Instruction {
         def->setDef(this);
     }
     void replaceUse(Operand* old, Operand* new_);
+    void setFlag() { flag = true; }
+    bool getFlag() { return flag; }
 };
 
 class ShlInstruction : public Instruction {

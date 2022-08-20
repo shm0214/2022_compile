@@ -19,7 +19,7 @@ void InsReorder::pass() {
         if (paramsType.size() >= 10) {
             auto flag = true;
             for (auto t : paramsType)
-                if (t->isArray()) {
+                if (t->isArray() || t->isFloat()) {
                     flag = false;
                     break;
                 }

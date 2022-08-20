@@ -2,6 +2,7 @@
 #define __SYMBOLTABLE_H__
 
 #include <assert.h>
+#include <iostream>
 #include <map>
 #include <string>
 class Type;
@@ -116,6 +117,9 @@ class IdentifierSymbolEntry : public SymbolEntry {
     Function* func = nullptr;
     // used for auto inline
     int allParamNo;
+    int stackParamNo;
+    int intParamNo;
+    int floatParamNo;
 
    public:
     IdentifierSymbolEntry(Type* type,
@@ -142,7 +146,13 @@ class IdentifierSymbolEntry : public SymbolEntry {
     bool isAllZero() const { return allZero; };
     int getParamNo() const { return paramNo; };
     int getAllParamNo() const { return allParamNo; };
+    int getIntParamNo() const { return intParamNo; };
+    int getFloatParamNo() const { return floatParamNo; };
+    int getStackParamNo() const { return stackParamNo; };
     void setAllParamNo(int no) { allParamNo = no; }
+    void setIntParamNo(int no) { intParamNo = no; }
+    void setFloatParamNo(int no) { floatParamNo = no; }
+    void setStackParamNo(int no) { stackParamNo = no; }
     void setConst() { constant = true; };
     bool getConst() const { return constant; };
     int getNotZeroNum() const { return notZeroNum; }

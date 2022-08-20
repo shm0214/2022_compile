@@ -13,6 +13,7 @@
 #include "InsReorder.h"
 #include "InstructionScheduling.h"
 #include "LinearScan.h"
+#include "LocalValueNumber.h"
 #include "LoopOptimization.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
@@ -22,6 +23,7 @@
 #include "PeepholeForIR.h"
 #include "PeepholeOptimization.h"
 #include "SSADestruction.h"
+#include "SpecialOptimize.h"
 #include "Starighten.h"
 #include "TreeHeightBalance.h"
 #include "Unit.h"
@@ -105,21 +107,33 @@ int main(int argc, char* argv[]) {
         AutoInline ai(&unit);
         Global2Local g2l(&unit);
         PeepholeForIR ph(&unit);
+        SpecialOptimize so(&unit);
         g2l.pass();
+        s.pass();
         m2r.pass();
         
         dce.pass();
+        vn.pass();
         s.pass();
-        lop.pass();//先展开 再内联
-        // ai.pass();
-        // dce.pass();
-        // cp.copy_prop();
-        // vn.pass();
-        // thb.pass();
-        // euc.pass();
-        
-        // ir.pass();
-        // ssad.pass();
+        // 速度较慢
+        so.pass();
+        s.checkCond();
+        // ai.pass(); // 
+        dce.pass();
+        cp.pass();
+        vn.pass();
+        // thb.pass(); //
+        s.checkCond();
+        // ai.pass(); //
+        vn.pass();
+        // thb.pass(); // 
+        euc.pass();
+        s.pass();
+        // ir.pass(); //
+        // ph.pass(); // 
+        vn.pass();
+        s.checkCond();
+        ssad.pass();
     }
     if (dump_ir) {
         unit.output();
@@ -133,10 +147,16 @@ int main(int argc, char* argv[]) {
         ConstAsm ca(&mUnit);
         PeepholeOptimization po(&mUnit);
         PartialRedundancyElimination pre(&mUnit);
+        LocalValueNumber lvn(&mUnit);
         caaz.pass();
         ca.pass();
-        // 效果一般 而且会导致编译时间长一些
-        pre.pass();
+        // 效果一般 而且会导致编译时间长一些 不开了
+        // pre.pass();
+        mdce.pass();
+        ms.pass();
+        po.pass1();
+        mdce.pass();
+        lvn.pass();
         mdce.pass();
         po.pass();
         mdce.pass();

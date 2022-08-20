@@ -30,7 +30,7 @@ BLOCKCOMMENTEND \*\/
 %x BLOCKCOMMENT
 LINECOMMENT \/\/[^\n]*
 
-DECIMAL_FLOAT ([+-]?(([0-9]*[.][0-9]*([eE][+-]?[0-9]+)?)|([0-9]+[eE][+-]?[0-9]+))[fLlL]?)
+DECIMAL_FLOAT ((([0-9]*[.][0-9]*([eE][+-]?[0-9]+)?)|([0-9]+[eE][+-]?[0-9]+))[fLlL]?)
 HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-Fa-f]+[pP][+-]?[0-9]+))[fLlL]?)
 
 %%
@@ -297,6 +297,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
@@ -315,6 +317,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(0);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
@@ -333,6 +337,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
@@ -350,6 +356,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(0);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
@@ -369,6 +377,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(0);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(1);
     st->install(yytext, se);
     return ID;
 }
@@ -387,6 +397,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(0);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
@@ -407,6 +419,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(2);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
@@ -427,6 +441,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
@@ -447,6 +463,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(2);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
@@ -468,6 +486,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     while(st->getPrev())
         st = st->getPrev();
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, yytext, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(yytext, se);
     return ID;
 }
@@ -510,6 +530,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     char *temp = new char[6+strlen(yytext)];
     memcpy(temp, lexeme, 6+strlen(yytext));
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, temp, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(temp, se);
     return ID;
 }
@@ -532,6 +554,8 @@ HEXADECIMAL_FLOAT (0[xX](([0-9A-Fa-f]*[.][0-9A-Fa-f]*([pP][+-]?[0-9]+)?)|([0-9A-
     char *temp = new char[6+strlen(yytext)];
     memcpy(temp, lexeme, 14);
     SymbolEntry* se = new IdentifierSymbolEntry(funcType, temp, st->getLevel(), -1, true);
+    ((IdentifierSymbolEntry*)se)->setIntParamNo(1);
+    ((IdentifierSymbolEntry*)se)->setFloatParamNo(0);
     st->install(temp, se);
     return ID;
 }

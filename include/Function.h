@@ -74,6 +74,7 @@ class Function {
     bool recur;
     // used for auto inline
     int instNum;
+    std::set<Operand*> storedGlobals;
 
    public:
     Function() {}
@@ -129,6 +130,8 @@ class Function {
     bool hasRecur() { return recur; }
     void setInstNum(int num) { instNum = num; }
     int getInstNum() { return instNum; }
+    void addStoredGlobal(Operand* ope) { storedGlobals.insert(ope); }
+    std::set<Operand*> getStoredGlobals() { return storedGlobals; }
     void genSSAGraph();
     std::vector<SSAGraphNode*>& getSSAGraph(){return nodes;};
     void addNodeToSSAGraph(SSAGraphNode* node){nodes.push_back(node);};

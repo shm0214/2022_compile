@@ -67,7 +67,9 @@ void BasicBlock::addSucc(BasicBlock* bb, bool first) {
 
 // remove the successor basicclock bb.
 void BasicBlock::removeSucc(BasicBlock* bb) {
-    succ.erase(std::find(succ.begin(), succ.end(), bb));
+    auto iter = std::find(succ.begin(), succ.end(), bb);
+    if (iter != succ.end())
+        succ.erase(iter);
 }
 
 void BasicBlock::removeSuccFromEnd(BasicBlock* bb) {
@@ -80,11 +82,15 @@ void BasicBlock::addPred(BasicBlock* bb) {
 
 // remove the predecessor basicblock bb.
 void BasicBlock::removePred(BasicBlock* bb) {
-    pred.erase(std::find(pred.begin(), pred.end(), bb));
+    auto iter = std::find(pred.begin(), pred.end(), bb);
+    if (iter != pred.end())
+        pred.erase(iter);
 }
 
 void BasicBlock::removePredFromEnd(BasicBlock* bb) {
-    pred.erase((std::find(pred.rbegin(), pred.rend(), bb) + 1).base());
+    auto iter = std::find(pred.rbegin(), pred.rend(), bb);
+    if (iter != pred.rend())
+        pred.erase((iter + 1).base());
 }
 
 void BasicBlock::genMachineCode(AsmBuilder* builder) {

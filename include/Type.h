@@ -24,6 +24,7 @@ class Type {
     bool isArray() const { return kind == ARRAY; };
     bool isString() const { return kind == STRING; };
     int getKind() const { return kind; };
+    bool isPtr2Array();
     long long getSize() const { return size; };
 };
 
@@ -41,11 +42,11 @@ class IntType : public Type {
 class FloatType : public Type {
    private:
     bool constant;
-   
+
    public:
     FloatType(int size, bool constant = false)
-        : Type(Type::FLOAT, size), constant(constant) {};
-    
+        : Type(Type::FLOAT, size), constant(constant){};
+
     std::string toStr();
     bool isConst() const { return constant; };
 };

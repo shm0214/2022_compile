@@ -10,7 +10,8 @@ void SSADestruction::pass() {
 
 void SSADestruction::pass(Function* function) {
     map<BasicBlock*, vector<Instruction*>> copyInss;
-    for (auto it = function->begin(); it != function->end(); it++) {
+    vector<BasicBlock*> blocks(function->begin(), function->end());
+    for (auto it = blocks.begin(); it != blocks.end(); it++) {
         if (!(*it)->begin()->isPhi())
             continue;
         vector<BasicBlock*> preds((*it)->pred_begin(), (*it)->pred_end());

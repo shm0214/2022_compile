@@ -8,18 +8,24 @@ void Starighten::pass() {
         bool again = true;
         while (again) {
             again = false;
+            checkPhiPreds(*iter);
             setOriginBranch(*iter);
             // (*iter)->output();
             changes.clear();
             again = pass1(*iter) || again;
             //pass2(*iter);
             again = pass3(*iter) || again;
+            // (*iter)->output();
+            again = pass5(*iter) || again;
+            // (*iter)->output();
             again = pass4(*iter) || again;
             // (*iter)->output();
             // for (auto it : changes)
             //     cout << it.first->getNo() << "->" << it.second[0]->getNo()
             //          << endl;
             checkPhi(*iter);
+            // (*iter)->output();
+            checkPhiPreds(*iter);
             // checkAllocAndPhi(*iter);
         }
         iter++;
@@ -139,17 +145,8 @@ void Starighten::fuseBlock(Function* func, BasicBlock* i, BasicBlock* j) {
     func->remove(j);
 }
 
-void Starighten::checkPhi(Function* func) {
+void Starighten::checkPhiPreds(Function* func) {
     auto& blocklist = func->getBlockList();
-    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
-        (*it)->cleanPhiBlocks();
-        for (auto i = (*it)->begin(); i != (*it)->end(); i = i->getNext())
-            if (i->isPhi())
-                ((PhiInstruction*)i)->changeSrcBlock(changes);
-            else
-                break;
-    }
-    // map<Instruction*, Instruction*> replaceIns;
     vector<Instruction*> removeIns;
     for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
         auto preds = (*it)->getPred();
@@ -187,10 +184,20 @@ void Starighten::checkPhi(Function* func) {
                 }
             }
     }
-    // for (auto it : replaceIns)
-    //     it.first->getParent()->replaceIns(it.first, it.second);
     for (auto it : removeIns)
         it->getParent()->remove(it);
+}
+
+void Starighten::checkPhi(Function* func) {
+    auto& blocklist = func->getBlockList();
+    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
+        (*it)->cleanPhiBlocks();
+        for (auto i = (*it)->begin(); i != (*it)->end(); i = i->getNext())
+            if (i->isPhi())
+                ((PhiInstruction*)i)->changeSrcBlock(changes);
+            else
+                break;
+    }
 }
 
 bool Starighten::pass4(Function* func) {
@@ -254,4 +261,126 @@ void Starighten::setOriginBranch(Function* func) {
             cond->setOriginTrue(cond->getTrueBranch());
         }
     }
+}
+
+bool Starighten::pass5(Function* func) {
+    bool ret = false;
+    // auto again = true;
+    // while (again) {
+    //     again = false;
+    BasicBlock *first, *last = nullptr;
+    Operand* condSrc;
+    bool branch;
+    for (auto block : func->getBlockList()) {
+        auto in = block->rbegin();
+        if (!in->isCond())
+            continue;
+        auto cond = (CondBrInstruction*)in;
+        condSrc = cond->getUse()[0];
+        auto succs = block->getSucc();
+        for (int i = 0; i < 2; i++) {
+            if (succs[i] == block)
+                continue;
+            if (succs[i]->getNumOfPred() != 1)
+                continue;
+            auto in = succs[i]->rbegin();
+            if (in->isCond()) {
+                auto use = in->getUse()[0];
+                if (use == condSrc) {
+                    first = block;
+                    last = succs[i];
+                    branch = cond->getTrueBranch() == succs[i] ? true : false;
+                    break;
+                }
+            }
+        }
+        if (last)
+            break;
+    }
+    if (last) {
+        // again = true;
+        ret = true;
+        CondBrInstruction* cond;
+
+        auto temp = first;
+        while (true) {
+            BasicBlock *succ, *other;
+            cond = (CondBrInstruction*)(temp->rbegin());
+            if (branch) {
+                succ = cond->getTrueBranch();
+                other = cond->getFalseBranch();
+            } else {
+                succ = cond->getFalseBranch();
+                other = cond->getTrueBranch();
+            }
+            if (temp != first) {
+                temp->removeSucc(other);
+                other->removePred(temp);
+                new UncondBrInstruction(succ, temp);
+                temp->remove(cond);
+            }
+            if (temp == last)
+                break;
+            temp = succ;
+        }
+
+        // BasicBlock* succ;
+        // while (true) {
+        //     cond = (CondBrInstruction*)(last->rbegin());
+        //     if (branch)
+        //         succ = cond->getTrueBranch();
+        //     else
+        //         succ = cond->getFalseBranch();
+        //     auto in = succ->rbegin();
+        //     if (in->isCond()) {
+        //         auto use = in->getUse()[0];
+        //         if (use == condSrc)
+        //             last = succ;
+        //         else
+        //             break;
+
+        //     } else
+        //         break;
+        // }
+        // succ->removePred(last);
+        // BasicBlock* second;
+        // auto firstCond = (CondBrInstruction*)(first->rbegin());
+        // if (branch)
+        //     second = firstCond->getTrueBranch();
+        // else
+        //     second = firstCond->getFalseBranch();
+        // first->removeSucc(second);
+        // second->removePred(first);
+        // if (branch)
+        //     firstCond->setTrueBranch(succ);
+        // else
+        //     firstCond->setFalseBranch(succ);
+        // first->addSucc(succ);
+        // succ->addPred(first);
+        // changes[last].push_back(first);
+    }
+    // }
+    return ret;
+}
+
+void Starighten::checkCond() {
+    for (auto it = unit->begin(); it != unit->end(); it++)
+        for (auto block : (*it)->getBlockList()) {
+            auto in = block->rbegin();
+            if (!in->isCond())
+                continue;
+            if (!in->getPrev()->isCmp()) {
+                auto condSrc = in->getUse()[0];
+                auto cmp = condSrc->getDef();
+                auto newCmp = cmp->copy();
+                for (auto u : newCmp->getUse())
+                    u->addUse(newCmp);
+                auto cmpDst = new Operand(new TemporarySymbolEntry(
+                    TypeSystem::boolType, SymbolTable::getLabel()));
+                newCmp->setDef(cmpDst);
+                in->replaceUse(condSrc, cmpDst);
+                newCmp->setParent(block);
+                block->insertBefore(newCmp, in);
+            }
+        }
 }

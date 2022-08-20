@@ -17,6 +17,12 @@ void DeadCodeElimination::mark(Function* func) {
         for (auto it1 = (*it)->begin(); it1 != (*it)->end();
              it1 = it1->getNext()) {
             if (it1->isEssential()) {
+                if (it1->isStore()) {
+                    auto addr = it1->getUse()[0];
+                    if (!(addr->isParam() || addr->isGlobal()) &&
+                        !addr->getDef())
+                        continue;
+                }
                 it1->setMark();
                 it1->getParent()->setMark();
                 worklist.push_back(it1);

@@ -14,11 +14,13 @@ class Starighten {
     bool pass2(Function* function);
     bool pass3(Function* function);
     bool pass4(Function* function);
+    bool pass5(Function* function);
     void fuseBlock(Function* function, BasicBlock* i, BasicBlock* j);
     void checkPhi(Function* function);
     void checkPhiPreds(Function* function);
     void checkAllocAndPhi(Function* function);
     void setOriginBranch(Function* function);
+    void checkCond();
 };
 
 #endif

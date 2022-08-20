@@ -172,6 +172,9 @@ void PeepholeForIR::pass2(Function* func) {
             continue;
         auto cmp = (CmpInstruction*)(in->getPrev());
         auto uses = cmp->getUse();
+        // cmp 冗余时出现
+        if (uses.empty())
+            continue;
         if (uses[0]->isConst() && uses[0]->getConstVal() == 0)
             cmp->swapSrc();
     }

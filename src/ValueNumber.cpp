@@ -43,7 +43,7 @@ void ValueNumber::pass(BasicBlock* block,
         // auto str = in->getHash();
         // if (str.length())
         //     cout << str << endl;
-        if (in->isCmp())
+        if (in->isCmp() && in->getNext()->isXor())
             continue;
         if (in->isPhi()) {
             set<Operand*> s;

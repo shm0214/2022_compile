@@ -107,21 +107,27 @@ void ElimUnreachCode::pass2(Function* func) {
                 flag = true;
                 break;
             }
-        if (flag)
-            continue;
-        auto branch = (CondBrInstruction*)(*(def->use_begin()));
-        BasicBlock *dstBlock, *otherBlock;
-        if (it.second) {
-            dstBlock = branch->getTrueBranch();
-            otherBlock = branch->getFalseBranch();
-        } else {
-            dstBlock = branch->getFalseBranch();
-            otherBlock = branch->getTrueBranch();
+        if (!flag)
+            parent->remove(in);
+        for (auto it1 = def->use_begin(); it1 != def->use_end(); it1++) {
+            if (!(*it1)->isCond())
+                continue;
+            auto branch = (CondBrInstruction*)(*it1);
+            parent = branch->getParent();
+            if (parent->rbegin() != branch)
+                continue;
+            BasicBlock *dstBlock, *otherBlock;
+            if (it.second) {
+                dstBlock = branch->getTrueBranch();
+                otherBlock = branch->getFalseBranch();
+            } else {
+                dstBlock = branch->getFalseBranch();
+                otherBlock = branch->getTrueBranch();
+            }
+            new UncondBrInstruction(dstBlock, parent);
+            parent->removeSucc(otherBlock);
+            otherBlock->removePred(parent);
+            parent->remove(branch);
         }
-        new UncondBrInstruction(dstBlock, parent);
-        parent->removeSucc(otherBlock);
-        otherBlock->removePred(parent);
-        parent->remove(in);
-        parent->remove(branch);
     }
 }

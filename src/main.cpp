@@ -111,13 +111,16 @@ int main(int argc, char* argv[]) {
         m2r.pass();
         dce.pass();
         vn.pass();
-        // 速度较慢 
+        s.pass();
+        // 速度较慢
         so.pass();
+        s.checkCond();
         ai.pass();
         dce.pass();
         cp.pass();
         vn.pass();
         thb.pass();
+        s.checkCond();
         ai.pass();
         vn.pass();
         thb.pass();
@@ -126,6 +129,7 @@ int main(int argc, char* argv[]) {
         ir.pass();
         ph.pass();
         vn.pass();
+        s.checkCond();
         ssad.pass();
     }
     if (dump_ir) {

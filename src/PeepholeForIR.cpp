@@ -59,6 +59,19 @@ void PeepholeForIR::pass1(Function* func) {
                                 // next = bitcast;
                                 storeSrc = newSrc;
                             }
+                            auto arrType =
+                                ((PointerType*)(addr->getType()))->getType();
+                            if (storeSrc->getType()->toStr() !=
+                                arrType->toStr()) {
+                                auto newSrc =
+                                    new Operand(new TemporarySymbolEntry(
+                                        arrType, SymbolTable::getLabel()));
+                                auto bitcast =
+                                    new BitcastInstruction(newSrc, storeSrc);
+                                bitcast->setParent(block);
+                                block->insertBefore(bitcast, cur);
+                                storeSrc = newSrc;
+                            }
                             for (auto in : loads) {
                                 auto loadDef = in->getDef();
                                 while (loadDef->use_begin() !=
@@ -172,6 +185,9 @@ void PeepholeForIR::pass2(Function* func) {
             continue;
         auto cmp = (CmpInstruction*)(in->getPrev());
         auto uses = cmp->getUse();
+        // cmp 冗余时出现
+        if (uses.empty())
+            continue;
         if (uses[0]->isConst() && uses[0]->getConstVal() == 0)
             cmp->swapSrc();
     }

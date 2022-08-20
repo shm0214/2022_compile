@@ -7,6 +7,7 @@ void PeepholeForIR::pass() {
     while (iter != unit->end()) {
         pass1(*iter);
         pass2(*iter);
+        pass3(*iter);
         iter++;
     }
     cleanOnlyStore();
@@ -190,5 +191,31 @@ void PeepholeForIR::pass2(Function* func) {
             continue;
         if (uses[0]->isConst() && uses[0]->getConstVal() == 0)
             cmp->swapSrc();
+    }
+}
+
+void PeepholeForIR::pass3(Function* func) {
+    auto block = func->getEntry();
+    Instruction* r3Add = nullptr;
+    for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+        if (in->isAddZero()) {
+            auto use = in->getUse()[0];
+            if (use->isParam()) {
+                auto entry = (IdentifierSymbolEntry*)(use->getEntry());
+                if (entry->getParamNo() == 3) {
+                    r3Add = in;
+                    break;
+                }
+            }
+        }
+    }
+    if (r3Add) {
+        block->remove(r3Add);
+        for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+            if (!in->isAlloc()) {
+                block->insertBefore(r3Add, in);
+                break;
+            }
+        }
     }
 }

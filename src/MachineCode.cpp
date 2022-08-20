@@ -990,6 +990,19 @@ void MachineBlock::output() {
                 cur_inst->output();
             }
         }
+        if ((*it)->getType() == MachineInstruction::MOV &&
+            (*it)->getOp() == MovMInstruction::VMOVF32) {
+            auto use = (*it)->getUse()[0];
+            if (use->isParam()) {
+                auto fp = new MachineOperand(MachineOperand::REG, 11);
+                auto s4 = new MachineOperand(MachineOperand::REG, 20, true);
+                int temp = baseOffset + use->getOffset();
+                auto off = new MachineOperand(MachineOperand::IMM, temp);
+                auto cur_inst = new LoadMInstruction(
+                    this, LoadMInstruction::VLDR, s4, fp, off);
+                cur_inst->output();
+            }
+        }
         if ((*it)->isLoad() && ((LoadMInstruction*)(*it))->isNeedModify()) {
             auto imm = (*it)->getUse()[1];
             imm->setVal(imm->getVal() + baseOffset);

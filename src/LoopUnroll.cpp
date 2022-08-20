@@ -274,6 +274,17 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
 void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Operand* beginOp,Operand* endOp,Operand* strideOp){
     BasicBlock* newCondBB = new BasicBlock(condbb->getParent());
     BasicBlock* resBodyBB = new BasicBlock(condbb->getParent());
+    BasicBlock* resOutCond = new BasicBlock(condbb->getParent());
+
+    BasicBlock* resoutCondSucc=nullptr;
+    for(auto succBB:bodybb->getSucc()){
+        if(succBB!=bodybb)
+            resoutCondSucc=succBB;
+    }
+    if(resoutCondSucc==nullptr){
+        return;
+    }
+
     std::vector<Instruction*> InstList;
     CmpInstruction* cmp;
     for(auto bodyinstr = bodybb->begin(); bodyinstr != bodybb->end(); bodyinstr = bodyinstr->getNext()){
@@ -328,7 +339,7 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
     //
     resBodyBB->addPred(newCondBB);
     resBodyBB->addPred(resBodyBB);
-    resBodyBB->addSucc(bodybb);
+    resBodyBB->addSucc(resOutCond);
     //resBody第一条得是phi指令
     //末尾添加cmp和br指令
     std::vector<Instruction*> resBodyInstList;
@@ -361,7 +372,7 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
     resNumPhi->addSrc(resBodyBB,binIncDef);
     BinaryInstruction* binInc = new BinaryInstruction(BinaryInstruction::ADD,binIncDef,resNumPhi->getDef(),new Operand(new ConstantSymbolEntry(TypeSystem::intType,1)),nullptr);
     CmpInstruction* resBodyCmp = new CmpInstruction(CmpInstruction::NE,new Operand(new TemporarySymbolEntry(TypeSystem::int8Type,SymbolTable::getLabel())),binIncDef,binMod->getDef(),nullptr);
-    CondBrInstruction* resBodyBr = new CondBrInstruction(resBodyBB,bodybb,resBodyCmp->getDef(),nullptr);
+    CondBrInstruction* resBodyBr = new CondBrInstruction(resBodyBB,resOutCond,resBodyCmp->getDef(),nullptr);
 
     for(auto resIns:resBodyInstList){
         for(auto useOp:resIns->getUse()){
@@ -379,10 +390,23 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
         resBodyBB->insertBefore(resIns,binInc);
     }
 
+    //resoutcond
+   
+    CmpInstruction* resOutCondCmp =(CmpInstruction*) cmp->copy();
+    resOutCondCmp->replaceUse(strideOp,resBodyReplaceMap[strideOp]);
+    CondBrInstruction* resOutCondBr = new CondBrInstruction(bodybb,resoutCondSucc,resOutCondCmp->getDef(),nullptr);
+    resOutCond->insertBack(resOutCondBr);
+    resOutCond->insertBefore(resBodyCmp,resOutCondBr);
+
+    resOutCond->addPred(resBodyBB);
+    resOutCond->addSucc(resoutCondSucc);
+    resoutCondSucc->addPred(resOutCond);
+
+
 
     bodybb->removePred(condbb);
     bodybb->addPred(newCondBB);
-    bodybb->addPred(resBodyBB);
+    bodybb->addPred(resOutCond);
 
     for(int i=0;i<InstList.size();i++){
         if(InstList[i]->isPhi()){
@@ -391,7 +415,7 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
             Operand* bodyOp =  phi->getSrc(bodybb); 
             phi->removeSrc(condbb);
             phi->addSrc(newCondBB,condOp);
-            phi->addSrc(resBodyBB,resBodyReplaceMap[bodyOp]);
+            phi->addSrc(resOutCond,resBodyReplaceMap[bodyOp]);
         }
     }
 

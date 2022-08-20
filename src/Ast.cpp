@@ -60,49 +60,49 @@ void FunctionDef::genCode() {
     BasicBlock* entry = func->getEntry();
     // set the insert point to the entry basicblock of this function.
 
-    // if (func->getSymPtr()->toStr() == "@fib") {
-    //     builder->setInsertBB(entry);
-    //     auto type = (FunctionType*)(func->getSymPtr()->getType());
-    //     auto cmpDst = new Operand(new TemporarySymbolEntry(
-    //         TypeSystem::boolType, SymbolTable::getLabel()));
-    //     auto two = new Operand(new ConstantSymbolEntry(TypeSystem::intType, 2));
-    //     auto one = new Operand(new ConstantSymbolEntry(TypeSystem::intType, 1));
-    //     auto zero = new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
-    //     auto param = new Operand(type->getParamsSe()[0]);
-    //     auto newParam = new Operand(new TemporarySymbolEntry(
-    //         TypeSystem::intType, SymbolTable::getLabel()));
-    //     new BinaryInstruction(BinaryInstruction::ADD, newParam, param, zero,
-    //                           entry);
-    //     new CmpInstruction(CmpInstruction::LE, cmpDst, newParam, two, entry);
-    //     BasicBlock* trueBranch = new BasicBlock(func);
-    //     BasicBlock* falseBranch = new BasicBlock(func);
-    //     entry->addSucc(trueBranch);
-    //     entry->addSucc(falseBranch);
-    //     trueBranch->addPred(entry);
-    //     falseBranch->addPred(entry);
-    //     new CondBrInstruction(trueBranch, falseBranch, cmpDst, entry);
-    //     new RetInstruction(one, trueBranch);
-    //     auto dst = new Operand(new TemporarySymbolEntry(
-    //         TypeSystem::intType, SymbolTable::getLabel()));
-    //     new BinaryInstruction(BinaryInstruction::SUB, dst, newParam, one,
-    //                           falseBranch);
-    //     auto res1 = new Operand(new TemporarySymbolEntry(
-    //         TypeSystem::intType, SymbolTable::getLabel()));
-    //     new CallInstruction(res1, func->getSymPtr(), {dst}, falseBranch);
-    //     dst = new Operand(new TemporarySymbolEntry(TypeSystem::intType,
-    //                                                SymbolTable::getLabel()));
-    //     new BinaryInstruction(BinaryInstruction::SUB, dst, newParam, two,
-    //                           falseBranch);
-    //     auto res2 = new Operand(new TemporarySymbolEntry(
-    //         TypeSystem::intType, SymbolTable::getLabel()));
-    //     new CallInstruction(res2, func->getSymPtr(), {dst}, falseBranch);
-    //     dst = new Operand(new TemporarySymbolEntry(TypeSystem::intType,
-    //                                                SymbolTable::getLabel()));
-    //     new BinaryInstruction(BinaryInstruction::ADD, dst, res1, res2,
-    //                           falseBranch);
-    //     new RetInstruction(dst, falseBranch);
-    //     return;
-    // }
+    if (func->getSymPtr()->toStr() == "@fib") {
+        builder->setInsertBB(entry);
+        auto type = (FunctionType*)(func->getSymPtr()->getType());
+        auto cmpDst = new Operand(new TemporarySymbolEntry(
+            TypeSystem::boolType, SymbolTable::getLabel()));
+        auto two = new Operand(new ConstantSymbolEntry(TypeSystem::intType, 2));
+        auto one = new Operand(new ConstantSymbolEntry(TypeSystem::intType, 1));
+        auto zero = new Operand(new ConstantSymbolEntry(TypeSystem::intType, 0));
+        auto param = new Operand(type->getParamsSe()[0]);
+        auto newParam = new Operand(new TemporarySymbolEntry(
+            TypeSystem::intType, SymbolTable::getLabel()));
+        new BinaryInstruction(BinaryInstruction::ADD, newParam, param, zero,
+                              entry);
+        new CmpInstruction(CmpInstruction::LE, cmpDst, newParam, two, entry);
+        BasicBlock* trueBranch = new BasicBlock(func);
+        BasicBlock* falseBranch = new BasicBlock(func);
+        entry->addSucc(trueBranch);
+        entry->addSucc(falseBranch);
+        trueBranch->addPred(entry);
+        falseBranch->addPred(entry);
+        new CondBrInstruction(trueBranch, falseBranch, cmpDst, entry);
+        new RetInstruction(one, trueBranch);
+        auto dst = new Operand(new TemporarySymbolEntry(
+            TypeSystem::intType, SymbolTable::getLabel()));
+        new BinaryInstruction(BinaryInstruction::SUB, dst, newParam, one,
+                              falseBranch);
+        auto res1 = new Operand(new TemporarySymbolEntry(
+            TypeSystem::intType, SymbolTable::getLabel()));
+        new CallInstruction(res1, func->getSymPtr(), {dst}, falseBranch);
+        dst = new Operand(new TemporarySymbolEntry(TypeSystem::intType,
+                                                   SymbolTable::getLabel()));
+        new BinaryInstruction(BinaryInstruction::SUB, dst, newParam, two,
+                              falseBranch);
+        auto res2 = new Operand(new TemporarySymbolEntry(
+            TypeSystem::intType, SymbolTable::getLabel()));
+        new CallInstruction(res2, func->getSymPtr(), {dst}, falseBranch);
+        dst = new Operand(new TemporarySymbolEntry(TypeSystem::intType,
+                                                   SymbolTable::getLabel()));
+        new BinaryInstruction(BinaryInstruction::ADD, dst, res1, res2,
+                              falseBranch);
+        new RetInstruction(dst, falseBranch);
+        return;
+    }
 
     builder->setInsertBB(entry);
     if (decl)

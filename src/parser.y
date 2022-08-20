@@ -23,6 +23,7 @@
     int stackParamNo = 0;
     int notZeroNum = 0;
     extern int yylineno;
+    extern char* yytext;
     #include <iostream>
 }
 
@@ -31,6 +32,8 @@
     #include "SymbolTable.h"
     #include "Type.h"
 }
+
+%define parse.error verbose
 
 %union {
     double numtype; // store all number in float
@@ -992,6 +995,7 @@ FuncArrayIndices
 
 int yyerror(char const* message)
 {
-    std::cerr<<message<<std::endl;
+    std::cerr << message << std::endl;
+    std::cerr << yytext << std::endl;
     return -1;
 }

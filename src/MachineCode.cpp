@@ -304,6 +304,12 @@ void FuseMInstruction::output() {
         case FuseMInstruction::MLS:
             fprintf(yyout, "\tmls ");
             break;
+        case FuseMInstruction::VMLA:
+            fprintf(yyout, "\tvmla.f32 ");
+            break;
+        case FuseMInstruction::VMLS:
+            fprintf(yyout, "\tvmls.f32 ");
+            break;
         default:
             break;
     }
@@ -314,8 +320,11 @@ void FuseMInstruction::output() {
     this->use_list[0]->output();
     fprintf(yyout, ", ");
     this->use_list[1]->output();
-    fprintf(yyout, ", ");
-    this->use_list[2]->output();
+    if (this->op != FuseMInstruction::VMLA &&
+        this->op != FuseMInstruction::VMLS) {
+        fprintf(yyout, ", ");
+        this->use_list[2]->output();
+    }
     fprintf(yyout, "\n");
 }
 

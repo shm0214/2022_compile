@@ -413,7 +413,7 @@ typedef int yy_state_fast_t;
 
 #define YY_ASSERT(E) ((void) (0 && (E)))
 
-#if !defined yyoverflow
+#if 1
 
 /* The parser invokes alloca or malloc; define the necessary symbols.  */
 
@@ -478,7 +478,7 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 #   endif
 #  endif
 # endif
-#endif /* !defined yyoverflow */
+#endif /* 1 */
 
 #if (! defined yyoverflow \
      && (! defined __cplusplus \
@@ -605,25 +605,25 @@ static const yytype_int8 yytranslate[] =
 /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_int16 yyrline[] =
 {
-       0,    68,    68,    73,    74,    79,    80,    81,    82,    83,
-      84,    85,    90,    95,    96,    97,   100,   108,   118,   123,
-     128,   133,   133,   144,   150,   153,   158,   158,   173,   178,
-     183,   186,   197,   201,   204,   207,   210,   223,   227,   233,
-     234,   241,   252,   253,   263,   283,   284,   295,   306,   320,
-     321,   332,   345,   348,   353,   358,   363,   370,   371,   376,
-     383,   384,   391,   392,   399,   402,   403,   408,   412,   415,
-     421,   422,   425,   428,   434,   438,   441,   445,   448,   456,
-     483,   499,   499,   537,   563,   563,   612,   615,   621,   677,
-     703,   703,   741,   800,   826,   826,   863,   866,   871,   874,
-     880,   888,   880,   917,   918,   920,   924,   929,   952,   984,
-     987
+       0,    70,    70,    75,    76,    81,    82,    83,    84,    85,
+      86,    87,    92,    97,    98,    99,   102,   110,   120,   125,
+     130,   135,   135,   146,   152,   155,   160,   160,   175,   180,
+     185,   188,   199,   203,   206,   209,   212,   225,   229,   235,
+     236,   243,   254,   255,   265,   285,   286,   297,   308,   322,
+     323,   334,   347,   350,   355,   360,   365,   372,   373,   378,
+     385,   386,   393,   394,   401,   404,   405,   410,   414,   417,
+     423,   424,   427,   430,   436,   440,   443,   447,   450,   458,
+     485,   501,   501,   539,   565,   565,   614,   617,   623,   679,
+     705,   705,   743,   802,   828,   828,   865,   868,   873,   876,
+     882,   890,   882,   919,   920,   922,   926,   931,   954,   986,
+     989
 };
 #endif
 
 /** Accessing symbol of state STATE.  */
 #define YY_ACCESSING_SYMBOL(State) YY_CAST (yysymbol_kind_t, yystos[State])
 
-#if YYDEBUG || 0
+#if 1
 /* The user-facing name of the symbol whose (internal) number is
    YYSYMBOL.  No bounds checking.  */
 static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
@@ -1039,8 +1039,275 @@ int yydebug;
 #endif
 
 
+/* Context of a parse error.  */
+typedef struct
+{
+  yy_state_t *yyssp;
+  yysymbol_kind_t yytoken;
+} yypcontext_t;
+
+/* Put in YYARG at most YYARGN of the expected tokens given the
+   current YYCTX, and return the number of tokens stored in YYARG.  If
+   YYARG is null, return the number of expected tokens (guaranteed to
+   be less than YYNTOKENS).  Return YYENOMEM on memory exhaustion.
+   Return 0 if there are more than YYARGN expected tokens, yet fill
+   YYARG up to YYARGN. */
+static int
+yypcontext_expected_tokens (const yypcontext_t *yyctx,
+                            yysymbol_kind_t yyarg[], int yyargn)
+{
+  /* Actual size of YYARG. */
+  int yycount = 0;
+  int yyn = yypact[+*yyctx->yyssp];
+  if (!yypact_value_is_default (yyn))
+    {
+      /* Start YYX at -YYN if negative to avoid negative indexes in
+         YYCHECK.  In other words, skip the first -YYN actions for
+         this state because they are default actions.  */
+      int yyxbegin = yyn < 0 ? -yyn : 0;
+      /* Stay within bounds of both yycheck and yytname.  */
+      int yychecklim = YYLAST - yyn + 1;
+      int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
+      int yyx;
+      for (yyx = yyxbegin; yyx < yyxend; ++yyx)
+        if (yycheck[yyx + yyn] == yyx && yyx != YYSYMBOL_YYerror
+            && !yytable_value_is_error (yytable[yyx + yyn]))
+          {
+            if (!yyarg)
+              ++yycount;
+            else if (yycount == yyargn)
+              return 0;
+            else
+              yyarg[yycount++] = YY_CAST (yysymbol_kind_t, yyx);
+          }
+    }
+  if (yyarg && yycount == 0 && 0 < yyargn)
+    yyarg[0] = YYSYMBOL_YYEMPTY;
+  return yycount;
+}
 
 
+
+
+#ifndef yystrlen
+# if defined __GLIBC__ && defined _STRING_H
+#  define yystrlen(S) (YY_CAST (YYPTRDIFF_T, strlen (S)))
+# else
+/* Return the length of YYSTR.  */
+static YYPTRDIFF_T
+yystrlen (const char *yystr)
+{
+  YYPTRDIFF_T yylen;
+  for (yylen = 0; yystr[yylen]; yylen++)
+    continue;
+  return yylen;
+}
+# endif
+#endif
+
+#ifndef yystpcpy
+# if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
+#  define yystpcpy stpcpy
+# else
+/* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
+   YYDEST.  */
+static char *
+yystpcpy (char *yydest, const char *yysrc)
+{
+  char *yyd = yydest;
+  const char *yys = yysrc;
+
+  while ((*yyd++ = *yys++) != '\0')
+    continue;
+
+  return yyd - 1;
+}
+# endif
+#endif
+
+#ifndef yytnamerr
+/* Copy to YYRES the contents of YYSTR after stripping away unnecessary
+   quotes and backslashes, so that it's suitable for yyerror.  The
+   heuristic is that double-quoting is unnecessary unless the string
+   contains an apostrophe, a comma, or backslash (other than
+   backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
+   null, do not copy; instead, return the length of what the result
+   would have been.  */
+static YYPTRDIFF_T
+yytnamerr (char *yyres, const char *yystr)
+{
+  if (*yystr == '"')
+    {
+      YYPTRDIFF_T yyn = 0;
+      char const *yyp = yystr;
+      for (;;)
+        switch (*++yyp)
+          {
+          case '\'':
+          case ',':
+            goto do_not_strip_quotes;
+
+          case '\\':
+            if (*++yyp != '\\')
+              goto do_not_strip_quotes;
+            else
+              goto append;
+
+          append:
+          default:
+            if (yyres)
+              yyres[yyn] = *yyp;
+            yyn++;
+            break;
+
+          case '"':
+            if (yyres)
+              yyres[yyn] = '\0';
+            return yyn;
+          }
+    do_not_strip_quotes: ;
+    }
+
+  if (yyres)
+    return yystpcpy (yyres, yystr) - yyres;
+  else
+    return yystrlen (yystr);
+}
+#endif
+
+
+static int
+yy_syntax_error_arguments (const yypcontext_t *yyctx,
+                           yysymbol_kind_t yyarg[], int yyargn)
+{
+  /* Actual size of YYARG. */
+  int yycount = 0;
+  /* There are many possibilities here to consider:
+     - If this state is a consistent state with a default action, then
+       the only way this function was invoked is if the default action
+       is an error action.  In that case, don't check for expected
+       tokens because there are none.
+     - The only way there can be no lookahead present (in yychar) is if
+       this state is a consistent state with a default action.  Thus,
+       detecting the absence of a lookahead is sufficient to determine
+       that there is no unexpected or expected token to report.  In that
+       case, just report a simple "syntax error".
+     - Don't assume there isn't a lookahead just because this state is a
+       consistent state with a default action.  There might have been a
+       previous inconsistent state, consistent state with a non-default
+       action, or user semantic action that manipulated yychar.
+     - Of course, the expected token list depends on states to have
+       correct lookahead information, and it depends on the parser not
+       to perform extra reductions after fetching a lookahead from the
+       scanner and before detecting a syntax error.  Thus, state merging
+       (from LALR or IELR) and default reductions corrupt the expected
+       token list.  However, the list is correct for canonical LR with
+       one exception: it will still contain any token that will not be
+       accepted due to an error action in a later state.
+  */
+  if (yyctx->yytoken != YYSYMBOL_YYEMPTY)
+    {
+      int yyn;
+      if (yyarg)
+        yyarg[yycount] = yyctx->yytoken;
+      ++yycount;
+      yyn = yypcontext_expected_tokens (yyctx,
+                                        yyarg ? yyarg + 1 : yyarg, yyargn - 1);
+      if (yyn == YYENOMEM)
+        return YYENOMEM;
+      else
+        yycount += yyn;
+    }
+  return yycount;
+}
+
+/* Copy into *YYMSG, which is of size *YYMSG_ALLOC, an error message
+   about the unexpected token YYTOKEN for the state stack whose top is
+   YYSSP.
+
+   Return 0 if *YYMSG was successfully written.  Return -1 if *YYMSG is
+   not large enough to hold the message.  In that case, also set
+   *YYMSG_ALLOC to the required number of bytes.  Return YYENOMEM if the
+   required number of bytes is too large to store.  */
+static int
+yysyntax_error (YYPTRDIFF_T *yymsg_alloc, char **yymsg,
+                const yypcontext_t *yyctx)
+{
+  enum { YYARGS_MAX = 5 };
+  /* Internationalized format string. */
+  const char *yyformat = YY_NULLPTR;
+  /* Arguments of yyformat: reported tokens (one for the "unexpected",
+     one per "expected"). */
+  yysymbol_kind_t yyarg[YYARGS_MAX];
+  /* Cumulated lengths of YYARG.  */
+  YYPTRDIFF_T yysize = 0;
+
+  /* Actual size of YYARG. */
+  int yycount = yy_syntax_error_arguments (yyctx, yyarg, YYARGS_MAX);
+  if (yycount == YYENOMEM)
+    return YYENOMEM;
+
+  switch (yycount)
+    {
+#define YYCASE_(N, S)                       \
+      case N:                               \
+        yyformat = S;                       \
+        break
+    default: /* Avoid compiler warnings. */
+      YYCASE_(0, YY_("syntax error"));
+      YYCASE_(1, YY_("syntax error, unexpected %s"));
+      YYCASE_(2, YY_("syntax error, unexpected %s, expecting %s"));
+      YYCASE_(3, YY_("syntax error, unexpected %s, expecting %s or %s"));
+      YYCASE_(4, YY_("syntax error, unexpected %s, expecting %s or %s or %s"));
+      YYCASE_(5, YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s"));
+#undef YYCASE_
+    }
+
+  /* Compute error message size.  Don't count the "%s"s, but reserve
+     room for the terminator.  */
+  yysize = yystrlen (yyformat) - 2 * yycount + 1;
+  {
+    int yyi;
+    for (yyi = 0; yyi < yycount; ++yyi)
+      {
+        YYPTRDIFF_T yysize1
+          = yysize + yytnamerr (YY_NULLPTR, yytname[yyarg[yyi]]);
+        if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
+          yysize = yysize1;
+        else
+          return YYENOMEM;
+      }
+  }
+
+  if (*yymsg_alloc < yysize)
+    {
+      *yymsg_alloc = 2 * yysize;
+      if (! (yysize <= *yymsg_alloc
+             && *yymsg_alloc <= YYSTACK_ALLOC_MAXIMUM))
+        *yymsg_alloc = YYSTACK_ALLOC_MAXIMUM;
+      return -1;
+    }
+
+  /* Avoid sprintf, as that infringes on the user's name space.
+     Don't have undefined behavior even if the translation
+     produced a string with the wrong number of "%s"s.  */
+  {
+    char *yyp = *yymsg;
+    int yyi = 0;
+    while ((*yyp = *yyformat) != '\0')
+      if (*yyp == '%' && yyformat[1] == 's' && yyi < yycount)
+        {
+          yyp += yytnamerr (yyp, yytname[yyarg[yyi++]]);
+          yyformat += 2;
+        }
+      else
+        {
+          ++yyp;
+          ++yyformat;
+        }
+  }
+  return 0;
+}
 
 
 /*-----------------------------------------------.
@@ -1109,7 +1376,10 @@ yyparse (void)
      action routines.  */
   YYSTYPE yyval;
 
-
+  /* Buffer for error messages, and its allocated size.  */
+  char yymsgbuf[128];
+  char *yymsg = yymsgbuf;
+  YYPTRDIFF_T yymsg_alloc = sizeof yymsgbuf;
 
 #define YYPOPSTACK(N)   (yyvsp -= (N), yyssp -= (N))
 
@@ -1320,103 +1590,103 @@ yyreduce:
   switch (yyn)
     {
   case 2: /* Program: Stmts  */
-#line 68 "src/parser.y"
+#line 70 "src/parser.y"
             {
         ast.setRoot((yyvsp[0].stmttype));
     }
-#line 1328 "src/parser.cpp"
+#line 1598 "src/parser.cpp"
     break;
 
   case 3: /* Stmts: Stmt  */
-#line 73 "src/parser.y"
+#line 75 "src/parser.y"
            {(yyval.stmttype)=(yyvsp[0].stmttype);}
-#line 1334 "src/parser.cpp"
+#line 1604 "src/parser.cpp"
     break;
 
   case 4: /* Stmts: Stmts Stmt  */
-#line 74 "src/parser.y"
+#line 76 "src/parser.y"
                 {
         (yyval.stmttype) = new SeqNode((yyvsp[-1].stmttype), (yyvsp[0].stmttype));
     }
-#line 1342 "src/parser.cpp"
+#line 1612 "src/parser.cpp"
     break;
 
   case 5: /* Stmt: AssignStmt  */
-#line 79 "src/parser.y"
+#line 81 "src/parser.y"
                  { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1348 "src/parser.cpp"
+#line 1618 "src/parser.cpp"
     break;
 
   case 6: /* Stmt: ExprStmt  */
-#line 80 "src/parser.y"
+#line 82 "src/parser.y"
                { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1354 "src/parser.cpp"
+#line 1624 "src/parser.cpp"
     break;
 
   case 7: /* Stmt: BlockStmt  */
-#line 81 "src/parser.y"
+#line 83 "src/parser.y"
                 {(yyval.stmttype) = (yyvsp[0].stmttype);}
-#line 1360 "src/parser.cpp"
+#line 1630 "src/parser.cpp"
     break;
 
   case 8: /* Stmt: BlankStmt  */
-#line 82 "src/parser.y"
+#line 84 "src/parser.y"
                 { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1366 "src/parser.cpp"
+#line 1636 "src/parser.cpp"
     break;
 
   case 9: /* Stmt: IfStmt  */
-#line 83 "src/parser.y"
+#line 85 "src/parser.y"
              { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1372 "src/parser.cpp"
+#line 1642 "src/parser.cpp"
     break;
 
   case 10: /* Stmt: WhileStmt  */
-#line 84 "src/parser.y"
+#line 86 "src/parser.y"
                 { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1378 "src/parser.cpp"
+#line 1648 "src/parser.cpp"
     break;
 
   case 11: /* Stmt: BreakStmt  */
-#line 85 "src/parser.y"
+#line 87 "src/parser.y"
                 {
         if (!whileCnt)
             fprintf(stderr, "\'break\' statement not in while statement\n");
         (yyval.stmttype) = (yyvsp[0].stmttype);
     }
-#line 1388 "src/parser.cpp"
+#line 1658 "src/parser.cpp"
     break;
 
   case 12: /* Stmt: ContinueStmt  */
-#line 90 "src/parser.y"
+#line 92 "src/parser.y"
                    {
         if (!whileCnt)
             fprintf(stderr, "\'continue\' statement not in while statement\n");
         (yyval.stmttype) = (yyvsp[0].stmttype);
     }
-#line 1398 "src/parser.cpp"
+#line 1668 "src/parser.cpp"
     break;
 
   case 13: /* Stmt: ReturnStmt  */
-#line 95 "src/parser.y"
+#line 97 "src/parser.y"
                  { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1404 "src/parser.cpp"
+#line 1674 "src/parser.cpp"
     break;
 
   case 14: /* Stmt: DeclStmt  */
-#line 96 "src/parser.y"
+#line 98 "src/parser.y"
                { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1410 "src/parser.cpp"
+#line 1680 "src/parser.cpp"
     break;
 
   case 15: /* Stmt: FuncDef  */
-#line 97 "src/parser.y"
+#line 99 "src/parser.y"
               { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1416 "src/parser.cpp"
+#line 1686 "src/parser.cpp"
     break;
 
   case 16: /* LVal: ID  */
-#line 100 "src/parser.y"
+#line 102 "src/parser.y"
          {
         SymbolEntry* se;
         se = identifiers->lookup((yyvsp[0].strtype));
@@ -1425,11 +1695,11 @@ yyreduce:
         (yyval.exprtype) = new Id(se);
         delete [](yyvsp[0].strtype);
     }
-#line 1429 "src/parser.cpp"
+#line 1699 "src/parser.cpp"
     break;
 
   case 17: /* LVal: ID ArrayIndices  */
-#line 108 "src/parser.y"
+#line 110 "src/parser.y"
                      {
         SymbolEntry* se;
         se = identifiers->lookup((yyvsp[-1].strtype));
@@ -1438,43 +1708,43 @@ yyreduce:
         (yyval.exprtype) = new Id(se, (yyvsp[0].exprtype));
         delete [](yyvsp[-1].strtype);
     }
-#line 1442 "src/parser.cpp"
+#line 1712 "src/parser.cpp"
     break;
 
   case 18: /* AssignStmt: LVal ASSIGN Exp SEMICOLON  */
-#line 118 "src/parser.y"
+#line 120 "src/parser.y"
                                 {
         (yyval.stmttype) = new AssignStmt((yyvsp[-3].exprtype), (yyvsp[-1].exprtype));
     }
-#line 1450 "src/parser.cpp"
+#line 1720 "src/parser.cpp"
     break;
 
   case 19: /* ExprStmt: Exp SEMICOLON  */
-#line 123 "src/parser.y"
+#line 125 "src/parser.y"
                     {
         (yyval.stmttype) = new ExprStmt((yyvsp[-1].exprtype));
     }
-#line 1458 "src/parser.cpp"
+#line 1728 "src/parser.cpp"
     break;
 
   case 20: /* BlankStmt: SEMICOLON  */
-#line 128 "src/parser.y"
+#line 130 "src/parser.y"
                 {
         (yyval.stmttype) = new BlankStmt();
     }
-#line 1466 "src/parser.cpp"
+#line 1736 "src/parser.cpp"
     break;
 
   case 21: /* $@1: %empty  */
-#line 133 "src/parser.y"
+#line 135 "src/parser.y"
              {
         identifiers = new SymbolTable(identifiers);
     }
-#line 1474 "src/parser.cpp"
+#line 1744 "src/parser.cpp"
     break;
 
   case 22: /* BlockStmt: LBRACE $@1 Stmts RBRACE  */
-#line 136 "src/parser.y"
+#line 138 "src/parser.y"
                    {
         // midrule actions https://www.gnu.org/software/bison/manual/html_node/Using-Midrule-Actions.html
         (yyval.stmttype) = new CompoundStmt((yyvsp[-1].stmttype));
@@ -1483,47 +1753,47 @@ yyreduce:
         identifiers = identifiers->getPrev();
         delete top;
     }
-#line 1487 "src/parser.cpp"
+#line 1757 "src/parser.cpp"
     break;
 
   case 23: /* BlockStmt: LBRACE RBRACE  */
-#line 144 "src/parser.y"
+#line 146 "src/parser.y"
                     {
         // 这里这个用加嘛 不确定
         (yyval.stmttype) = new CompoundStmt();
     }
-#line 1496 "src/parser.cpp"
+#line 1766 "src/parser.cpp"
     break;
 
   case 24: /* IfStmt: IF LPAREN Cond RPAREN Stmt  */
-#line 150 "src/parser.y"
+#line 152 "src/parser.y"
                                             {
         (yyval.stmttype) = new IfStmt((yyvsp[-2].exprtype), (yyvsp[0].stmttype));
     }
-#line 1504 "src/parser.cpp"
+#line 1774 "src/parser.cpp"
     break;
 
   case 25: /* IfStmt: IF LPAREN Cond RPAREN Stmt ELSE Stmt  */
-#line 153 "src/parser.y"
+#line 155 "src/parser.y"
                                            {
         (yyval.stmttype) = new IfElseStmt((yyvsp[-4].exprtype), (yyvsp[-2].stmttype), (yyvsp[0].stmttype));
     }
-#line 1512 "src/parser.cpp"
+#line 1782 "src/parser.cpp"
     break;
 
   case 26: /* @2: %empty  */
-#line 158 "src/parser.y"
+#line 160 "src/parser.y"
                                {
         whileCnt++;
         WhileStmt *whileNode = new WhileStmt((yyvsp[-1].exprtype));
         (yyval.stmttype) = whileNode;
         whileStk.push(whileNode);
     }
-#line 1523 "src/parser.cpp"
+#line 1793 "src/parser.cpp"
     break;
 
   case 27: /* WhileStmt: WHILE LPAREN Cond RPAREN @2 Stmt  */
-#line 164 "src/parser.y"
+#line 166 "src/parser.y"
          {
         StmtNode *whileNode = (yyvsp[-1].stmttype); 
         ((WhileStmt*)whileNode)->setStmt((yyvsp[0].stmttype));
@@ -1531,35 +1801,35 @@ yyreduce:
         whileStk.pop();
         whileCnt--;
     }
-#line 1535 "src/parser.cpp"
+#line 1805 "src/parser.cpp"
     break;
 
   case 28: /* BreakStmt: BREAK SEMICOLON  */
-#line 173 "src/parser.y"
+#line 175 "src/parser.y"
                       {
         (yyval.stmttype) = new BreakStmt(whileStk.top());
     }
-#line 1543 "src/parser.cpp"
+#line 1813 "src/parser.cpp"
     break;
 
   case 29: /* ContinueStmt: CONTINUE SEMICOLON  */
-#line 178 "src/parser.y"
+#line 180 "src/parser.y"
                          {
         (yyval.stmttype) = new ContinueStmt(whileStk.top());
     }
-#line 1551 "src/parser.cpp"
+#line 1821 "src/parser.cpp"
     break;
 
   case 30: /* ReturnStmt: RETURN SEMICOLON  */
-#line 183 "src/parser.y"
+#line 185 "src/parser.y"
                        {
         (yyval.stmttype) = new ReturnStmt();
     }
-#line 1559 "src/parser.cpp"
+#line 1829 "src/parser.cpp"
     break;
 
   case 31: /* ReturnStmt: RETURN Exp SEMICOLON  */
-#line 186 "src/parser.y"
+#line 188 "src/parser.y"
                            {
         if (((yyvsp[-1].exprtype)->getType()->isFloat() && funcRetType->isInt()) ||
             ((yyvsp[-1].exprtype)->getType()->isInt() && funcRetType->isFloat())) {
@@ -1568,39 +1838,39 @@ yyreduce:
             (yyval.stmttype) = new ReturnStmt((yyvsp[-1].exprtype));            
         }
     }
-#line 1572 "src/parser.cpp"
+#line 1842 "src/parser.cpp"
     break;
 
   case 32: /* Exp: AddExp  */
-#line 197 "src/parser.y"
+#line 199 "src/parser.y"
            { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1578 "src/parser.cpp"
+#line 1848 "src/parser.cpp"
     break;
 
   case 33: /* Cond: LOrExp  */
-#line 201 "src/parser.y"
+#line 203 "src/parser.y"
            { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1584 "src/parser.cpp"
+#line 1854 "src/parser.cpp"
     break;
 
   case 34: /* PrimaryExp: LPAREN Exp RPAREN  */
-#line 204 "src/parser.y"
+#line 206 "src/parser.y"
                         {
         (yyval.exprtype) = (yyvsp[-1].exprtype);
     }
-#line 1592 "src/parser.cpp"
+#line 1862 "src/parser.cpp"
     break;
 
   case 35: /* PrimaryExp: LVal  */
-#line 207 "src/parser.y"
+#line 209 "src/parser.y"
            {
         (yyval.exprtype) = (yyvsp[0].exprtype);
     }
-#line 1600 "src/parser.cpp"
+#line 1870 "src/parser.cpp"
     break;
 
   case 36: /* PrimaryExp: STRING  */
-#line 210 "src/parser.y"
+#line 212 "src/parser.y"
              {
         SymbolEntry* se;
         se = globals->lookup(std::string((yyvsp[0].strtype)));
@@ -1614,35 +1884,35 @@ yyreduce:
 
         (yyval.exprtype) = expr;
     }
-#line 1618 "src/parser.cpp"
+#line 1888 "src/parser.cpp"
     break;
 
   case 37: /* PrimaryExp: INTEGER  */
-#line 223 "src/parser.y"
+#line 225 "src/parser.y"
               {
         SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, (yyvsp[0].numtype));
         (yyval.exprtype) = new Constant(se);
     }
-#line 1627 "src/parser.cpp"
+#line 1897 "src/parser.cpp"
     break;
 
   case 38: /* PrimaryExp: FLOATING  */
-#line 227 "src/parser.y"
+#line 229 "src/parser.y"
                {
         SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::floatType, (yyvsp[0].numtype));
         (yyval.exprtype) = new Constant(se);
     }
-#line 1636 "src/parser.cpp"
+#line 1906 "src/parser.cpp"
     break;
 
   case 39: /* UnaryExp: PrimaryExp  */
-#line 233 "src/parser.y"
+#line 235 "src/parser.y"
                  { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1642 "src/parser.cpp"
+#line 1912 "src/parser.cpp"
     break;
 
   case 40: /* UnaryExp: ID LPAREN FuncRParams RPAREN  */
-#line 234 "src/parser.y"
+#line 236 "src/parser.y"
                                    {
         SymbolEntry* se;
         se = identifiers->lookup((yyvsp[-3].strtype));
@@ -1650,11 +1920,11 @@ yyreduce:
             fprintf(stderr, "function \"%s\" is undefined\n", (char*)(yyvsp[-3].strtype));
         (yyval.exprtype) = new CallExpr(se, (yyvsp[-1].exprtype));
     }
-#line 1654 "src/parser.cpp"
+#line 1924 "src/parser.cpp"
     break;
 
   case 41: /* UnaryExp: ID LPAREN RPAREN  */
-#line 241 "src/parser.y"
+#line 243 "src/parser.y"
                        {
         SymbolEntry* se;
         se = identifiers->lookup((yyvsp[-2].strtype));
@@ -1666,17 +1936,17 @@ yyreduce:
         } else
             (yyval.exprtype) = new CallExpr(se);
     }
-#line 1670 "src/parser.cpp"
+#line 1940 "src/parser.cpp"
     break;
 
   case 42: /* UnaryExp: ADD UnaryExp  */
-#line 252 "src/parser.y"
+#line 254 "src/parser.y"
                    { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1676 "src/parser.cpp"
+#line 1946 "src/parser.cpp"
     break;
 
   case 43: /* UnaryExp: SUB UnaryExp  */
-#line 253 "src/parser.y"
+#line 255 "src/parser.y"
                    {
         Type* exprType = (yyvsp[0].exprtype)->getType();
         SymbolEntry* se = new TemporarySymbolEntry(exprType, SymbolTable::getLabel());
@@ -1687,11 +1957,11 @@ yyreduce:
             (yyval.exprtype) = tmpExpr->const_fold();
         }
     }
-#line 1691 "src/parser.cpp"
+#line 1961 "src/parser.cpp"
     break;
 
   case 44: /* UnaryExp: NOT UnaryExp  */
-#line 263 "src/parser.y"
+#line 265 "src/parser.y"
                    {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         ExprNode* tmpExpr;
@@ -1710,17 +1980,17 @@ yyreduce:
             (yyval.exprtype) = tmpExpr->const_fold();
         }
     }
-#line 1714 "src/parser.cpp"
+#line 1984 "src/parser.cpp"
     break;
 
   case 45: /* MulExp: UnaryExp  */
-#line 283 "src/parser.y"
+#line 285 "src/parser.y"
                { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1720 "src/parser.cpp"
+#line 1990 "src/parser.cpp"
     break;
 
   case 46: /* MulExp: MulExp MUL UnaryExp  */
-#line 284 "src/parser.y"
+#line 286 "src/parser.y"
                           {
         SymbolEntry* se;
         if ((yyvsp[-2].exprtype)->getType()->isFloat() || (yyvsp[0].exprtype)->getType()->isFloat()) {
@@ -1732,11 +2002,11 @@ yyreduce:
             (yyval.exprtype) = tmpExpr->const_fold();
         }
     }
-#line 1736 "src/parser.cpp"
+#line 2006 "src/parser.cpp"
     break;
 
   case 47: /* MulExp: MulExp DIV UnaryExp  */
-#line 295 "src/parser.y"
+#line 297 "src/parser.y"
                           {
         SymbolEntry* se;
         if ((yyvsp[-2].exprtype)->getType()->isFloat() || (yyvsp[0].exprtype)->getType()->isFloat()) {
@@ -1748,11 +2018,11 @@ yyreduce:
             (yyval.exprtype) = tmpExpr->const_fold();
         }
     }
-#line 1752 "src/parser.cpp"
+#line 2022 "src/parser.cpp"
     break;
 
   case 48: /* MulExp: MulExp MOD UnaryExp  */
-#line 306 "src/parser.y"
+#line 308 "src/parser.y"
                           {
 
         if ((yyvsp[-2].exprtype)->getType()->isFloat() || (yyvsp[0].exprtype)->getType()->isFloat()) {
@@ -1765,17 +2035,17 @@ yyreduce:
         ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::MOD, (yyvsp[-2].exprtype), (yyvsp[0].exprtype));
         (yyval.exprtype) = tmpExpr->const_fold();
     }
-#line 1769 "src/parser.cpp"
+#line 2039 "src/parser.cpp"
     break;
 
   case 49: /* AddExp: MulExp  */
-#line 320 "src/parser.y"
+#line 322 "src/parser.y"
              { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1775 "src/parser.cpp"
+#line 2045 "src/parser.cpp"
     break;
 
   case 50: /* AddExp: AddExp ADD MulExp  */
-#line 321 "src/parser.y"
+#line 323 "src/parser.y"
                         {
         SymbolEntry* se;
         if ((yyvsp[-2].exprtype)->getType()->isFloat() || (yyvsp[0].exprtype)->getType()->isFloat()) {
@@ -1787,11 +2057,11 @@ yyreduce:
             (yyval.exprtype) = tmpExpr->const_fold();
         }
     }
-#line 1791 "src/parser.cpp"
+#line 2061 "src/parser.cpp"
     break;
 
   case 51: /* AddExp: AddExp SUB MulExp  */
-#line 332 "src/parser.y"
+#line 334 "src/parser.y"
                         {
         SymbolEntry* se;
         if ((yyvsp[-2].exprtype)->getType()->isFloat() || (yyvsp[0].exprtype)->getType()->isFloat()) {
@@ -1803,221 +2073,221 @@ yyreduce:
             (yyval.exprtype) = tmpExpr->const_fold();
         }
     }
-#line 1807 "src/parser.cpp"
+#line 2077 "src/parser.cpp"
     break;
 
   case 52: /* RelExp: AddExp  */
-#line 345 "src/parser.y"
+#line 347 "src/parser.y"
              {
         (yyval.exprtype) = (yyvsp[0].exprtype);
     }
-#line 1815 "src/parser.cpp"
+#line 2085 "src/parser.cpp"
     break;
 
   case 53: /* RelExp: RelExp LESS AddExp  */
-#line 348 "src/parser.y"
+#line 350 "src/parser.y"
                          {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::LESS, (yyvsp[-2].exprtype), (yyvsp[0].exprtype));
         (yyval.exprtype) = tmpExpr->const_fold();
     }
-#line 1825 "src/parser.cpp"
+#line 2095 "src/parser.cpp"
     break;
 
   case 54: /* RelExp: RelExp LESSEQUAL AddExp  */
-#line 353 "src/parser.y"
+#line 355 "src/parser.y"
                               {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::LESSEQUAL, (yyvsp[-2].exprtype), (yyvsp[0].exprtype));
         (yyval.exprtype) = tmpExpr->const_fold();
     }
-#line 1835 "src/parser.cpp"
+#line 2105 "src/parser.cpp"
     break;
 
   case 55: /* RelExp: RelExp GREATER AddExp  */
-#line 358 "src/parser.y"
+#line 360 "src/parser.y"
                             {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::GREATER, (yyvsp[-2].exprtype), (yyvsp[0].exprtype));
         (yyval.exprtype) = tmpExpr->const_fold();
     }
-#line 1845 "src/parser.cpp"
+#line 2115 "src/parser.cpp"
     break;
 
   case 56: /* RelExp: RelExp GREATEREQUAL AddExp  */
-#line 363 "src/parser.y"
+#line 365 "src/parser.y"
                                  {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::GREATEREQUAL, (yyvsp[-2].exprtype), (yyvsp[0].exprtype));
         (yyval.exprtype) = tmpExpr->const_fold();
     }
-#line 1855 "src/parser.cpp"
+#line 2125 "src/parser.cpp"
     break;
 
   case 57: /* EqExp: RelExp  */
-#line 370 "src/parser.y"
+#line 372 "src/parser.y"
              { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1861 "src/parser.cpp"
+#line 2131 "src/parser.cpp"
     break;
 
   case 58: /* EqExp: EqExp EQUAL RelExp  */
-#line 371 "src/parser.y"
+#line 373 "src/parser.y"
                          {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::EQUAL, (yyvsp[-2].exprtype), (yyvsp[0].exprtype));
         (yyval.exprtype) = tmpExpr->const_fold();
     }
-#line 1871 "src/parser.cpp"
+#line 2141 "src/parser.cpp"
     break;
 
   case 59: /* EqExp: EqExp NOTEQUAL RelExp  */
-#line 376 "src/parser.y"
+#line 378 "src/parser.y"
                             {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::NOTEQUAL, (yyvsp[-2].exprtype), (yyvsp[0].exprtype));
         (yyval.exprtype) = tmpExpr->const_fold();
     }
-#line 1881 "src/parser.cpp"
+#line 2151 "src/parser.cpp"
     break;
 
   case 60: /* LAndExp: EqExp  */
-#line 383 "src/parser.y"
+#line 385 "src/parser.y"
             { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1887 "src/parser.cpp"
+#line 2157 "src/parser.cpp"
     break;
 
   case 61: /* LAndExp: LAndExp AND EqExp  */
-#line 384 "src/parser.y"
+#line 386 "src/parser.y"
                         {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::AND, (yyvsp[-2].exprtype), (yyvsp[0].exprtype));
         (yyval.exprtype) = tmpExpr->const_fold();
     }
-#line 1897 "src/parser.cpp"
+#line 2167 "src/parser.cpp"
     break;
 
   case 62: /* LOrExp: LAndExp  */
-#line 391 "src/parser.y"
+#line 393 "src/parser.y"
               { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1903 "src/parser.cpp"
+#line 2173 "src/parser.cpp"
     break;
 
   case 63: /* LOrExp: LOrExp OR LAndExp  */
-#line 392 "src/parser.y"
+#line 394 "src/parser.y"
                         {
         SymbolEntry* se = new TemporarySymbolEntry(TypeSystem::boolType, SymbolTable::getLabel());
         ExprNode* tmpExpr = new BinaryExpr(se, BinaryExpr::OR, (yyvsp[-2].exprtype), (yyvsp[0].exprtype));
         (yyval.exprtype) = tmpExpr->const_fold();
     }
-#line 1913 "src/parser.cpp"
+#line 2183 "src/parser.cpp"
     break;
 
   case 64: /* ConstExp: AddExp  */
-#line 399 "src/parser.y"
+#line 401 "src/parser.y"
              { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1919 "src/parser.cpp"
+#line 2189 "src/parser.cpp"
     break;
 
   case 65: /* FuncRParams: Exp  */
-#line 402 "src/parser.y"
+#line 404 "src/parser.y"
           { (yyval.exprtype) = (yyvsp[0].exprtype); }
-#line 1925 "src/parser.cpp"
+#line 2195 "src/parser.cpp"
     break;
 
   case 66: /* FuncRParams: FuncRParams COMMA Exp  */
-#line 403 "src/parser.y"
+#line 405 "src/parser.y"
                             {
         (yyval.exprtype) = (yyvsp[-2].exprtype);
         (yyval.exprtype)->setNext((yyvsp[0].exprtype));
     }
-#line 1934 "src/parser.cpp"
+#line 2204 "src/parser.cpp"
     break;
 
   case 67: /* Type: INT  */
-#line 408 "src/parser.y"
+#line 410 "src/parser.y"
           {
         (yyval.type) = TypeSystem::intType;
         declType = TypeSystem::intType;
     }
-#line 1943 "src/parser.cpp"
+#line 2213 "src/parser.cpp"
     break;
 
   case 68: /* Type: VOID  */
-#line 412 "src/parser.y"
+#line 414 "src/parser.y"
            {
         (yyval.type) = TypeSystem::voidType;
     }
-#line 1951 "src/parser.cpp"
+#line 2221 "src/parser.cpp"
     break;
 
   case 69: /* Type: FLOAT  */
-#line 415 "src/parser.y"
+#line 417 "src/parser.y"
             {
         (yyval.type) = TypeSystem::floatType;
         declType = TypeSystem::floatType;
     }
-#line 1960 "src/parser.cpp"
+#line 2230 "src/parser.cpp"
     break;
 
   case 70: /* DeclStmt: VarDeclStmt  */
-#line 421 "src/parser.y"
+#line 423 "src/parser.y"
                   { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1966 "src/parser.cpp"
+#line 2236 "src/parser.cpp"
     break;
 
   case 71: /* DeclStmt: ConstDeclStmt  */
-#line 422 "src/parser.y"
+#line 424 "src/parser.y"
                     { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 1972 "src/parser.cpp"
+#line 2242 "src/parser.cpp"
     break;
 
   case 72: /* VarDeclStmt: Type VarDefList SEMICOLON  */
-#line 425 "src/parser.y"
+#line 427 "src/parser.y"
                                 { (yyval.stmttype) = (yyvsp[-1].stmttype); }
-#line 1978 "src/parser.cpp"
+#line 2248 "src/parser.cpp"
     break;
 
   case 73: /* ConstDeclStmt: CONST Type ConstDefList SEMICOLON  */
-#line 428 "src/parser.y"
+#line 430 "src/parser.y"
                                         {
         // 这里肯定还得区分一下 
         (yyval.stmttype) = (yyvsp[-1].stmttype);
     }
-#line 1987 "src/parser.cpp"
+#line 2257 "src/parser.cpp"
     break;
 
   case 74: /* VarDefList: VarDefList COMMA VarDef  */
-#line 434 "src/parser.y"
+#line 436 "src/parser.y"
                               {
         (yyval.stmttype) = (yyvsp[-2].stmttype);
         (yyvsp[-2].stmttype)->setNext((yyvsp[0].stmttype));
     }
-#line 1996 "src/parser.cpp"
+#line 2266 "src/parser.cpp"
     break;
 
   case 75: /* VarDefList: VarDef  */
-#line 438 "src/parser.y"
+#line 440 "src/parser.y"
              { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 2002 "src/parser.cpp"
+#line 2272 "src/parser.cpp"
     break;
 
   case 76: /* ConstDefList: ConstDefList COMMA ConstDef  */
-#line 441 "src/parser.y"
+#line 443 "src/parser.y"
                                   {
         (yyval.stmttype) = (yyvsp[-2].stmttype);
         (yyvsp[-2].stmttype)->setNext((yyvsp[0].stmttype));
     }
-#line 2011 "src/parser.cpp"
+#line 2281 "src/parser.cpp"
     break;
 
   case 77: /* ConstDefList: ConstDef  */
-#line 445 "src/parser.y"
+#line 447 "src/parser.y"
                { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 2017 "src/parser.cpp"
+#line 2287 "src/parser.cpp"
     break;
 
   case 78: /* VarDef: ID  */
-#line 448 "src/parser.y"
+#line 450 "src/parser.y"
          {
         SymbolEntry* se;
         se = new IdentifierSymbolEntry(declType, (yyvsp[0].strtype), identifiers->getLevel());
@@ -2026,11 +2296,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se));
         delete [](yyvsp[0].strtype);
     }
-#line 2030 "src/parser.cpp"
+#line 2300 "src/parser.cpp"
     break;
 
   case 79: /* VarDef: ID ArrayIndices  */
-#line 456 "src/parser.y"
+#line 458 "src/parser.y"
                       {
         SymbolEntry* se;
         std::vector<int> vec;
@@ -2058,11 +2328,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se));
         delete [](yyvsp[-1].strtype);
     }
-#line 2062 "src/parser.cpp"
+#line 2332 "src/parser.cpp"
     break;
 
   case 80: /* VarDef: ID ASSIGN InitVal  */
-#line 483 "src/parser.y"
+#line 485 "src/parser.y"
                         {
         SymbolEntry* se;
         se = new IdentifierSymbolEntry(declType, (yyvsp[-2].strtype), identifiers->getLevel());
@@ -2079,11 +2349,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se), (yyvsp[0].exprtype));
         delete [](yyvsp[-2].strtype);
     }
-#line 2083 "src/parser.cpp"
+#line 2353 "src/parser.cpp"
     break;
 
   case 81: /* @3: %empty  */
-#line 499 "src/parser.y"
+#line 501 "src/parser.y"
                              {
         SymbolEntry* se;
         std::vector<int> vec;
@@ -2108,11 +2378,11 @@ yyreduce:
         arrayValue = new double[arrayType->getSize()];
         notZeroNum = 0;
     }
-#line 2112 "src/parser.cpp"
+#line 2382 "src/parser.cpp"
     break;
 
   case 82: /* VarDef: ID ArrayIndices ASSIGN @3 InitVal  */
-#line 523 "src/parser.y"
+#line 525 "src/parser.y"
               {
         ((IdentifierSymbolEntry*)(yyvsp[-1].se))->setArrayValue(arrayValue);
         ((IdentifierSymbolEntry*)(yyvsp[-1].se))->setNotZeroNum(notZeroNum);
@@ -2125,11 +2395,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id((yyvsp[-1].se)), (yyvsp[0].exprtype));
         delete [](yyvsp[-4].strtype);
     }
-#line 2129 "src/parser.cpp"
+#line 2399 "src/parser.cpp"
     break;
 
   case 83: /* ConstDef: ID ASSIGN ConstInitVal  */
-#line 537 "src/parser.y"
+#line 539 "src/parser.y"
                              {
 
         if (declType->isFloat()) {
@@ -2156,11 +2426,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se), (yyvsp[0].exprtype));
         delete [](yyvsp[-2].strtype);
     }
-#line 2160 "src/parser.cpp"
+#line 2430 "src/parser.cpp"
     break;
 
   case 84: /* @4: %empty  */
-#line 563 "src/parser.y"
+#line 565 "src/parser.y"
                              {
 
         if (declType->isFloat()) {
@@ -2195,11 +2465,11 @@ yyreduce:
         arrayValue = new double[arrayType->getSize()];
         notZeroNum = 0;
     }
-#line 2199 "src/parser.cpp"
+#line 2469 "src/parser.cpp"
     break;
 
   case 85: /* ConstDef: ID ArrayIndices ASSIGN @4 ConstInitVal  */
-#line 597 "src/parser.y"
+#line 599 "src/parser.y"
                    {
         ((IdentifierSymbolEntry*)(yyvsp[-1].se))->setArrayValue(arrayValue);
         ((IdentifierSymbolEntry*)(yyvsp[-1].se))->setNotZeroNum(notZeroNum);
@@ -2213,28 +2483,28 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id((yyvsp[-1].se)), (yyvsp[0].exprtype));
         delete [](yyvsp[-4].strtype);
     }
-#line 2217 "src/parser.cpp"
+#line 2487 "src/parser.cpp"
     break;
 
   case 86: /* ArrayIndices: LBRACKET ConstExp RBRACKET  */
-#line 612 "src/parser.y"
+#line 614 "src/parser.y"
                                  {
         (yyval.exprtype) = (yyvsp[-1].exprtype);
     }
-#line 2225 "src/parser.cpp"
+#line 2495 "src/parser.cpp"
     break;
 
   case 87: /* ArrayIndices: ArrayIndices LBRACKET ConstExp RBRACKET  */
-#line 615 "src/parser.y"
+#line 617 "src/parser.y"
                                               {
         (yyval.exprtype) = (yyvsp[-3].exprtype);
         (yyvsp[-3].exprtype)->setNext((yyvsp[-1].exprtype));
     }
-#line 2234 "src/parser.cpp"
+#line 2504 "src/parser.cpp"
     break;
 
   case 88: /* InitVal: Exp  */
-#line 621 "src/parser.y"
+#line 623 "src/parser.y"
           {
         if (!(yyvsp[0].exprtype)->getType()->isInt() && !(yyvsp[0].exprtype)->getType()->isFloat()) {
             // error
@@ -2291,11 +2561,11 @@ yyreduce:
             }
         }         
     }
-#line 2295 "src/parser.cpp"
+#line 2565 "src/parser.cpp"
     break;
 
   case 89: /* InitVal: LBRACE RBRACE  */
-#line 677 "src/parser.y"
+#line 679 "src/parser.y"
                     {
         SymbolEntry* se;
         ExprNode* list;
@@ -2322,11 +2592,11 @@ yyreduce:
         }
         (yyval.exprtype) = list;
     }
-#line 2326 "src/parser.cpp"
+#line 2596 "src/parser.cpp"
     break;
 
   case 90: /* @5: %empty  */
-#line 703 "src/parser.y"
+#line 705 "src/parser.y"
              {
         SymbolEntry* se;
         if (!stk.empty())
@@ -2344,11 +2614,11 @@ yyreduce:
         (yyval.exprtype) = expr;
         leftCnt++;
     }
-#line 2348 "src/parser.cpp"
+#line 2618 "src/parser.cpp"
     break;
 
   case 91: /* InitVal: LBRACE @5 InitValList RBRACE  */
-#line 720 "src/parser.y"
+#line 722 "src/parser.y"
                          {
         leftCnt--;
         while (stk.top() != (yyvsp[-2].exprtype) && stk.size() > (long unsigned int)(leftCnt + 1))
@@ -2367,11 +2637,11 @@ yyreduce:
             arrayType = (ArrayType*)(
                 ((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
     }
-#line 2371 "src/parser.cpp"
+#line 2641 "src/parser.cpp"
     break;
 
   case 92: /* ConstInitVal: ConstExp  */
-#line 741 "src/parser.y"
+#line 743 "src/parser.y"
                {
         (yyval.exprtype) = (yyvsp[0].exprtype);
         if (!stk.empty()) {
@@ -2431,11 +2701,11 @@ yyreduce:
             }
         }
     }
-#line 2435 "src/parser.cpp"
+#line 2705 "src/parser.cpp"
     break;
 
   case 93: /* ConstInitVal: LBRACE RBRACE  */
-#line 800 "src/parser.y"
+#line 802 "src/parser.y"
                     {
         SymbolEntry* se;
         ExprNode* list;
@@ -2462,11 +2732,11 @@ yyreduce:
         }
         (yyval.exprtype) = list;
     }
-#line 2466 "src/parser.cpp"
+#line 2736 "src/parser.cpp"
     break;
 
   case 94: /* @6: %empty  */
-#line 826 "src/parser.y"
+#line 828 "src/parser.y"
              {
         SymbolEntry* se;
         if (!stk.empty())
@@ -2484,11 +2754,11 @@ yyreduce:
         (yyval.exprtype) = expr;
         leftCnt++;
     }
-#line 2488 "src/parser.cpp"
+#line 2758 "src/parser.cpp"
     break;
 
   case 95: /* ConstInitVal: LBRACE @6 ConstInitValList RBRACE  */
-#line 843 "src/parser.y"
+#line 845 "src/parser.y"
                               {
         leftCnt--;
         while (stk.top() != (yyvsp[-2].exprtype) && stk.size() > (long unsigned int)(leftCnt + 1))
@@ -2507,43 +2777,43 @@ yyreduce:
             arrayType = (ArrayType*)(
                 ((ArrayType*)(stk.top()->getSymbolEntry()->getType()))->getElementType());
     }
-#line 2511 "src/parser.cpp"
+#line 2781 "src/parser.cpp"
     break;
 
   case 96: /* InitValList: InitVal  */
-#line 863 "src/parser.y"
+#line 865 "src/parser.y"
               {
         (yyval.exprtype) = (yyvsp[0].exprtype);
     }
-#line 2519 "src/parser.cpp"
+#line 2789 "src/parser.cpp"
     break;
 
   case 97: /* InitValList: InitValList COMMA InitVal  */
-#line 866 "src/parser.y"
+#line 868 "src/parser.y"
                                 {
         (yyval.exprtype) = (yyvsp[-2].exprtype);
     }
-#line 2527 "src/parser.cpp"
+#line 2797 "src/parser.cpp"
     break;
 
   case 98: /* ConstInitValList: ConstInitVal  */
-#line 871 "src/parser.y"
+#line 873 "src/parser.y"
                    {
         (yyval.exprtype) = (yyvsp[0].exprtype);
     }
-#line 2535 "src/parser.cpp"
+#line 2805 "src/parser.cpp"
     break;
 
   case 99: /* ConstInitValList: ConstInitValList COMMA ConstInitVal  */
-#line 874 "src/parser.y"
+#line 876 "src/parser.y"
                                           {
         (yyval.exprtype) = (yyvsp[-2].exprtype);
     }
-#line 2543 "src/parser.cpp"
+#line 2813 "src/parser.cpp"
     break;
 
   case 100: /* $@7: %empty  */
-#line 880 "src/parser.y"
+#line 882 "src/parser.y"
             {
         // SymbolTable::resetLabel();
         identifiers = new SymbolTable(identifiers);
@@ -2552,11 +2822,11 @@ yyreduce:
         stackParamNo = 0;
         funcRetType = (yyvsp[-1].type);
     }
-#line 2556 "src/parser.cpp"
+#line 2826 "src/parser.cpp"
     break;
 
   case 101: /* @8: %empty  */
-#line 888 "src/parser.y"
+#line 890 "src/parser.y"
                                      {
         Type* funcType;
         std::vector<Type*> vec;
@@ -2577,11 +2847,11 @@ yyreduce:
         }
         (yyval.se) = se; 
     }
-#line 2579 "src/parser.cpp"
+#line 2851 "src/parser.cpp"
     break;
 
   case 102: /* FuncDef: Type ID $@7 LPAREN MaybeFuncFParams RPAREN @8 BlockStmt  */
-#line 906 "src/parser.y"
+#line 910 "src/parser.y"
                 {
         (yyval.stmttype) = new FunctionDef((yyvsp[-1].se), (DeclStmt*)(yyvsp[-3].stmttype), (yyvsp[0].stmttype));
         SymbolTable* top = identifiers;
@@ -2589,40 +2859,40 @@ yyreduce:
         delete top;
         delete [](yyvsp[-6].strtype);
     }
-#line 2591 "src/parser.cpp"
+#line 2863 "src/parser.cpp"
     break;
 
   case 103: /* MaybeFuncFParams: FuncFParams  */
-#line 917 "src/parser.y"
+#line 919 "src/parser.y"
                   { (yyval.stmttype) = (yyvsp[0].stmttype); }
-#line 2599 "src/parser.cpp"
+#line 2869 "src/parser.cpp"
     break;
 
   case 104: /* MaybeFuncFParams: %empty  */
-#line 918 "src/parser.y"
+#line 920 "src/parser.y"
              { (yyval.stmttype) = nullptr; }
-#line 2605 "src/parser.cpp"
+#line 2875 "src/parser.cpp"
     break;
 
   case 105: /* FuncFParams: FuncFParams COMMA FuncFParam  */
-#line 918 "src/parser.y"
+#line 922 "src/parser.y"
                                    {
         (yyval.stmttype) = (yyvsp[-2].stmttype);
         (yyval.stmttype)->setNext((yyvsp[0].stmttype));
     }
-#line 2612 "src/parser.cpp"
+#line 2884 "src/parser.cpp"
     break;
 
   case 106: /* FuncFParams: FuncFParam  */
-#line 924 "src/parser.y"
+#line 926 "src/parser.y"
                  {
         (yyval.stmttype) = (yyvsp[0].stmttype);
     }
-#line 2622 "src/parser.cpp"
+#line 2892 "src/parser.cpp"
     break;
 
   case 107: /* FuncFParam: Type ID  */
-#line 927 "src/parser.y"
+#line 931 "src/parser.y"
               {
         SymbolEntry* se;
         if ((yyvsp[-1].type)->isFloat()) {
@@ -2646,11 +2916,11 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se));
         delete [](yyvsp[0].strtype);
     }
-#line 2648 "src/parser.cpp"
+#line 2920 "src/parser.cpp"
     break;
 
   case 108: /* FuncFParam: Type ID FuncArrayIndices  */
-#line 950 "src/parser.y"
+#line 954 "src/parser.y"
                                {
         // 这里也需要求值
         SymbolEntry* se;
@@ -2681,28 +2951,28 @@ yyreduce:
         (yyval.stmttype) = new DeclStmt(new Id(se));
         delete [](yyvsp[-1].strtype);
     }
-#line 2683 "src/parser.cpp"
+#line 2955 "src/parser.cpp"
     break;
 
   case 109: /* FuncArrayIndices: LBRACKET RBRACKET  */
-#line 984 "src/parser.y"
+#line 986 "src/parser.y"
                         {
         (yyval.exprtype) = new ExprNode(nullptr);
     }
-#line 2693 "src/parser.cpp"
+#line 2963 "src/parser.cpp"
     break;
 
   case 110: /* FuncArrayIndices: FuncArrayIndices LBRACKET Exp RBRACKET  */
-#line 985 "src/parser.y"
+#line 989 "src/parser.y"
                                              {
         (yyval.exprtype) = (yyvsp[-3].exprtype);
         (yyval.exprtype)->setNext((yyvsp[-1].exprtype));
     }
-#line 2700 "src/parser.cpp"
+#line 2972 "src/parser.cpp"
     break;
 
 
-#line 2704 "src/parser.cpp"
+#line 2976 "src/parser.cpp"
 
       default: break;
     }
@@ -2749,7 +3019,37 @@ yyerrlab:
   if (!yyerrstatus)
     {
       ++yynerrs;
-      yyerror (YY_("syntax error"));
+      {
+        yypcontext_t yyctx
+          = {yyssp, yytoken};
+        char const *yymsgp = YY_("syntax error");
+        int yysyntax_error_status;
+        yysyntax_error_status = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx);
+        if (yysyntax_error_status == 0)
+          yymsgp = yymsg;
+        else if (yysyntax_error_status == -1)
+          {
+            if (yymsg != yymsgbuf)
+              YYSTACK_FREE (yymsg);
+            yymsg = YY_CAST (char *,
+                             YYSTACK_ALLOC (YY_CAST (YYSIZE_T, yymsg_alloc)));
+            if (yymsg)
+              {
+                yysyntax_error_status
+                  = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx);
+                yymsgp = yymsg;
+              }
+            else
+              {
+                yymsg = yymsgbuf;
+                yymsg_alloc = sizeof yymsgbuf;
+                yysyntax_error_status = YYENOMEM;
+              }
+          }
+        yyerror (yymsgp);
+        if (yysyntax_error_status == YYENOMEM)
+          YYNOMEM;
+      }
     }
 
   if (yyerrstatus == 3)
@@ -2891,11 +3191,12 @@ yyreturnlab:
   if (yyss != yyssa)
     YYSTACK_FREE (yyss);
 #endif
-
+  if (yymsg != yymsgbuf)
+    YYSTACK_FREE (yymsg);
   return yyresult;
 }
 
-#line 989 "src/parser.y"
+#line 993 "src/parser.y"
 
 
 int yyerror(char const* message)

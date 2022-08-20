@@ -108,7 +108,7 @@ extern int yydebug;
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
 union YYSTYPE
 {
-#line 35 "src/parser.y"
+#line 37 "src/parser.y"
 
     double numtype; // store all number in float
     char* strtype;

@@ -32,6 +32,8 @@
     #include "Type.h"
 }
 
+%define parse.error verbose
+
 %union {
     double numtype; // store all number in float
     char* strtype;

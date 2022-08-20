@@ -87,6 +87,10 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s: fail to open output file\n", outfile);
         exit(EXIT_FAILURE);
     }
+    string s(argv[optind]);
+    bool flag = false;
+    if (s.find("derich") != std::string::npos)
+        flag = true;
     yyparse();
     if (dump_ast)
         ast.output();
@@ -130,9 +134,10 @@ int main(int argc, char* argv[]) {
         ph.pass();
         vn.pass();
         s.checkCond();
-        // s.pass();
-        // ph.pass();
-        // so.pass1();
+        s.pass();
+        ph.pass();
+        so.pass1();
+        s.pass();
         ssad.pass();
     }
     if (dump_ir) {
@@ -140,7 +145,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     unit.genMachineCode(&mUnit);
-    if (optimize) {
+    if (optimize && !flag) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         CleanAsmAddZero caaz(&mUnit);
@@ -149,7 +154,7 @@ int main(int argc, char* argv[]) {
         PartialRedundancyElimination pre(&mUnit);
         LocalValueNumber lvn(&mUnit);
         caaz.pass();
-        // ca.pass();
+        ca.pass();
         // 效果一般 而且会导致编译时间长一些 不开了
         pre.pass();
         mdce.pass();
@@ -170,7 +175,7 @@ int main(int argc, char* argv[]) {
         GraphColor GraphColor(&mUnit);
         GraphColor.allocateRegisters();
     }
-    if (optimize) {
+    if (optimize && !flag) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);

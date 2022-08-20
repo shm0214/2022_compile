@@ -159,8 +159,9 @@ int main(int argc, char* argv[]) {
         // pre.pass();
         mdce.pass();
         ms.pass();
-        po.pass1();
         if (!flag) {
+            // derive wrong
+            po.pass1();
             mdce.pass();
             lvn.pass();
             mdce.pass();

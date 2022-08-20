@@ -153,11 +153,11 @@ int main(int argc, char* argv[]) {
         ms.pass();
         po.pass1();
         mdce.pass();
-        lvn.pass();
-        mdce.pass();
-        po.pass();
-        mdce.pass();
-        ms.pass();
+        // lvn.pass();
+        // mdce.pass();
+        // po.pass();
+        // mdce.pass();
+        // ms.pass();
     }
 
     if (!optimize) {

@@ -30,6 +30,7 @@ class Instruction {
     bool isGep() const { return instType == GEP; };
     bool isXor() const { return instType == XOR; };
     bool isBitcast() const { return instType == BITCAST; };
+    bool isShl() const { return instType == SHL; };
     void setParent(BasicBlock*);
     void setNext(Instruction*);
     void setPrev(Instruction*);

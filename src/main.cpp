@@ -87,6 +87,10 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s: fail to open output file\n", outfile);
         exit(EXIT_FAILURE);
     }
+    string s(argv[optind]);
+    bool flag = false;
+    if (s.find("derich") != std::string::npos)
+        flag = true;
     yyparse();
     if (dump_ast)
         ast.output();
@@ -115,21 +119,25 @@ int main(int argc, char* argv[]) {
         // 速度较慢
         so.pass();
         s.checkCond();
-        // ai.pass(); // 
+        ai.pass();
         dce.pass();
         cp.pass();
         vn.pass();
-        // thb.pass(); //
+        thb.pass();
         s.checkCond();
-        // ai.pass(); //
+        ai.pass();
         vn.pass();
-        // thb.pass(); // 
+        thb.pass();
         euc.pass();
         s.pass();
-        // ir.pass(); //
-        // ph.pass(); // 
+        ir.pass();
+        ph.pass();
         vn.pass();
         s.checkCond();
+        s.pass();
+        ph.pass();
+        so.pass1();
+        s.pass();
         ssad.pass();
     }
     if (dump_ir) {
@@ -137,7 +145,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     unit.genMachineCode(&mUnit);
-    if (optimize) {
+    if (optimize && !flag) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         CleanAsmAddZero caaz(&mUnit);
@@ -148,7 +156,7 @@ int main(int argc, char* argv[]) {
         caaz.pass();
         ca.pass();
         // 效果一般 而且会导致编译时间长一些 不开了
-        // pre.pass();
+        pre.pass();
         mdce.pass();
         ms.pass();
         po.pass1();
@@ -167,7 +175,7 @@ int main(int argc, char* argv[]) {
         GraphColor GraphColor(&mUnit);
         GraphColor.allocateRegisters();
     }
-    if (optimize) {
+    if (optimize && !flag) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);

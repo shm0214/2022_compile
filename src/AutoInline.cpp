@@ -57,6 +57,14 @@ void AutoInline::decide(CallInstruction* in) {
     if (funcSE->isSysy() || funcSE->getName() == "llvm.memset.p0.i32")
         return;
     auto func = funcSE->getFunction();
+    if (funcSE->getName() == "set") {
+        auto type = (FunctionType*)(funcSE->getType());
+        auto size = type->getParamsType().size();
+        if (size == 3) {
+            workList[in] = func;
+            return;
+        }
+    }
     // // 无意义的函数不内联 便于dce删除
     // auto preds = func->getPreds();
     // bool flag = true;
@@ -144,8 +152,8 @@ void AutoInline::deal(CallInstruction* in) {
                 auto uses = in1->getUse();
                 if (uses.size()) {
                     auto use = uses[0];
-                    auto zero = new Operand(
-                        new ConstantSymbolEntry(use->getType(), 0));
+                    auto zero =
+                        new Operand(new ConstantSymbolEntry(use->getType(), 0));
                     auto dst = getTempOperand(use);
                     retOpes.push_back(dst);
                     Operand* src;
@@ -306,8 +314,7 @@ void AutoInline::deal(CallInstruction* in) {
                 phi->addSrc(retBlocks[i], retOpes[i]);
             newIn = phi;
         } else {
-            auto zero =
-                new Operand(new ConstantSymbolEntry(ret->getType(), 0));
+            auto zero = new Operand(new ConstantSymbolEntry(ret->getType(), 0));
             newIn = new BinaryInstruction(BinaryInstruction::ADD, ret,
                                           retOpes[0], zero);
         }

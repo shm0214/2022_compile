@@ -9,7 +9,10 @@ class SpecialOptimize {
    public:
     SpecialOptimize(Unit* unit) : unit(unit){};
     void pass();
+    void pass1();
     void pass(Function* function);
+    void pass1(Function* function);
+    void checkOperandsUse(Function* function);
 };
 
 #endif

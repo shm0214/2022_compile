@@ -23,7 +23,7 @@ void PeepholeOptimization::pass() {
                  curr_inst_iter++, next_inst_iter++) {
                 auto curr_inst = *curr_inst_iter;
                 auto next_inst = *next_inst_iter;
-                if (curr_inst->isMov()) {
+                if (curr_inst->isMov() || curr_inst->isVMovf32()) {
                     // mov r1, r1
                     // occurs after register allocation and peephole in
                     // performance/sort
@@ -96,6 +96,63 @@ void PeepholeOptimization::pass() {
                         block, FuseMInstruction::MLS, rd, rn, rm, ra);
                     *next_inst_iter = fused_inst;
                     // instToRemove.insert(curr_inst);
+                } else if (curr_inst->isVMul() && next_inst->isVAdd()) {
+                    //
+                    // vmul.f32 v0, v1, v2
+                    // vadd.f32 v3, v4, v0
+                    // -----
+                    // vmla.f32 v4, v1, v2
+                    // vmov.f32 v3, v4 // for dce
+
+                    auto mul_dst = curr_inst->getDef()[0];
+                    auto add_src1 = next_inst->getUse()[0];
+                    auto add_src2 = next_inst->getUse()[1];
+
+                    auto rd = new MachineOperand(*(next_inst->getDef()[0]));
+                    auto rn = new MachineOperand(*(curr_inst->getUse()[0]));
+                    auto rm = new MachineOperand(*(curr_inst->getUse()[1]));
+                    MachineOperand* ra;
+
+                    if (mul_dst->getReg() == add_src1->getReg()) {
+                        ra = new MachineOperand(*add_src2);
+                    } else if (mul_dst->getReg() == add_src2->getReg()) {
+                        ra = new MachineOperand(*add_src1);
+                    } else {
+                        continue;
+                    }
+
+                    auto fused_inst = new FuseMInstruction(
+                        block, FuseMInstruction::VMLA, ra, rn, rm, ra);
+
+                    *curr_inst_iter = fused_inst;
+
+                    auto vmov_inst = new MovMInstruction(
+                        block, MovMInstruction::VMOVF32, rd, ra);
+
+                    *next_inst_iter = vmov_inst;
+
+                } else if (curr_inst->isVMul() && next_inst->isVSub()) {
+                    
+                    auto mul_dst = curr_inst->getDef()[0];
+                    auto sub_src = next_inst->getUse()[1];
+                    if (mul_dst->getReg() != sub_src->getReg()) {
+                        continue;
+                    }
+                    auto rd = new MachineOperand(*(next_inst->getDef()[0]));
+                    auto rn = new MachineOperand(*(curr_inst->getUse()[0]));
+                    auto rm = new MachineOperand(*(curr_inst->getUse()[1]));
+                    auto ra = new MachineOperand(*(next_inst->getUse()[0]));
+
+                    auto fused_inst = new FuseMInstruction(
+                        block, FuseMInstruction::VMLS, ra, rn, rm, ra);
+
+                    *curr_inst_iter = fused_inst;
+
+                    auto vmov_inst = new MovMInstruction(
+                        block, MovMInstruction::VMOVF32, rd, ra);
+
+                    *next_inst_iter = vmov_inst;
+
                 } else if (curr_inst->isStore() && next_inst->isLoad()) {
                     // convert store and load into store and move
                     //     str v355, [v11]

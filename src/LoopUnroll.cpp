@@ -129,8 +129,11 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
     std::vector<Instruction*> preInstructionList;
     std::vector<Instruction*> nextInstructionList;
     std::vector<Instruction*> phis;
+    std::vector<Instruction*> copyPhis;
     CmpInstruction* cmp;
     Operand* cmpOld = strideOp;
+    std::vector<Operand*> finalOperands;
+    std::map<Operand*,Operand*> begin_final_Map;
     for(auto bodyinstr = bb->begin(); bodyinstr != bb->end(); bodyinstr = bodyinstr->getNext()){
         if(bodyinstr->isPhi()){
             phis.push_back(bodyinstr);
@@ -138,18 +141,34 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
         else if(bodyinstr->isCmp()){
             cmp=(CmpInstruction*) bodyinstr;
             break;
-        }  
+        }
         preInstructionList.push_back(bodyinstr);
+    }
+    copyPhis.assign(phis.begin(),phis.end());
+
+    for(auto preIns:preInstructionList){
+        if(!preIns->isStore()){
+            Operand* newDef = new Operand(new TemporarySymbolEntry(TypeSystem::intType,SymbolTable::getLabel()));
+            begin_final_Map[preIns->getDef()]=newDef;
+            finalOperands.push_back(preIns->getDef());
+            preIns->replaceDef(newDef);
+        }
     }
 
     for(auto preIns:preInstructionList){
+        for(auto useOp:preIns->getUse()){
+            if(begin_final_Map.find(useOp)!=begin_final_Map.end()){
+                preIns->replaceUse(useOp,begin_final_Map[useOp]);
+            }
+        }
         nextInstructionList.push_back(preIns->copy());
     }
 
     
     std::map<Operand*, Operand*> replaceMap;
-    for(int k = 0 ;k < num; k++){
+    for(int k = 0 ;k < num-1; k++){
         std::vector<Operand*> notReplaceOp;
+        int calculatePhi = 0;
         for(int i=0;i<nextInstructionList.size();i++){
             Instruction* preIns=preInstructionList[i];
             Instruction* nextIns=nextInstructionList[i];
@@ -157,12 +176,14 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
             if(!preIns->isStore()){
                 Operand* newDef = new Operand(new TemporarySymbolEntry(preIns->getDef()->getType(),SymbolTable::getLabel()));
                 replaceMap[preIns->getDef()]=newDef;
-                if(preIns->isPhi()){
-                    nextInstructionList[i] =(Instruction*)(new BinaryInstruction(BinaryInstruction::ADD,newDef,preIns->getDef(),new Operand(new ConstantSymbolEntry(TypeSystem::intType,0)),nullptr));
+                if(count(copyPhis.begin(),copyPhis.end(),preIns)){
+                    PhiInstruction* phi = (PhiInstruction*)phis[calculatePhi];
+                    nextInstructionList[i] =(Instruction*)(new BinaryInstruction(BinaryInstruction::ADD,newDef,phi->getSrc(bb),new Operand(new ConstantSymbolEntry(TypeSystem::intType,0)),nullptr));
                     notReplaceOp.push_back(newDef);
+                    calculatePhi++;
+                    copyPhis.push_back(nextInstructionList[i]);
                 }
                 else{
-                    
                     nextIns->replaceDef(newDef);
                 }
             }
@@ -187,12 +208,41 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
             phi->replaceUse(old,_new);
         }
         
-        Operand* cmpNew=replaceMap[cmpOld];
-        cmp->replaceUse(cmpOld,cmpNew);
-        cmpOld=cmpNew;
+        // Operand* cmpNew=replaceMap[cmpOld];
+        // cmp->replaceUse(cmpOld,cmpNew);
+        // cmpOld=cmpNew;
 
-        for(auto nextIns:nextInstructionList){
-            bb->insertBefore(nextIns,cmp);
+        //最后一次才会换 否则不换
+        if(k==num-2){
+            // 构建新的map然后再次替换
+            std::map<Operand*,Operand*> newMap;
+            int i=0;
+            for(auto nextIns:nextInstructionList){
+                if(!nextIns->isStore()){
+                    newMap[nextIns->getDef()]=finalOperands[i];
+                    nextIns->replaceDef(finalOperands[i]);
+                    i++;
+                }
+            }
+            for(auto nextIns:nextInstructionList){
+                for(auto useOp:nextIns->getUse()){
+                    if(newMap.find(useOp)!=newMap.end()){
+                        nextIns->replaceUse(useOp,newMap[useOp]);
+                    }
+                }
+                bb->insertBefore(nextIns,cmp);
+            }
+            for(auto ins:phis){
+                PhiInstruction* phi=(PhiInstruction*) ins;
+                Operand* old=phi->getSrc(bb);
+                Operand* _new=newMap[old];
+                phi->replaceUse(old,_new);
+            }
+        }
+        else{
+            for(auto nextIns:nextInstructionList){
+                bb->insertBefore(nextIns,cmp);
+            }
         }
 
         //清空原来的
@@ -205,38 +255,147 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
             nextInstructionList.push_back(preIns->copy());
         }
 
-        std::map<Operand*, Operand*> tempMap;
-        for(auto notReOp:notReplaceOp){
-            for(auto item:replaceMap){
-                if(item.second==notReOp){
-                    tempMap[item.first]=item.second;
-                }
-            }
-        }
+        // std::map<Operand*, Operand*> tempMap;
+        // for(auto notReOp:notReplaceOp){
+        //     for(auto item:replaceMap){
+        //         if(item.second==notReOp){
+        //             tempMap[item.first]=item.second;
+        //         }
+        //     }
+        // }
 
-        for(auto item:tempMap){
-            replaceMap[item.first]=item.second;
-        }
-
-
+        // for(auto item:tempMap){
+        //     replaceMap[item.first]=item.second;
+        // }
     }
-
-
 }
 
+//只考虑+1的情况先 不管浮点？
 void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Operand* beginOp,Operand* endOp,Operand* strideOp){
     BasicBlock* newCondBB = new BasicBlock(condbb->getParent());
+    BasicBlock* resBodyBB = new BasicBlock(condbb->getParent());
+    std::vector<Instruction*> InstList;
     CmpInstruction* cmp;
     for(auto bodyinstr = bodybb->begin(); bodyinstr != bodybb->end(); bodyinstr = bodyinstr->getNext()){
         if(bodyinstr->isCmp()){
             cmp=(CmpInstruction*) bodyinstr;
             break;
         }  
+        InstList.push_back(bodyinstr);
     }
 
-    BinaryInstruction* binMod = new BinaryInstruction(BinaryInstruction::MOD,);
+    bool ifPlusOne = false;
+    BinaryInstruction* binPlusOne;
+    if(cmp->getOpcode()==CmpInstruction::LE||cmp->getOpcode()==CmpInstruction::GE){
+        ifPlusOne = true;
+    }
+    Operand* countDef = new Operand(new TemporarySymbolEntry(TypeSystem::intType,SymbolTable::getLabel()));
+    BinaryInstruction* calCount = new BinaryInstruction(BinaryInstruction::SUB,countDef,endOp,beginOp,nullptr);
+    if(ifPlusOne){
+        binPlusOne = new BinaryInstruction(BinaryInstruction::ADD,new Operand(new TemporarySymbolEntry(TypeSystem::intType,SymbolTable::getLabel())),countDef,new Operand(new ConstantSymbolEntry(TypeSystem::intType,1)),nullptr);
+        countDef = binPlusOne->getDef();
+    }
+    BinaryInstruction* binMod = new BinaryInstruction(BinaryInstruction::MOD,new Operand(new TemporarySymbolEntry(TypeSystem::intType,SymbolTable::getLabel())),countDef,new Operand(new ConstantSymbolEntry(TypeSystem::intType,UNROLLNUM)),nullptr);
+    CmpInstruction* cmpEZero = new CmpInstruction(CmpInstruction::E,new Operand(new TemporarySymbolEntry(TypeSystem::int8Type,SymbolTable::getLabel())),binMod->getDef(),new Operand(new ConstantSymbolEntry(TypeSystem::intType,0)),nullptr);
+    CondBrInstruction* condBr = new CondBrInstruction(bodybb,resBodyBB,cmpEZero->getDef(),nullptr); 
+
+    condbb->addSucc(newCondBB);
+    condbb->removeSucc(bodybb);
+    CondBrInstruction* condbbBr = (CondBrInstruction*) condbb->rbegin();
+    if(condbbBr->getTrueBranch()==bodybb){
+        condbbBr->setTrueBranch(newCondBB);
+    }
+    else if(condbbBr->getFalseBranch()==bodybb){
+        condbbBr->setFalseBranch(newCondBB);
+    }
+    else {
+        std::cout<<"conbb succ not right"<<std::endl;
+    }
+
+    newCondBB->addPred(condbb);
+    newCondBB->addSucc(bodybb);
+    newCondBB->addSucc(resBodyBB);
+    newCondBB->insertBack(calCount);
+    //得看是否有equal
+    if(ifPlusOne){
+        newCondBB->insertBack(binPlusOne);
+    }
+    newCondBB->insertBack(binMod);
+    newCondBB->insertBack(cmpEZero);
+    newCondBB->insertBack(condBr);
+    //newcond 对的
+
+    //
+    resBodyBB->addPred(newCondBB);
+    resBodyBB->addPred(resBodyBB);
+    resBodyBB->addSucc(bodybb);
+    //resBody第一条得是phi指令
+    //末尾添加cmp和br指令
+    std::vector<Instruction*> resBodyInstList;
+    for(auto ins:InstList){
+        resBodyInstList.push_back(ins->copy());
+    }
+    std::map<Operand*,Operand*> resBodyReplaceMap;
+    for(auto resIns:resBodyInstList){
+        if(!resIns->isStore()){
+            if(resIns->isPhi()){
+                PhiInstruction* phi = (PhiInstruction*) resIns;
+                Operand* condOp = phi->getSrc(condbb);
+                Operand* bodyOp = phi->getSrc(bodybb);
+                phi->removeSrc(condbb);
+                phi->removeSrc(bodybb);
+                phi->addSrc(newCondBB,condOp);
+                phi->addSrc(resBodyBB,bodyOp);
+            }
+            Operand* oldDef = resIns->getDef(); 
+            Operand* newDef = new Operand(new TemporarySymbolEntry(oldDef->getType(),SymbolTable::getLabel()));
+            resBodyReplaceMap[oldDef]=newDef;
+            resIns->replaceDef(newDef);
+        }
+    }
+
+    Operand* resNumPhiDef = new Operand(new TemporarySymbolEntry(TypeSystem::intType,SymbolTable::getLabel()));
+    Operand* binIncDef = new Operand(new TemporarySymbolEntry(TypeSystem::intType,SymbolTable::getLabel()));
+    PhiInstruction* resNumPhi = new PhiInstruction(resNumPhiDef,nullptr);
+    resNumPhi->addSrc(newCondBB,new Operand(new ConstantSymbolEntry(TypeSystem::intType,0)));
+    resNumPhi->addSrc(resBodyBB,binIncDef);
+    BinaryInstruction* binInc = new BinaryInstruction(BinaryInstruction::ADD,binIncDef,resNumPhi->getDef(),new Operand(new ConstantSymbolEntry(TypeSystem::intType,1)),nullptr);
+    CmpInstruction* resBodyCmp = new CmpInstruction(CmpInstruction::NE,new Operand(new TemporarySymbolEntry(TypeSystem::int8Type,SymbolTable::getLabel())),binIncDef,binMod->getDef(),nullptr);
+    CondBrInstruction* resBodyBr = new CondBrInstruction(resBodyBB,bodybb,resBodyCmp->getDef(),nullptr);
+
+    for(auto resIns:resBodyInstList){
+        for(auto useOp:resIns->getUse()){
+            if(resBodyReplaceMap.find(useOp)!=resBodyReplaceMap.end()){
+                resIns->replaceUse(useOp,resBodyReplaceMap[useOp]);
+            }
+        }
+    }
+    
+    resBodyBB->insertBack(resBodyBr);
+    resBodyBB->insertBefore(resBodyCmp,resBodyBr);
+    resBodyBB->insertBefore(binInc,resBodyCmp);
+    resBodyBB->insertFront(resNumPhi);
+    for(auto resIns:resBodyInstList){
+        resBodyBB->insertBefore(resIns,binInc);
+    }
 
 
+    bodybb->removePred(condbb);
+    bodybb->addPred(newCondBB);
+    bodybb->addPred(resBodyBB);
+
+    for(int i=0;i<InstList.size();i++){
+        if(InstList[i]->isPhi()){
+            PhiInstruction* phi = (PhiInstruction*) InstList[i];
+            Operand* condOp =  phi->getSrc(condbb);
+            Operand* bodyOp =  phi->getSrc(bodybb); 
+            phi->removeSrc(condbb);
+            phi->addSrc(newCondBB,condOp);
+            phi->addSrc(resBodyBB,resBodyReplaceMap[bodyOp]);
+        }
+    }
+
+    specialCopyInstructions(bodybb,UNROLLNUM,endOp,strideOp);
 
 }
 
@@ -522,17 +681,15 @@ void LoopUnroll::Unroll(){
         else if(IsStrideCons){
             //展开四次
             //copy四次
-
-
             //构建rescond resbody
             //rescond包含 最后算出来的变量值 然后新建一条cmp指令 最后算出来的变量值与end作比较，重构一个循环即可
-            
             //看n是否为temp 
-
-
-
-
-
+            //后续的stride继续补充即可
+            if(ivOpcode==BinaryInstruction::ADD){
+                if(stride==1){
+                    normalCopyInstructions(cond,body,beginOp,endOp,strideOp);
+                }
+            }
 
 
         }

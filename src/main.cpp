@@ -119,7 +119,8 @@ int main(int argc, char* argv[]) {
         dce.pass();
         cp.pass();
         vn.pass();
-        // s.pass();
+        s.pass();
+        ph.pass();
         thb.pass();
         s.checkCond();
         ai.pass();
@@ -127,11 +128,12 @@ int main(int argc, char* argv[]) {
         thb.pass();
         euc.pass();
         s.pass();
-        ir.pass(); 
-        ph.pass(); 
+        ir.pass();
+        ph.pass();
         vn.pass();
         s.checkCond();
-        // ssad.pass();
+        // so.pass1();
+        ssad.pass();
     }
     if (dump_ir) {
         unit.output();

@@ -119,6 +119,7 @@ int main(int argc, char* argv[]) {
         dce.pass();
         cp.pass();
         vn.pass();
+        // s.pass();
         thb.pass();
         s.checkCond();
         ai.pass();
@@ -130,7 +131,7 @@ int main(int argc, char* argv[]) {
         ph.pass(); 
         vn.pass();
         s.checkCond();
-        ssad.pass();
+        // ssad.pass();
     }
     if (dump_ir) {
         unit.output();
@@ -149,10 +150,10 @@ int main(int argc, char* argv[]) {
         ca.pass();
         // 效果一般 而且会导致编译时间长一些 不开了
         // pre.pass();
-        mdce.pass();
-        ms.pass();
-        po.pass1();
-        mdce.pass();
+        // mdce.pass();
+        // ms.pass();
+        // po.pass1();
+        // mdce.pass();
         // lvn.pass();
         // mdce.pass();
         // po.pass();

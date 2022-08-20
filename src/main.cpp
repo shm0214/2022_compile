@@ -145,7 +145,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     unit.genMachineCode(&mUnit);
-    if (optimize && !flag) {
+    if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         CleanAsmAddZero caaz(&mUnit);
@@ -156,16 +156,18 @@ int main(int argc, char* argv[]) {
         caaz.pass();
         ca.pass();
         // 效果一般 而且会导致编译时间长一些 不开了
-        pre.pass();
-        mdce.pass();
-        ms.pass();
-        po.pass1();
-        mdce.pass();
-        lvn.pass();
-        mdce.pass();
-        po.pass();
-        mdce.pass();
-        ms.pass();
+        // pre.pass();
+        if (!flag) {
+            mdce.pass();
+            ms.pass();
+            po.pass1();
+            mdce.pass();
+            lvn.pass();
+            mdce.pass();
+            po.pass();
+            mdce.pass();
+            ms.pass();
+        }
     }
 
     if (!optimize) {
@@ -175,7 +177,7 @@ int main(int argc, char* argv[]) {
         GraphColor GraphColor(&mUnit);
         GraphColor.allocateRegisters();
     }
-    if (optimize && !flag) {
+    if (optimize) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);

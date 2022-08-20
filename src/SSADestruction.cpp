@@ -10,14 +10,15 @@ void SSADestruction::pass() {
 
 void SSADestruction::pass(Function* function) {
     map<BasicBlock*, vector<Instruction*>> copyInss;
-    for (auto it = function->begin(); it != function->end(); it++) {
+    vector<BasicBlock*> blocks(function->begin(), function->end());
+    for (auto it = blocks.begin(); it != blocks.end(); it++) {
         if (!(*it)->begin()->isPhi())
             continue;
         vector<BasicBlock*> preds((*it)->pred_begin(), (*it)->pred_end());
         for (auto pred : preds) {
             if (pred->getNumOfSucc() == 1) {
                 for (auto i = (*it)->begin(); i != (*it)->end();
-                    i = i->getNext()) {
+                     i = i->getNext()) {
                     if (!i->isPhi())
                         break;
                     auto def = i->getDef();

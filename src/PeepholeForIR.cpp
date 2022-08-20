@@ -4,12 +4,16 @@ using namespace std;
 
 void PeepholeForIR::pass() {
     auto iter = unit->begin();
-    while (iter != unit->end())
-        pass(*iter++);
+    while (iter != unit->end()) {
+        pass1(*iter);
+        pass2(*iter);
+        pass3(*iter);
+        iter++;
+    }
     cleanOnlyStore();
 }
 
-void PeepholeForIR::pass(Function* func) {
+void PeepholeForIR::pass1(Function* func) {
     bool again = true;
     while (again) {
         again = false;
@@ -54,6 +58,19 @@ void PeepholeForIR::pass(Function* func) {
                                 addList.push_back(bitcast);
                                 // block->insertAfter(bitcast, cur);
                                 // next = bitcast;
+                                storeSrc = newSrc;
+                            }
+                            auto arrType =
+                                ((PointerType*)(addr->getType()))->getType();
+                            if (storeSrc->getType()->toStr() !=
+                                arrType->toStr()) {
+                                auto newSrc =
+                                    new Operand(new TemporarySymbolEntry(
+                                        arrType, SymbolTable::getLabel()));
+                                auto bitcast =
+                                    new BitcastInstruction(newSrc, storeSrc);
+                                bitcast->setParent(block);
+                                block->insertBefore(bitcast, cur);
                                 storeSrc = newSrc;
                             }
                             for (auto in : loads) {
@@ -160,4 +177,45 @@ void PeepholeForIR::cleanOnlyStore() {
                 use->removeUse(in);
                 in->getParent()->remove(in);
             }
+}
+
+void PeepholeForIR::pass2(Function* func) {
+    for (auto block : func->getBlockList()) {
+        auto in = block->rbegin();
+        if (!in->isCond())
+            continue;
+        auto cmp = (CmpInstruction*)(in->getPrev());
+        auto uses = cmp->getUse();
+        // cmp 冗余时出现
+        if (uses.empty())
+            continue;
+        if (uses[0]->isConst() && uses[0]->getConstVal() == 0)
+            cmp->swapSrc();
+    }
+}
+
+void PeepholeForIR::pass3(Function* func) {
+    auto block = func->getEntry();
+    Instruction* r3Add = nullptr;
+    for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+        if (in->isAddZero()) {
+            auto use = in->getUse()[0];
+            if (use->isParam()) {
+                auto entry = (IdentifierSymbolEntry*)(use->getEntry());
+                if (entry->getParamNo() == 3) {
+                    r3Add = in;
+                    break;
+                }
+            }
+        }
+    }
+    if (r3Add) {
+        block->remove(r3Add);
+        for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+            if (!in->isAlloc()) {
+                block->insertBefore(r3Add, in);
+                break;
+            }
+        }
+    }
 }

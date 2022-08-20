@@ -441,26 +441,26 @@ void BinaryExpr::genCode() {
                 opcode = BinaryInstruction::MOD;
                 break;
         }
-        if(opcode == BinaryInstruction::MOD){
-            if(expr2->getSymbolEntry()->isConstant()){
-                int b = expr2->getValue();
-                if((b & (b-1)) == 0){
-                    new BinaryInstruction(opcode, dst, src1, src2, bb);
-                    return;
-                }
-            }
-            new BinaryInstruction(BinaryInstruction::DIV, dst, src1, src2, bb);
-            Operand* dst1 = new Operand(*dst);
-            src1 = new Operand(*src1);
-            src2 = new Operand(*src2);
-            auto temp = new Operand(*dst);
-            // c = c * b
-            new BinaryInstruction(BinaryInstruction::MUL, dst1, temp, src2, bb);
-            dst = new Operand(*dst1);
-            // c = a - c
-            new BinaryInstruction(BinaryMInstruction::SUB, dst, src1, dst1, bb);
-            return;
-        }
+        // if(opcode == BinaryInstruction::MOD){
+        //     if(expr2->getSymbolEntry()->isConstant()){
+        //         int b = expr2->getValue();
+        //         if((b & (b-1)) == 0){
+        //             new BinaryInstruction(opcode, dst, src1, src2, bb);
+        //             return;
+        //         }
+        //     }
+        //     new BinaryInstruction(BinaryInstruction::DIV, dst, src1, src2, bb);
+        //     Operand* dst1 = new Operand(*dst);
+        //     src1 = new Operand(*src1);
+        //     src2 = new Operand(*src2);
+        //     auto temp = new Operand(*dst);
+        //     // c = c * b
+        //     new BinaryInstruction(BinaryInstruction::MUL, dst1, temp, src2, bb);
+        //     dst = new Operand(*dst1);
+        //     // c = a - c
+        //     new BinaryInstruction(BinaryMInstruction::SUB, dst, src1, dst1, bb);
+        //     return;
+        // }
         new BinaryInstruction(opcode, dst, src1, src2, bb);
     }
 }
@@ -1105,16 +1105,15 @@ ExprNode* ExprNode::const_fold() {
     ExprNode* res = this;
     res = this->alge_simple(5);  // 代数化简
     bool flag = true;
-    double fconst = res->fold_const(flag);
+    int fconst = res->fold_const(flag);
     if (flag) {
-        if(type->isInt()) fconst = int(fconst);
-        SymbolEntry* se = new ConstantSymbolEntry(type, fconst);
+        SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
         res = new Constant(se);
     }
     return res;
 }
 
-double ExprNode::fold_const(bool& flag) {
+int ExprNode::fold_const(bool& flag) {
     if (this->isBinaryExpr()) {
         ExprNode *lhs = ((BinaryExpr*)this)->getLeft(),
                  *rhs = ((BinaryExpr*)this)->getRight();

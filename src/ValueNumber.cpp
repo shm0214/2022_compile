@@ -4,7 +4,19 @@ using namespace std;
 
 // ref: engineering a compiler 8.4.1 & 10.5.2
 
+int log2(int value) {
+    if (value == 1)
+        return 0;
+    else
+        return 1 + log2(value >> 1);
+}
+
+inline bool is2Exp(int val) {
+    return !(val & (val - 1));
+}
+
 void ValueNumber::pass() {
+    calFuncStoreGlobals();
     auto iter = unit->begin();
     while (iter != unit->end())
         pass(*iter++);
@@ -31,7 +43,7 @@ void ValueNumber::pass(BasicBlock* block,
         // auto str = in->getHash();
         // if (str.length())
         //     cout << str << endl;
-        if (in->isCmp())
+        if (in->isCmp() && in->getNext()->isXor())
             continue;
         if (in->isPhi()) {
             set<Operand*> s;
@@ -71,6 +83,12 @@ void ValueNumber::pass(BasicBlock* block,
                     for (auto ope : store)
                         if (ope->getEntry()->isVariable())
                             stores.insert(ope);
+                    auto globalStore = func->getStoredGlobals();
+                    for (auto ope : globalStore) {
+                        string name = ope->toStr().substr(1);
+                        auto global = identifiers->lookup(name);
+                        storeGlobals.insert(global);
+                    }
                 }
             }
             // if (in->isRet()) {
@@ -108,24 +126,29 @@ void ValueNumber::pass(BasicBlock* block,
                     Operand* def = operands[0];
                     Operand* src1 = operands[1];
                     Operand* src2 = operands[2];
+                    int val = 0;
                     if (src1->getEntry()->isConstant()) {
                         auto entry = (ConstantSymbolEntry*)(src1->getEntry());
-                        if (entry->getValue() == 2)
+                        if (is2Exp(entry->getValue())) {
                             ope = src1;
+                            val = log2(entry->getValue());
+                        }
                     }
                     if (src2->getEntry()->isConstant()) {
                         auto entry = (ConstantSymbolEntry*)(src2->getEntry());
-                        if (entry->getValue() == 2)
+                        if (is2Exp(entry->getValue())) {
                             ope = src2;
+                            val = log2(entry->getValue());
+                        }
                     }
-                    if (ope) {
+                    if (ope && val) {
                         Operand* src = ope == src1 ? src2 : src1;
                         src->removeUse(in);
                         ope->removeUse(in);
                         auto shl = new ShlInstruction(
                             def, src,
                             new Operand(new ConstantSymbolEntry(
-                                TypeSystem::intType, 1)));
+                                TypeSystem::intType, val)));
                         shl->setParent(block);
                         block->replaceIns(in, shl);
                         in = shl;
@@ -273,9 +296,23 @@ void ValueNumber::pass(BasicBlock* block,
         in->getParent()->remove(in);
     }
     auto func = block->getParent();
-    auto nodes = func->getDomNode(block);
-    for (auto node : nodes->children) {
+    auto node = func->getDomNode(block);
+    for (auto node : node->children) {
         auto b = node->block;
         pass(b, hash, valueNumber, stores, storeGlobals);
+    }
+}
+
+void ValueNumber::calFuncStoreGlobals() {
+    for (auto it = unit->begin(); it != unit->end(); it++) {
+        auto func = *it;
+        for (auto block : func->getBlockList())
+            for (auto in = block->begin(); in != block->end();
+                 in = in->getNext())
+                if (in->isStore()) {
+                    auto addr = in->getUse()[0];
+                    if (addr->isGlobal())
+                        func->addStoredGlobal(addr);
+                }
     }
 }

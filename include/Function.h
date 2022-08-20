@@ -50,7 +50,7 @@ class Function {
    private:
     std::vector<BasicBlock*> block_list;
     SymbolEntry* sym_ptr;
-    BasicBlock *entry, *exit;
+    BasicBlock* entry;
     Unit* parent;
     TreeNode* DFSTreeRoot;
     TreeNode* domTreeRoot;
@@ -74,9 +74,10 @@ class Function {
     bool recur;
     // used for auto inline
     int instNum;
+    std::set<Operand*> storedGlobals;
 
    public:
-    Function() {};
+    Function() {}
     Function(Unit*, SymbolEntry*);
     ~Function();
     void insertBlock(BasicBlock* bb) { block_list.push_back(bb); };
@@ -130,6 +131,8 @@ class Function {
     bool hasRecur() { return recur; }
     void setInstNum(int num) { instNum = num; }
     int getInstNum() { return instNum; }
+    void addStoredGlobal(Operand* ope) { storedGlobals.insert(ope); }
+    std::set<Operand*> getStoredGlobals() { return storedGlobals; }
 };
 
 #endif

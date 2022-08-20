@@ -83,7 +83,7 @@ class ExprNode : public Node {
     Type* getOriginType() { return type; };
     ExprNode* copy();
     ExprNode* const_fold();
-    double fold_const(bool& flag);
+    int fold_const(bool& flag);
     ExprNode* alge_simple(int depth);
 };
 

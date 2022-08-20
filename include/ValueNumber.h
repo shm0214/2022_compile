@@ -15,6 +15,7 @@ class ValueNumber {
               std::map<Operand*, Operand*> valueNumber,
               std::set<Operand*> stores,
               std::set<SymbolEntry*> storeGlobals);
+    void calFuncStoreGlobals();
 };
 
 #endif

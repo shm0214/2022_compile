@@ -8,6 +8,7 @@
 using namespace std;
 class CopyProp {
     Unit* unit;
+
    public:
     CopyProp(Unit* unit) : unit(unit){};
     ~CopyProp();

@@ -9,7 +9,9 @@ class PeepholeForIR {
    public:
     PeepholeForIR(Unit* unit) : unit(unit){};
     void pass();
-    void pass(Function* function);
+    void pass1(Function* function);
+    void pass2(Function* function);
+    void pass3(Function* function);
     void cleanOnlyStore();
 };
 

@@ -38,10 +38,12 @@ class MachineOperand {
     float fval;
     // 用于计算栈内偏移
     int paramNo;
+    int allParamNo;
 
    public:
     enum { IMM, VREG, REG, LABEL };
     MachineOperand(int tp, LL val, bool fpu = false);
+    MachineOperand() = default;
     MachineOperand(int tp, int val, bool fpu = false);
     MachineOperand(std::string label);
     MachineOperand(int tp, float fval);
@@ -78,7 +80,11 @@ class MachineOperand {
     void setParam() { param = true; }
     bool isParam() { return param; }
     void setParamNo(int no) { paramNo = no; }
-    int getOffset() { return 4 * (paramNo - 4); };
+    void setAllParamNo(int no) { allParamNo = no; }
+    int getAllParamNo() { return allParamNo; }
+    int getOffset() { return 4 * allParamNo; };
+    // used for local value number
+    std::string toStr();
 };
 
 class MachineInstruction {
@@ -109,7 +115,8 @@ class MachineInstruction {
         STACK,
         VCVT,
         VMRS,
-        FUSE
+        FUSE,
+        VNEG,
     };
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
     virtual void output() = 0;
@@ -133,7 +140,9 @@ class MachineInstruction {
     bool isAdd() const { return type == BINARY && op == 0; };
     bool isVAdd() const { return type == BINARY && op == 7; };
     bool isSub() const { return type == BINARY && op == 1; };
+    bool isVSub() const { return type == BINARY && op == 7; }
     bool isMul() const { return type == BINARY && op == 2; };
+    bool isVMul() const { return type == BINARY && op == 8; }
     bool isDiv() const { return type == BINARY && op == 3; };
     bool isDivConst() const { return type == BINARY && op == 3 && use_list[1]->getDef() && use_list[1]->getDef()->getUse()[0]->isImm(); };
     bool isMod() const { return type == BINARY && op == 4; };
@@ -141,6 +150,7 @@ class MachineInstruction {
     
     bool isMov() const { return type == MOV && op == 0; };
     bool isVMov() const { return type == MOV && op == 3; };
+    bool isVMovf32() const { return type == MOV && op == 4; };
     bool isCondMov() const { return type == MOV && op == 0 && cond != NONE; };
     bool isPush() const { return type == STACK && op == 0; };
     bool isStack() const { return type == STACK; }
@@ -167,11 +177,23 @@ class MachineInstruction {
         }
         return false;
     }
+    virtual std::string getHash() { return ""; }
+};
+
+class VNegMInstruction : public MachineInstruction {
+   public:
+    enum opType { S32, F32 };
+    VNegMInstruction(MachineBlock* p,
+                     int op,
+                     MachineOperand* dst,
+                     MachineOperand* src);
+    void output();
+    int latency();
 };
 
 class FuseMInstruction : public MachineInstruction {
    public:
-    enum opType { MLA, MLS };
+    enum opType { MLA, MLS, VMLA, VMLS };
     FuseMInstruction(MachineBlock* p,
                      int op,
                      MachineOperand* dst,
@@ -193,6 +215,7 @@ class BinaryMInstruction : public MachineInstruction {
                        int cond = MachineInstruction::NONE);
     void output();
     int latency();
+    std::string getHash();
 };
 
 class LoadMInstruction : public MachineInstruction {
@@ -211,6 +234,7 @@ class LoadMInstruction : public MachineInstruction {
     void setNeedModify() { needModify = true; }
     bool isNeedModify() { return needModify; }
     int latency();
+    std::string getHash();
 };
 
 class StoreMInstruction : public MachineInstruction {
@@ -237,6 +261,7 @@ class MovMInstruction : public MachineInstruction {
                     MachineOperand* num = nullptr);
     void output();
     int latency();
+    std::string getHash();
 };
 
 class BranchMInstruction : public MachineInstruction {
@@ -363,6 +388,8 @@ class MachineFunction {
     MachineBlock* entry;
     std::map<int, MachineBlock*> no2Block;
 
+    bool need_align;
+
    public:
     std::vector<MachineBlock*>& getBlocks() { return block_list; };
     std::vector<MachineBlock*>::iterator begin() { return block_list.begin(); };
@@ -402,6 +429,7 @@ class MachineFunction {
     MachineBlock* getNext(MachineBlock* block);
     // insert b after a
     void InsertAfter(MachineBlock* a, MachineBlock* b);
+    bool needAlign() { return need_align; }
 };
 
 class MachineUnit {

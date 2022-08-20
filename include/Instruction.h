@@ -154,7 +154,7 @@ class LoadInstruction : public Instruction {
     ~LoadInstruction();
     void output() const;
     void genMachineCode(AsmBuilder*);
-    Operand* getDef() { return operands[0]; }    
+    Operand* getDef() { return operands[0]; }
     std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
@@ -168,8 +168,6 @@ class LoadInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src_addr;
 };
 
 class StoreInstruction : public Instruction {
@@ -203,7 +201,7 @@ class BinaryInstruction : public Instruction {
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
-    bool isDivConst() { return opcode==DIV && src2->isConst(); }
+    bool isDivConst() { return opcode==DIV && operands[2]->isConst(); }
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
@@ -216,8 +214,6 @@ class BinaryInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src1, *src2;
 };
 
 class CmpInstruction : public Instruction {
@@ -246,8 +242,23 @@ class CmpInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src1, *src2;
+    void swapSrc() {
+        switch (opcode) {
+            case L:
+                opcode = G;
+                break;
+            case LE:
+                opcode = GE;
+                break;
+            case G:
+                opcode = L;
+                break;
+            case GE:
+                opcode = LE;
+                break;
+        }
+        std::swap(operands[1], operands[2]);
+    }
 };
 
 class UncondBrInstruction : public Instruction {
@@ -273,7 +284,6 @@ class CondBrInstruction : public Instruction {
    private:
     BasicBlock* originTrue;
     BasicBlock* originFalse;
-    Operand* cond;
 
    public:
     CondBrInstruction(BasicBlock*,
@@ -286,7 +296,6 @@ class CondBrInstruction : public Instruction {
     BasicBlock* getTrueBranch();
     void setFalseBranch(BasicBlock*);
     BasicBlock* getFalseBranch();
-    Operand* getCond() { return cond; };
     void genMachineCode(AsmBuilder*);
     void replaceUse(Operand* old, Operand* new_);
     std::vector<Operand*> getUse() {
@@ -420,16 +429,12 @@ class GepInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     void setFirst() { first = true; };
-    bool getFirst() { return first; };
     void setLast() { last = true; };
-    bool getLast() { return last; };
     Operand* getInit() const { return init; };
     void setInit(Operand* init, int off = 0) {
         this->init = init;
         this->off = off;
     };
-    double* getArrayValue();
-    int getFlatIdx();
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
@@ -547,6 +552,7 @@ class BitcastInstruction : public Instruction {
    private:
     Operand* dst;
     Operand* src;
+    bool flag;
 
    public:
     BitcastInstruction(Operand* dst,
@@ -567,6 +573,8 @@ class BitcastInstruction : public Instruction {
         def->setDef(this);
     }
     void replaceUse(Operand* old, Operand* new_);
+    void setFlag() { flag = true; }
+    bool getFlag() { return flag; }
 };
 
 class ShlInstruction : public Instruction {
@@ -593,8 +601,6 @@ class ShlInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src, *num;
 };
 
 class AshrInstruction : public Instruction {
@@ -621,8 +627,6 @@ class AshrInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
-   protected:
-    Operand *dst, *src, *num;
 };
 
 #endif

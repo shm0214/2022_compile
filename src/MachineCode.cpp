@@ -4,6 +4,9 @@
 #include "Type.h"
 extern FILE* yyout;
 
+using std::string;
+using std::stringstream;
+
 int MachineBlock::label = 0;
 
 MachineOperand::MachineOperand(int tp, LL val, bool fpu) {
@@ -153,6 +156,45 @@ void MachineOperand::output() {
     }
 }
 
+string MachineOperand::toStr() {
+    stringstream ss;
+    switch (this->type) {
+        case IMM:
+            if (!fpu) {
+                ss << "#" << this->val;
+            } else {
+                uint32_t temp = reinterpret_cast<uint32_t&>(this->fval);
+                ss << "#" << temp;
+            }
+            break;
+        case VREG:
+            ss << "v" << this->reg_no;
+            break;
+        case REG:
+            if (reg_no >= 16) {
+                int sreg_no = reg_no - 16;
+                if (sreg_no <= 31) {
+                    ss << "s" << sreg_no;
+                } else if (sreg_no == 32) {
+                    ss << "FPSCR";
+                }
+            } else if (reg_no == 11) {
+                ss << "fp";
+            } else if (reg_no == 13) {
+                ss << "sp";
+            } else if (reg_no == 14) {
+                ss << "lr";
+            } else if (reg_no == 15) {
+                ss << "pc";
+            } else {
+                ss << "r" << reg_no;
+            }
+        default:
+            break;
+    }
+    return ss.str();
+}
+
 void MachineInstruction::PrintCond() {
     switch (cond) {
         case EQ:
@@ -208,6 +250,44 @@ void MachineInstruction::replaceUse(MachineOperand* old, MachineOperand* new_) {
         }
 }
 
+VNegMInstruction::VNegMInstruction(MachineBlock* p,
+                                   int op,
+                                   MachineOperand* dst,
+                                   MachineOperand* src) {
+    this->parent = p;
+    this->type = MachineInstruction::VNEG;
+    this->op = op;
+    this->def_list.push_back(dst);
+    this->use_list.push_back(src);
+    dst->setParent(this);
+    src->setParent(this);
+}
+
+void VNegMInstruction::output() {
+    fprintf(yyout, "\tvneg.");
+    switch (this->op) {
+        case VNegMInstruction::F32:
+            fprintf(yyout, "f32 ");
+            break;
+        case VNegMInstruction::S32:
+            fprintf(yyout, "s32 ");  // need neon registers
+            break;
+
+        default:
+            break;
+    }
+
+    this->PrintCond();
+    this->def_list[0]->output();
+    fprintf(yyout, ", ");
+    this->use_list[0]->output();
+    fprintf(yyout, "\n");
+}
+
+int VNegMInstruction::latency() {
+    return 3;
+}
+
 FuseMInstruction::FuseMInstruction(MachineBlock* p,
                                    int op,
                                    MachineOperand* dst,
@@ -235,6 +315,12 @@ void FuseMInstruction::output() {
         case FuseMInstruction::MLS:
             fprintf(yyout, "\tmls ");
             break;
+        case FuseMInstruction::VMLA:
+            fprintf(yyout, "\tvmla.f32 ");
+            break;
+        case FuseMInstruction::VMLS:
+            fprintf(yyout, "\tvmls.f32 ");
+            break;
         default:
             break;
     }
@@ -245,8 +331,11 @@ void FuseMInstruction::output() {
     this->use_list[0]->output();
     fprintf(yyout, ", ");
     this->use_list[1]->output();
-    fprintf(yyout, ", ");
-    this->use_list[2]->output();
+    if (this->op != FuseMInstruction::VMLA &&
+        this->op != FuseMInstruction::VMLS) {
+        fprintf(yyout, ", ");
+        this->use_list[2]->output();
+    }
     fprintf(yyout, "\n");
 }
 
@@ -533,54 +622,82 @@ BranchMInstruction::BranchMInstruction(MachineBlock* p,
     dst->setDef(this);
     // }else{
     if (op == BL) {
+        auto label = dst->getLabel().substr(1);
+        int intParamNo;
+        // int floatParamNo;
         auto r0d = new MachineOperand(MachineOperand::REG, 0);
-        auto r0u = new MachineOperand(MachineOperand::REG, 0);
         auto r1d = new MachineOperand(MachineOperand::REG, 1);
-        auto r1u = new MachineOperand(MachineOperand::REG, 1);
         auto r2d = new MachineOperand(MachineOperand::REG, 2);
-        auto r2u = new MachineOperand(MachineOperand::REG, 2);
         auto r3d = new MachineOperand(MachineOperand::REG, 3);
-        auto r3u = new MachineOperand(MachineOperand::REG, 3);
         r0d->setParent(this);
-        r0u->setParent(this);
         r1d->setParent(this);
-        r1u->setParent(this);
         r2d->setParent(this);
-        r2u->setParent(this);
         r3d->setParent(this);
-        r3u->setParent(this);
         this->def_list.push_back(r0d);
         this->def_list.push_back(r1d);
         this->def_list.push_back(r2d);
         this->def_list.push_back(r3d);
-        this->use_list.push_back(r0u);
-        this->use_list.push_back(r1u);
-        this->use_list.push_back(r2u);
-        this->use_list.push_back(r3u);
         auto s0d = new MachineOperand(MachineOperand::REG, 16, true);
-        auto s0u = new MachineOperand(MachineOperand::REG, 16, true);
         auto s1d = new MachineOperand(MachineOperand::REG, 17, true);
-        auto s1u = new MachineOperand(MachineOperand::REG, 17, true);
         auto s2d = new MachineOperand(MachineOperand::REG, 18, true);
-        auto s2u = new MachineOperand(MachineOperand::REG, 18, true);
         auto s3d = new MachineOperand(MachineOperand::REG, 19, true);
-        auto s3u = new MachineOperand(MachineOperand::REG, 19, true);
         s0d->setParent(this);
-        s0u->setParent(this);
         s1d->setParent(this);
-        s1u->setParent(this);
         s2d->setParent(this);
-        s2u->setParent(this);
         s3d->setParent(this);
-        s3u->setParent(this);
         this->def_list.push_back(s0d);
         this->def_list.push_back(s1d);
         this->def_list.push_back(s2d);
         this->def_list.push_back(s3d);
+        if (label == "memset") {
+            intParamNo = 3;
+            // floatParamNo = 0;
+        } else {
+            auto entry = (IdentifierSymbolEntry*)(identifiers->lookup(label));
+            intParamNo = entry->getIntParamNo();
+            // floatParamNo = entry->getFloatParamNo();
+        }
+        if (intParamNo > 0) {
+            auto r0u = new MachineOperand(MachineOperand::REG, 0);
+            r0u->setParent(this);
+            this->use_list.push_back(r0u);
+        }
+        if (intParamNo > 1) {
+            auto r1u = new MachineOperand(MachineOperand::REG, 1);
+            r1u->setParent(this);
+            this->use_list.push_back(r1u);
+        }
+        if (intParamNo > 2) {
+            auto r2u = new MachineOperand(MachineOperand::REG, 2);
+            this->use_list.push_back(r2u);
+            r2u->setParent(this);
+        }
+        if (intParamNo > 3) {
+            auto r3u = new MachineOperand(MachineOperand::REG, 3);
+            r3u->setParent(this);
+            this->use_list.push_back(r3u);
+        }
+        // 浮点貌似有些问题 不过寄存器多 也无所谓
+        // if (floatParamNo > 1) {
+        auto s0u = new MachineOperand(MachineOperand::REG, 16, true);
+        s0u->setParent(this);
         this->use_list.push_back(s0u);
+        // }
+        // if (floatParamNo > 2) {
+        auto s1u = new MachineOperand(MachineOperand::REG, 17, true);
+        s1u->setParent(this);
         this->use_list.push_back(s1u);
+        // }
+        // if (floatParamNo > 3) {
+        auto s2u = new MachineOperand(MachineOperand::REG, 18, true);
+        s2u->setParent(this);
         this->use_list.push_back(s2u);
+        // }
+        // if (floatParamNo > 4) {
+        auto s3u = new MachineOperand(MachineOperand::REG, 19, true);
+        s3u->setParent(this);
         this->use_list.push_back(s3u);
+        // }
     } else if (op == BX) {
         auto r0 = new MachineOperand(MachineOperand::REG, 0);
         auto s0 = new MachineOperand(MachineOperand::REG, 16, true);
@@ -779,6 +896,31 @@ MachineFunction::MachineFunction(MachineUnit* p, SymbolEntry* sym_ptr) {
     this->stack_size = 0;
     this->paramsNum =
         ((FunctionType*)(sym_ptr->getType()))->getParamsSe().size();
+
+    auto paramsSe = ((FunctionType*)(sym_ptr->getType()))->getParamsSe();
+
+    int float_num = 0;
+    int int_num = 0;
+    int push_num = 0;
+    for (auto se : paramsSe) {
+        if (se->getType()->isFloat()) {
+            float_num++;
+        } else {
+            int_num++;
+        }
+    }
+
+    if (float_num > 4) {
+        push_num += float_num - 4;
+    }
+    if (int_num > 4) {
+        push_num += int_num - 4;
+    }
+    if (push_num % 2 != 0) {
+        need_align = true;
+    } else {
+        need_align = false;
+    }
 };
 
 std::string MachineBlock::getLabel() {
@@ -807,7 +949,7 @@ void MachineBlock::output() {
         (parent->getSavedRegs().size() + parent->getSavedFpRegs().size() + 2) *
         4;
     int baseOffset = offset;
-    int num = parent->getParamsNum();
+    // int num = parent->getParamsNum();
     int count = 0;
     // if (!inst_list.empty()) {
     fprintf(yyout, ".L%d:\n", this->no);
@@ -822,7 +964,7 @@ void MachineBlock::output() {
                                              parent->getSavedRegs(), fp, lr);
             cur_inst->output();
         }
-        if (num > 4 && (*it)->isStore()) {
+        if ((*it)->isStore()) {
             MachineOperand* operand = (*it)->getUse()[0];
             if (operand->isReg() && operand->getReg() == 3 &&
                 operand->isParam()) {
@@ -831,26 +973,30 @@ void MachineBlock::output() {
                 int temp = baseOffset + operand->getOffset();
                 auto off = new MachineOperand(MachineOperand::IMM, temp);
                 // auto off = new MachineOperand(MachineOperand::IMM, offset);
-                // offset += 4; // FIXME
+                // offset += 4;
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
                 cur_inst->output();
-            } else if (operand->isReg() && operand->getReg() == 19) {
-                // floating point
-                if (first) {
+            } else if (operand->isReg() && operand->getReg() == 20 &&
+                       operand->isParam()) {
+                if (parent->needAlign() && first) {
                     first = false;
                 } else {
+                    // floating point
                     auto fp = new MachineOperand(MachineOperand::REG, 11);
-                    auto s3 = new MachineOperand(MachineOperand::REG, 19, true);
-                    auto off = new MachineOperand(MachineOperand::IMM, offset);
-                    offset += 4;
+                    auto s4 = new MachineOperand(MachineOperand::REG, 20, true);
+
+                    int temp = baseOffset + operand->getOffset();
+                    auto off = new MachineOperand(MachineOperand::IMM, temp);
+                    // auto off = new MachineOperand(MachineOperand::IMM,
+                    // offset); offset += 4;
                     auto cur_inst = new LoadMInstruction(
-                        this, LoadMInstruction::VLDR, s3, fp, off);
+                        this, LoadMInstruction::VLDR, s4, fp, off);
                     cur_inst->output();
                 }
             }
         }
-        if (num > 4 && (*it)->isAdd()) {
+        if ((*it)->isAdd()) {
             auto uses = (*it)->getUse();
             if (uses[0]->isParam() && uses[1]->isImm() &&
                 uses[1]->getVal() == 0) {
@@ -862,6 +1008,19 @@ void MachineBlock::output() {
                 // offset += 4;
                 auto cur_inst = new LoadMInstruction(
                     this, LoadMInstruction::LDR, r3, fp, off);
+                cur_inst->output();
+            }
+        }
+        if ((*it)->getType() == MachineInstruction::MOV &&
+            (*it)->getOp() == MovMInstruction::VMOVF32) {
+            auto use = (*it)->getUse()[0];
+            if (use->isParam()) {
+                auto fp = new MachineOperand(MachineOperand::REG, 11);
+                auto s4 = new MachineOperand(MachineOperand::REG, 20, true);
+                int temp = baseOffset + use->getOffset();
+                auto off = new MachineOperand(MachineOperand::IMM, temp);
+                auto cur_inst = new LoadMInstruction(
+                    this, LoadMInstruction::VLDR, s4, fp, off);
                 cur_inst->output();
             }
         }
@@ -906,10 +1065,25 @@ void MachineBlock::output() {
 }
 
 void MachineFunction::output() {
+    auto name = this->sym_ptr->toStr().substr(1);
     fprintf(yyout, "\t.global %s\n", this->sym_ptr->toStr().c_str() + 1);
     fprintf(yyout, "\t.type %s , %%function\n",
             this->sym_ptr->toStr().c_str() + 1);
     fprintf(yyout, "%s:\n", this->sym_ptr->toStr().c_str() + 1);
+    // if (name == "multiply") {
+    //     fprintf(yyout, "\tpush {r11, lr}\n");
+    //     fprintf(yyout, "\tsmull r3, r12, r1, r0\n");
+    //     fprintf(yyout, "\tmov r2, #1\n");
+    //     fprintf(yyout, "\tmov r0, r3\n");
+    //     fprintf(yyout, "\torr r2, r2, #998244352\n");
+    //     fprintf(yyout, "\tmov r1, r12\n");
+    //     fprintf(yyout, "\tmov r3, #0\n");
+    //     fprintf(yyout, "\tbl __aeabi_ldivmod\n");
+    //     fprintf(yyout, "\tmov r0, r2\n");
+    //     fprintf(yyout, "\tpop {r11, lr}\n");
+    //     fprintf(yyout, "\tbx lr\n");
+    //     return;
+    // }
     /* Hint:
      *  1. Save fp
      *  2. fp = sp
@@ -1293,7 +1467,7 @@ int BranchMInstruction::latency() {
 }
 
 int CmpMInstruction::latency() {
-    if (this->op==CmpMInstruction::VCMP) {
+    if (this->op == CmpMInstruction::VCMP) {
         return 3;
     }
     return 1;
@@ -1316,4 +1490,107 @@ int VcvtMInstruction::latency() {
 
 int VmrsMInstruction::latency() {
     return 1;
+}
+
+string BinaryMInstruction::getHash() {
+    auto dst = def_list[0];
+    auto src1 = use_list[0];
+    auto src2 = use_list[1];
+    auto src1Flag = (src1->isReg() && src1->getReg() == 11) || !src1->isReg();
+    auto src2Flag = (src2->isReg() && src2->getReg() == 11) || !src2->isReg();
+    if (!dst->isReg() && src1Flag && src2Flag) {
+        stringstream ss;
+        switch (op) {
+            case ADD:
+                ss << "add";
+                break;
+            case SUB:
+                ss << "sub";
+                break;
+            case MUL:
+                ss << "mul";
+                break;
+            case DIV:
+                ss << "div";
+                break;
+            case AND:
+                ss << "and";
+                break;
+            case OR:
+                ss << "or";
+                break;
+            case VADD:
+                ss << "vadd";
+                break;
+            case VSUB:
+                ss << "vsub";
+                break;
+            case VMUL:
+                ss << "vmul";
+                break;
+            case VDIV:
+                ss << "vdiv";
+                break;
+        }
+        ss << " " << src1->toStr() << " " << src2->toStr();
+        return ss.str();
+    }
+    return "";
+}
+
+string LoadMInstruction::getHash() {
+    stringstream ss;
+    auto dst = def_list[0];
+    auto src = use_list[0];
+    if (!dst->isReg() && src->isImm()) {
+        if (op == LDR)
+            ss << "ldr";
+        else
+            ss << "vldr";
+        ss << " " << src->toStr();
+    }
+    return ss.str();
+}
+
+string MovMInstruction::getHash() {
+    stringstream ss;
+    if (cond != condType::NONE)
+        return ss.str();
+    auto dst = def_list[0];
+    auto src1 = use_list[0];
+    auto src2 = use_list[1];
+    if (!dst->isReg() && !src1->isReg()) {
+        switch (op) {
+            case MOV:
+                ss << "mov";
+                break;
+            case MVN:
+                ss << "mvn";
+                break;
+            case MOVT:
+                ss << "movt";
+                break;
+            case VMOV:
+                ss << "vmov";
+                break;
+            case VMOVF32:
+                ss << "vmovf32";
+                break;
+            case MOVLSL:
+                ss << "movlsl";
+                break;
+            case MOVASR:
+                ss << "movasr";
+                break;
+        }
+        if (op < MOVLSL) {
+            ss << " " << src1->toStr();
+        } else {
+            if (!src2->isReg())
+                ss << " " << src1->toStr() << " " << src2->toStr();
+            else
+                ss.str("");
+        }
+    }
+    return ss.str();
 }

@@ -45,7 +45,6 @@ UOO intersection(BasicBlock* bb) {
     return res;
 }
 
-
 void remove_ACP(UOO& ACP, Operand* opd) {
     for (auto iter = ACP.begin(); iter != ACP.end(); ++iter) {
         if (iter->first == opd || iter->second == opd) {
@@ -65,8 +64,7 @@ Operand* copy_value(Operand* opd, UOO& ACP, bool& flag) {
     return opd;
 }
 
-
-void CopyProp::pass(){
+void CopyProp::pass() {
     auto iter = unit->begin();
     UOO ACP;
     while (iter != unit->end()) {
@@ -107,7 +105,6 @@ void CopyProp::pass(){
         }
         iter++;
     }
-
 }
 
 void CopyProp::local_copy_prop(BasicBlock* bb, UOO ACP) {
@@ -116,21 +113,21 @@ void CopyProp::local_copy_prop(BasicBlock* bb, UOO ACP) {
     for (auto iter = bb->begin(); iter != bb->end(); iter = iter->getNext()) {
         Operand* def = iter->getDef();
         vector<Operand*> uses(iter->getUse());
-        for(auto opd : uses) {
+        for (auto opd : uses) {
             if (!opd->isConst()) {
                 Operand* new_opd = copy_value(opd, ACP, flag);
                 if (flag) {
                     iter->replaceUse(opd, new_opd);
-                    if(!opd->usersNum()){
+                    if (!opd->usersNum()) {
                         // opd->getDef()->output();
                         bb->remove(opd->getDef());
                     }
                 }
             }
-        } 
-        if(def){
+        }
+        if (def) {
             remove_ACP(ACP, def);
-            if(iter->isStore())
+            if (iter->isStore())
                 ACP[def] = ((StoreInstruction*)iter)->getSrc();
         }
     }

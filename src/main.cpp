@@ -162,9 +162,10 @@ int main(int argc, char* argv[]) {
         ca.pass();
         // 效果一般 而且会导致编译时间长一些 不开了
         // pre.pass();
+        mdce.pass();
+        ms.pass();
         if (!flag) {
-            mdce.pass();
-            ms.pass();
+            // derive wrong
             po.pass1();
             mdce.pass();
             lvn.pass();
@@ -182,7 +183,7 @@ int main(int argc, char* argv[]) {
         GraphColor GraphColor(&mUnit);
         GraphColor.allocateRegisters();
     }
-    if (optimize) {
+    if (optimize && !flag) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);

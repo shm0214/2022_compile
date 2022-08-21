@@ -293,7 +293,7 @@ void TreeHeightBalance::pass(BasicBlock* block) {
                 }
             } else {
                 auto uses = in->getUse();
-                if (uses[0] == lastDef) {
+                if (uses[0] == lastDef && def->usersNum() == 1) {
                     addIns.push_back(in);
                     lastDef = def;
                     if (in->isAdd())

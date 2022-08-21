@@ -115,22 +115,23 @@ int main(int argc, char* argv[]) {
         dce.pass();
         vn.pass();
         s.pass();
+        lop.pass();
         // 速度较慢
         so.pass();
         s.checkCond();
-        // ai.pass(); // 
+        ai.pass(); // 
         dce.pass();
         cp.pass();
         vn.pass();
-        // thb.pass(); //
+        thb.pass(); //
         s.checkCond();
-        // ai.pass(); //
+        ai.pass(); //
         vn.pass();
-        // thb.pass(); // 
+        thb.pass(); // 
         euc.pass();
         s.pass();
-        // ir.pass(); //
-        // ph.pass(); // 
+        ir.pass(); //
+        ph.pass(); // 
         vn.pass();
         s.checkCond();
         ssad.pass();
@@ -175,9 +176,9 @@ int main(int argc, char* argv[]) {
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);
         InstructionScheduling is(&mUnit);
-        po.pass();
-        mdce.pass();
-        ms.pass();
+        // po.pass();
+        // mdce.pass();
+        // ms.pass();
         // is.pass();
     }
     if (dump_asm)

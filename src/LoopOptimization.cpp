@@ -1184,7 +1184,6 @@ void LoopOptimization::pass(){
         std::vector<std::vector<BasicBlock*>> InnerLoopList = Ln.calculateInnerLoop(LoopList);
         Ln.findLoop(InnerLoopList);
         Ln.Unroll();
-
     }
 }
 

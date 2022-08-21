@@ -94,6 +94,11 @@ Operand* LoopUnroll::getBeginOp(BasicBlock* bb,Operand* strideOp,std::stack<Inst
         std::vector<Operand*> uses=tempdefIns->getUse();
         bool iftempChange=false;
 
+        if(tempdefIns->getUse().size()!=2){
+            std::cout<<"can't find phi"<<std::endl;
+            return nullptr;
+        }
+
         Operand* useOp1=tempdefIns->getUse()[0],*useOp2=tempdefIns->getUse()[1];
 
         if(isRegionConst(useOp1,useOp2)){
@@ -147,23 +152,37 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
     copyPhis.assign(phis.begin(),phis.end());
 
     for(auto preIns:preInstructionList){
+        Instruction* ins=preIns->copy();
         if(!preIns->isStore()){
             Operand* newDef = new Operand(new TemporarySymbolEntry(preIns->getDef()->getType(),SymbolTable::getLabel()));
             begin_final_Map[preIns->getDef()]=newDef;
             finalOperands.push_back(preIns->getDef());
+            ins->setDef(newDef);
             preIns->replaceDef(newDef);
         }
+        nextInstructionList.push_back(ins);
     }
-
-    for(auto preIns:preInstructionList){
+    
+    for(int i=0;i<preInstructionList.size();i++){
+        Instruction* preIns = preInstructionList[i];
         for(auto useOp:preIns->getUse()){
             if(begin_final_Map.find(useOp)!=begin_final_Map.end()){
                 preIns->replaceUse(useOp,begin_final_Map[useOp]);
             }
         }
-        nextInstructionList.push_back(preIns->copy());
     }
 
+    for(auto nextIns:nextInstructionList){
+        for(auto useOp:nextIns->getUse()){
+            if(begin_final_Map.find(useOp)!=begin_final_Map.end()){
+                nextIns->replaceUse(useOp,begin_final_Map[useOp]);
+            }
+            else{
+                useOp->addUse(nextIns);
+            }
+        }
+        // nextInstructionList.push_back(preIns->copy());
+    }
     
     std::map<Operand*, Operand*> replaceMap;
     for(int k = 0 ;k < num-1; k++){
@@ -178,13 +197,13 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
                 replaceMap[preIns->getDef()]=newDef;
                 if(count(copyPhis.begin(),copyPhis.end(),preIns)){
                     PhiInstruction* phi = (PhiInstruction*)phis[calculatePhi];
-                    nextInstructionList[i] =(Instruction*)(new BinaryInstruction(BinaryInstruction::ADD,newDef,phi->getSrc(bb),new Operand(new ConstantSymbolEntry(TypeSystem::intType,0)),nullptr));
+                    nextInstructionList[i] =(Instruction*)(new BinaryInstruction(BinaryInstruction::ADD,newDef,phi->getSrc(bb),new Operand(new ConstantSymbolEntry(preIns->getDef()->getType(),0)),nullptr));
                     notReplaceOp.push_back(newDef);
                     calculatePhi++;
                     copyPhis.push_back(nextInstructionList[i]);
                 }
                 else{
-                    nextIns->replaceDef(newDef);
+                    nextIns->setDef(newDef);
                 }
             }
 
@@ -197,6 +216,9 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
             for(auto useOp:nextIns->getUse()){
                 if(replaceMap.find(useOp)!=replaceMap.end()){
                     nextIns->replaceUse(useOp,replaceMap[useOp]);
+                }
+                else{
+                    useOp->addUse(nextIns);
                 }
             }
         }
@@ -229,6 +251,9 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
                     if(newMap.find(useOp)!=newMap.end()){
                         nextIns->replaceUse(useOp,newMap[useOp]);
                     }
+                    // else{
+                    //     useOp->addUse(nextIns);
+                    // }
                 }
                 bb->insertBefore(nextIns,cmp);
             }
@@ -254,7 +279,6 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
         for(auto preIns:preInstructionList){
             nextInstructionList.push_back(preIns->copy());
         }
-
         // std::map<Operand*, Operand*> tempMap;
         // for(auto notReOp:notReplaceOp){
         //     for(auto item:replaceMap){
@@ -339,6 +363,7 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
     //
     resBodyBB->addPred(newCondBB);
     resBodyBB->addPred(resBodyBB);
+    resBodyBB->addSucc(resBodyBB);
     resBodyBB->addSucc(resOutCond);
     //resBody第一条得是phi指令
     //末尾添加cmp和br指令
@@ -361,7 +386,7 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
             Operand* oldDef = resIns->getDef(); 
             Operand* newDef = new Operand(new TemporarySymbolEntry(oldDef->getType(),SymbolTable::getLabel()));
             resBodyReplaceMap[oldDef]=newDef;
-            resIns->replaceDef(newDef);
+            resIns->setDef(newDef);
         }
     }
 
@@ -379,6 +404,9 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
             if(resBodyReplaceMap.find(useOp)!=resBodyReplaceMap.end()){
                 resIns->replaceUse(useOp,resBodyReplaceMap[useOp]);
             }
+            else{
+                useOp->addUse(resIns);
+            }
         }
     }
     
@@ -394,10 +422,11 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
 
     resOutCond->addPred(resBodyBB);
     resOutCond->addSucc(resoutCondSucc);
+    resOutCond->addSucc(bodybb);
     resoutCondSucc->addPred(resOutCond);
 
     CmpInstruction* resOutCondCmp =(CmpInstruction*) cmp->copy();
-    resOutCondCmp->replaceDef(new Operand(new TemporarySymbolEntry(TypeSystem::boolType,SymbolTable::getLabel())));
+    resOutCondCmp->setDef(new Operand(new TemporarySymbolEntry(TypeSystem::boolType,SymbolTable::getLabel())));
     resOutCondCmp->replaceUse(strideOp,resBodyReplaceMap[strideOp]);
     CondBrInstruction* resOutCondBr = new CondBrInstruction(bodybb,resoutCondSucc,resOutCondCmp->getDef(),nullptr);
     resOutCond->insertBack(resOutCondBr);
@@ -540,24 +569,40 @@ void LoopUnroll::Unroll(){
                         /* code */
                         endOp=cmpOp1;
                         strideOp=cmpOp2;
+                        if(strideOp->isConst()){
+                            strideOp=cmpOp1;
+                            endOp=cmpOp2;
+                        }
                         beginOp = getBeginOp(loop->getbody(),strideOp,Insstack);
                         break;
                     case CmpInstruction::GE:
                         /* code */
                         endOp=cmpOp1;
                         strideOp=cmpOp2;
+                        if(strideOp->isConst()){
+                            strideOp=cmpOp1;
+                            endOp=cmpOp2;
+                        }
                         beginOp = getBeginOp(loop->getbody(),strideOp,Insstack);
                         break;
                     case CmpInstruction::L:
                         /* code */
                         endOp=cmpOp2;
                         strideOp=cmpOp1;
+                        if(strideOp->isConst()){
+                            strideOp=cmpOp2;
+                            endOp=cmpOp1;
+                        }
                         beginOp=getBeginOp(loop->getbody(),strideOp,Insstack);
                         break;
                     case CmpInstruction::LE:
                         /* code */
                         endOp=cmpOp2;
                         strideOp=cmpOp1;
+                        if(strideOp->isConst()){
+                            strideOp=cmpOp2;
+                            endOp=cmpOp1;
+                        }
                         beginOp=getBeginOp(loop->getbody(),strideOp,Insstack);
                         break;
                     default:

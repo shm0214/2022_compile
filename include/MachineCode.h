@@ -117,6 +117,7 @@ class MachineInstruction {
         VMRS,
         FUSE,
         VNEG,
+        SMULL
     };
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
     virtual void output() = 0;
@@ -132,11 +133,12 @@ class MachineInstruction {
     bool isBX() const { return type == BRANCH && op == 2; };
     bool isBL() const { return type == BRANCH && op == 1; };
     bool isB() const { return type == BRANCH && op == 0; };
-    bool isBranch() const { return type == BRANCH; }
-    bool isCmp() const { return type == CMP; }
-    bool isLoad() const { return type == LOAD; }
+    bool isBranch() const { return type == BRANCH; };
+    bool isCmp() const { return type == CMP; };
+    bool isLoad() const { return type == LOAD; };
     bool isStore() const { return type == STORE; };
-    bool isBinary() const { return type == BINARY; }
+    bool isBinary() const { return type == BINARY; };
+    bool isSmull() const { return type == SMULL; };
     bool isAdd() const { return type == BINARY && op == 0; };
     bool isVAdd() const { return type == BINARY && op == 7; };
     bool isSub() const { return type == BINARY && op == 1; };

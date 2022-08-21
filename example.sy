@@ -1,6 +1,6 @@
+//test rem
 int main(){
-    int a = getint();
-    int b = 10;
-    int c = a/b;
-    return c;
+    int a;
+    a = 10;
+    return a % 3;
 }

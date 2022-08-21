@@ -27,7 +27,12 @@ void MachineDeadCodeElimination::pass(MachineFunction* func) {
             if (!defs.empty()) {
                 // 除bl以外def应该都只是1个
                 // bl也只有第一个r0有用
-                auto def = defs[0];
+                MachineOperand* def = nullptr;
+                if((*ins)->isSmull()){
+                    def = defs[1];
+                }
+                else
+                    def = defs[0];
                 if (out[*def].empty())
                     temp.push_back(*ins);
             }

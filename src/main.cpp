@@ -111,8 +111,11 @@ int main(int argc, char* argv[]) {
         s.pass();
         m2r.pass();
         dce.pass();
+        // unit.output(); //
         vn.pass();
-        s.pass();
+        // unit.output(); //
+        // return 0; //
+        s.pass();        
         // 速度较慢
         so.pass();
         s.checkCond();

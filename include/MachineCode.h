@@ -24,12 +24,13 @@ class MachineUnit;
 class MachineFunction;
 class MachineBlock;
 class MachineInstruction;
-
+using LL = long long;
 class MachineOperand {
    private:
+    MachineInstruction* def = nullptr;
     MachineInstruction* parent;
     int type;
-    int val;            // value of immediate number
+    LL val;            // value of immediate number
     int reg_no;         // register no
     std::string label;  // address label
     bool param = false;
@@ -41,6 +42,7 @@ class MachineOperand {
 
    public:
     enum { IMM, VREG, REG, LABEL };
+    MachineOperand(int tp, LL val, bool fpu = false);
     MachineOperand() = default;
     MachineOperand(int tp, int val, bool fpu = false);
     MachineOperand(std::string label);
@@ -51,13 +53,15 @@ class MachineOperand {
     bool isReg() { return this->type == REG; };
     bool isVReg() { return this->type == VREG; };
     bool isLabel() { return this->type == LABEL; };
-    int getVal() { return this->val; };
-    void setVal(int val) { this->val = val; };
+    LL getVal() { return this->val; };
+    void setVal(LL val) { this->val = val; };
     float getFVal() { return this->fval; }
     void setFVal(float fval) {
         this->fval = fval;
         this->fpu = true;
     }
+    void setDef(MachineInstruction* inst) { def = inst; };
+    MachineInstruction* getDef() { return def; };
     uint32_t getBinVal();
     bool isFloat() { return this->fpu; }
     int getReg() { return this->reg_no; };
@@ -113,6 +117,7 @@ class MachineInstruction {
         VMRS,
         FUSE,
         VNEG,
+        SMULL
     };
     enum condType { EQ, NE, LT, LE, GT, GE, NONE };
     virtual void output() = 0;
@@ -128,18 +133,22 @@ class MachineInstruction {
     bool isBX() const { return type == BRANCH && op == 2; };
     bool isBL() const { return type == BRANCH && op == 1; };
     bool isB() const { return type == BRANCH && op == 0; };
-    bool isBranch() const { return type == BRANCH; }
-    bool isCmp() const { return type == CMP; }
-    bool isLoad() const { return type == LOAD; }
+    bool isBranch() const { return type == BRANCH; };
+    bool isCmp() const { return type == CMP; };
+    bool isLoad() const { return type == LOAD; };
     bool isStore() const { return type == STORE; };
-    bool isBinary() const { return type == BINARY; }
+    bool isBinary() const { return type == BINARY; };
+    bool isSmull() const { return type == SMULL; };
     bool isAdd() const { return type == BINARY && op == 0; };
-    bool isVAdd() const { return type == BINARY && op == 6; };
+    bool isVAdd() const { return type == BINARY && op == 7; };
     bool isSub() const { return type == BINARY && op == 1; };
     bool isVSub() const { return type == BINARY && op == 7; }
     bool isMul() const { return type == BINARY && op == 2; };
     bool isVMul() const { return type == BINARY && op == 8; }
     bool isDiv() const { return type == BINARY && op == 3; };
+    bool isDivConst() const { return type == BINARY && op == 3 && use_list[1]->getDef() && use_list[1]->getDef()->getUse()[0]->isImm(); };
+    bool isMod() const { return type == BINARY && op == 4; };
+    
     bool isMov() const { return type == MOV && op == 0; };
     bool isVMov() const { return type == MOV && op == 3; };
     bool isVMovf32() const { return type == MOV && op == 4; };
@@ -198,7 +207,7 @@ class FuseMInstruction : public MachineInstruction {
 
 class BinaryMInstruction : public MachineInstruction {
    public:
-    enum opType { ADD, SUB, MUL, DIV, AND, OR, VADD, VSUB, VMUL, VDIV };
+    enum opType { ADD, SUB, MUL, DIV, MOD, AND, OR, VADD, VSUB, VMUL, VDIV };
     BinaryMInstruction(MachineBlock* p,
                        int op,
                        MachineOperand* dst,
@@ -208,6 +217,18 @@ class BinaryMInstruction : public MachineInstruction {
     void output();
     int latency();
     std::string getHash();
+};
+
+class SmullMInstruction : public MachineInstruction {
+   public:
+    SmullMInstruction(MachineBlock* p,
+                       MachineOperand* dst,
+                       MachineOperand* dst1,
+                       MachineOperand* src1,
+                       MachineOperand* src2,
+                       int cond = MachineInstruction::NONE);
+    void output();
+    int latency();
 };
 
 class LoadMInstruction : public MachineInstruction {
@@ -244,7 +265,7 @@ class StoreMInstruction : public MachineInstruction {
 
 class MovMInstruction : public MachineInstruction {
    public:
-    enum opType { MOV, MVN, MOVT, VMOV, VMOVF32, MOVLSL, MOVASR };
+    enum opType { MOV, MVN, MOVT, VMOV, VMOVF32, MOVLSL, MOVLSR, MOVASR };
     MovMInstruction(MachineBlock* p,
                     int op,
                     MachineOperand* dst,

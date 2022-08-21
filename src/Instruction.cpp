@@ -8,6 +8,7 @@
 #include "Function.h"
 #include "Type.h"
 extern FILE* yyout;
+extern bool optimize;
 
 Instruction::Instruction(unsigned instType, BasicBlock* insert_bb) {
     prev = next = this;
@@ -170,6 +171,52 @@ BinaryInstruction::~BinaryInstruction() {
     operands[2]->removeUse(this);
 }
 
+std::pair<int, int> BinaryInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
+    std::pair<int, int> res, val1, val2;
+    if (value.find(this->getUse()[0]) == value.end())
+        val1 = this->getUse()[0]->getInitLatticeValue();
+    else
+        val1 = value[this->getUse()[0]];
+    if (value.find(this->getUse()[1]) == value.end())
+        val2 = this->getUse()[1]->getInitLatticeValue();
+    else
+        val2 = value[this->getUse()[1]];
+
+    if (val1.first == -1 || val2.first == -1)
+        res = {-1, 0};
+    else if (val1.first == 0 && val2.first == 0) {
+        res.first = 0;
+        switch (opcode) {
+            case ADD:
+                res.second = val1.second + val2.second;
+                break;
+            case SUB:
+                res.second = val1.second - val2.second;
+                break;
+            case MUL:
+                res.second = val1.second * val2.second;
+                break;
+            case DIV:
+                res.second = val1.second / val2.second;
+                break;
+            case MOD:
+                res.second = val1.second % val2.second;
+                break;
+            case AND:
+                res.second = val1.second & val2.second;
+                break;
+            case OR:
+                res.second = val1.second | val2.second;
+                break;
+            default:
+                break;
+        }
+    } else
+        res.first = 1;
+    return res;
+}
+
 void BinaryInstruction::output() const {
     std::string s1, s2, s3, op, type;
     s1 = operands[0]->toStr();
@@ -290,6 +337,49 @@ void CmpInstruction::output() const {
 
     fprintf(yyout, "  %s = icmp %s %s %s, %s\n", s1.c_str(), op.c_str(),
             type.c_str(), s2.c_str(), s3.c_str());
+}
+
+std::pair<int, int> CmpInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
+    std::pair<int, int> res, val1, val2;
+    if (value.find(this->getUse()[0]) == value.end())
+        val1 = this->getUse()[0]->getInitLatticeValue();
+    else
+        val1 = value[this->getUse()[0]];
+    if (value.find(this->getUse()[1]) == value.end())
+        val2 = this->getUse()[1]->getInitLatticeValue();
+    else
+        val2 = value[this->getUse()[1]];
+    if (val1.first == -1 || val2.first == -1) {
+        res = {-1, 0};
+    } else if (val1.first == 0 && val2.first == 0) {
+        res.first = 0;
+        switch (opcode) {
+            case E:
+                res.second = val1.second == val2.second;
+                break;
+            case NE:
+                res.second = val1.second != val2.second;
+                break;
+            case L:
+                res.second = val1.second < val2.second;
+                break;
+            case GE:
+                res.second = val1.second >= val2.second;
+                break;
+            case G:
+                res.second = val1.second > val2.second;
+                break;
+            case LE:
+                res.second = val1.second <= val2.second;
+                break;
+            default:
+                break;
+        }
+    } else {
+        res.first = 1;
+    }
+    return res;
 }
 
 UncondBrInstruction::UncondBrInstruction(BasicBlock* to, BasicBlock* insert_bb)
@@ -982,6 +1072,15 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
                 break;
             case MOD: {
                 // c = a % b
+                // c = a / b
+                // if(optimize && operands[2]->isConst()){
+                //     int b = operands[2]->getConstVal();
+                //     if(b > 0 && b < 256 && (b & (b-1)) == 0){
+                //         cur_inst = new BinaryMInstruction(
+                //             cur_block, BinaryMInstruction::MOD, dst, src1, src2);
+                //         break;
+                //     }
+                // }
                 // c1 = a / b
                 auto dst1 = genMachineVReg();
                 cur_inst = new BinaryMInstruction(
@@ -1397,6 +1496,53 @@ void GepInstruction::replaceUse(Operand* old, Operand* new_) {
         new_->addUse(this);
     }
 }
+
+/*
+double* GepInstruction::getArrayValue() {
+    GepInstruction* tmp = this;
+    while (!tmp->first) {
+        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();
+    }
+    auto in = tmp->getUse()[0]->getDef();
+    if (in->isAlloc()) {
+        auto alloca = (AllocaInstruction*)in;
+        return ((IdentifierSymbolEntry*)(alloca->getEntry()))->getArrayValue();
+    }
+    return nullptr;
+}
+
+int GepInstruction::getFlatIdx() {
+    if (first)
+        return this->getUse()[1]->getConstVal();
+    GepInstruction* tmp = this;
+    int res;
+    SymbolEntry* se = tmp->getUse()[1]->getEntry();
+    if (se->isConstant())
+        res = ((ConstantSymbolEntry*)se)->getValue();
+    else if (se->isVariable())
+        res = ((IdentifierSymbolEntry*)se)->getValue();
+    int fsize =
+        ((ArrayType*)((PointerType*)(tmp->getUse()[0]->getEntry()->getType()))
+             ->getType())
+            ->getElementType()
+            ->getSize();
+    while (!tmp->first) {
+        tmp = (GepInstruction*)tmp->getUse()[0]->getDef();
+        se = tmp->getUse()[1]->getEntry();
+        int len =
+            ((ArrayType*)((PointerType*)tmp->getUse()[0]->getEntry()->getType())
+                 ->getType())
+                ->getElementType()
+                ->getSize();
+        len /= fsize;
+        if (se->isConstant())
+            res += ((ConstantSymbolEntry*)se)->getValue() * len;
+        else if (se->isVariable())
+            res += ((IdentifierSymbolEntry*)se)->getValue() * len;
+    }
+    return res;
+}
+*/
 
 void GepInstruction::output() const {
     Operand* dst = operands[0];
@@ -1895,6 +2041,31 @@ void PhiInstruction::output() const {
     fprintf(yyout, "\n");
 }
 
+std::pair<int, int> PhiInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
+    std::pair<int, int> res, tmp;
+    res = {1, 0};
+    /*
+    for (auto i = srcs.begin(); i != srcs.end(); i++)
+    {
+        if (value.find((*i).second) == value.end())
+            tmp = (*i).second->getInitLatticeValue();
+        else
+            tmp = value[(*i).second];
+        if (res.first > tmp.first)
+            res = tmp;
+        else if (res.first == tmp.first)
+        {
+            if (res.first == 0)
+            {
+                if (res.second != tmp.second)
+                    res = {-1, 0};
+            }
+        }
+    }*/
+    return res;
+}
+
 void PhiInstruction::addSrc(BasicBlock* block, Operand* src) {
     operands.push_back(src);
     srcs.insert(std::make_pair(block, src));
@@ -2182,6 +2353,16 @@ bool LoadInstruction::genNode() {
     auto node1 = operands[1]->getDef()->getNode();
     node->addChild(node1);
     return true;
+}
+
+std::pair<int, int> LoadInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
+    std::pair<int, int> l;
+    if (value.find(this->getUse()[0]) == value.end())
+        l = this->getUse()[0]->getInitLatticeValue();
+    else
+        l = value[this->getUse()[0]];
+    return l;
 }
 
 bool BinaryInstruction::genNode() {
@@ -2616,6 +2797,28 @@ std::string ShlInstruction::getHash() {
     return s.str();
 }
 
+std::pair<int, int> ShlInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
+    std::pair<int, int> res, val1, val2;
+    if (value.find(this->getUse()[0]) == value.end())
+        val1 = this->getUse()[0]->getInitLatticeValue();
+    else
+        val1 = value[this->getUse()[0]];
+    if (value.find(this->getUse()[1]) == value.end())
+        val2 = this->getUse()[1]->getInitLatticeValue();
+    else
+        val2 = value[this->getUse()[1]];
+
+    if (val1.first == -1 || val2.first == -1)
+        res = {-1, 0};
+    else if (val1.first == 0 && val2.first == 0) {
+        res.first = 0;
+        res.second = val1.second << val2.second;
+    } else
+        res.first = 1;
+    return res;
+}
+
 void ShlInstruction::genMachineCode(AsmBuilder* builder) {
     auto cur_block = builder->getBlock();
     auto dst = genMachineOperand(operands[0]);
@@ -2671,6 +2874,28 @@ AshrInstruction::~AshrInstruction() {
         delete operands[0];
     operands[1]->removeUse(this);
     operands[2]->removeUse(this);
+}
+
+std::pair<int, int> AshrInstruction::getLatticeValue(
+    std::map<Operand*, std::pair<int, int>>& value) {
+    std::pair<int, int> res, val1, val2;
+    if (value.find(this->getUse()[0]) == value.end())
+        val1 = this->getUse()[0]->getInitLatticeValue();
+    else
+        val1 = value[this->getUse()[0]];
+    if (value.find(this->getUse()[1]) == value.end())
+        val2 = this->getUse()[1]->getInitLatticeValue();
+    else
+        val2 = value[this->getUse()[1]];
+
+    if (val1.first == -1 || val2.first == -1)
+        res = {-1, 0};
+    else if (val1.first == 0 && val2.first == 0) {
+        res.first = 0;
+        res.second = val1.second >> val2.second;
+    } else
+        res.first = 1;
+    return res;
 }
 
 void AshrInstruction::output() const {

@@ -6,8 +6,11 @@
 #include "CleanAsmAddZero.h"
 #include "ConstAsm.h"
 #include "CopyProp.h"
+#include "CondCopyProp.h"
+#include "ElimComSubexpr.h"
 #include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
+#include "Div2Mul.h"
 #include "Global2Local.h"
 #include "GraphColor.h"
 #include "InsReorder.h"
@@ -96,7 +99,7 @@ int main(int argc, char* argv[]) {
     if (dump_ast)
         ast.output();
     ast.typeCheck();
-    ast.genCode(&unit);
+    ast.genCode(&unit);    
     if (optimize) {
         ElimUnreachCode euc(&unit);
         DeadCodeElimination dce(&unit);
@@ -106,6 +109,8 @@ int main(int argc, char* argv[]) {
         CopyProp cp(&unit);
         LoopOptimization lop(&unit);
         ValueNumber vn(&unit);
+        CondCopyProp cc(&unit);
+        ElimComSubexpr ec(&unit);
         TreeHeightBalance thb(&unit);
         InsReorder ir(&unit);
         AutoInline ai(&unit);
@@ -116,7 +121,10 @@ int main(int argc, char* argv[]) {
         s.pass();
         m2r.pass();
         dce.pass();
-        vn.pass();
+        cp.pass();
+        vn.pass();  // 拆分srem导致结果错误
+        cc.pass();
+        ec.pass();
         s.pass();
         // 速度较慢 maybe something wrong 
         so.pass();
@@ -132,6 +140,7 @@ int main(int argc, char* argv[]) {
         vn.pass();
         thb.pass();
         euc.pass();
+
         s.pass();
         ir.pass();
         ph.pass();
@@ -150,6 +159,7 @@ int main(int argc, char* argv[]) {
     }
     unit.genMachineCode(&mUnit);
     if (optimize) {
+        Div2Mul d2m(&mUnit);
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         CleanAsmAddZero caaz(&mUnit);
@@ -157,6 +167,7 @@ int main(int argc, char* argv[]) {
         PeepholeOptimization po(&mUnit);
         PartialRedundancyElimination pre(&mUnit);
         LocalValueNumber lvn(&mUnit);
+        // d2m.pass();
         caaz.pass();
         ca.pass();
         // 效果一般 而且会导致编译时间长一些 不开了
@@ -174,7 +185,6 @@ int main(int argc, char* argv[]) {
             ms.pass();
         }
     }
-
     if (!optimize) {
         LinearScan linearScan(&mUnit);
         linearScan.allocateRegisters();

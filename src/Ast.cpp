@@ -441,6 +441,19 @@ void BinaryExpr::genCode() {
                 opcode = BinaryInstruction::MOD;
                 break;
         }
+        // if(opcode == BinaryInstruction::MOD && !(expr2->getSymbolEntry()->isConstant() && (int(expr2->getValue()) & int(expr2->getValue() - 1)) == 0)){
+        //     // c1 = a / b
+        //     Operand* dst0 = new Operand(new TemporarySymbolEntry(
+        //         TypeSystem::intType, SymbolTable::getLabel()));
+        //     Operand* dst1 = new Operand(new TemporarySymbolEntry(
+        //         TypeSystem::intType, SymbolTable::getLabel()));
+        //     new BinaryInstruction(BinaryInstruction::DIV, dst0, src1, src2, bb);
+        //     // c2 = c1 * b
+        //     new BinaryInstruction(BinaryInstruction::MUL, dst1, dst0, src2, bb);
+        //     // c = a - c2
+        //     new BinaryInstruction(BinaryInstruction::SUB, dst, src1, dst1, bb);
+        // }
+        // else
         new BinaryInstruction(opcode, dst, src1, src2, bb);
     }
 }
@@ -1085,15 +1098,17 @@ ExprNode* ExprNode::const_fold() {
     ExprNode* res = this;
     res = this->alge_simple(5);  // 代数化简
     bool flag = true;
-    int fconst = res->fold_const(flag);
+    double fconst = res->fold_const(flag);
     if (flag) {
-        SymbolEntry* se = new ConstantSymbolEntry(TypeSystem::intType, fconst);
+        if(dst->getType()->isInt())
+            fconst = int(fconst);
+        SymbolEntry* se = new ConstantSymbolEntry(type, fconst);
         res = new Constant(se);
     }
     return res;
 }
 
-int ExprNode::fold_const(bool& flag) {
+double ExprNode::fold_const(bool& flag) {
     if (this->isBinaryExpr()) {
         ExprNode *lhs = ((BinaryExpr*)this)->getLeft(),
                  *rhs = ((BinaryExpr*)this)->getRight();
@@ -1531,8 +1546,12 @@ double BinaryExpr::getValue() {
                 val = val1 * val2;
                 break;
             case DIV:
-                if (val2 != 0)
+                if (val2 != 0){
                     val = val1 / val2;
+                    if(dst->getType()->isInt()){
+                        val = (int)(val);
+                    }                        
+                }                    
                 break;
             case MOD:
                 val = (int)(val1) % (int)(val2);

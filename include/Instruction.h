@@ -15,6 +15,7 @@ class Instruction {
    public:
     Instruction(unsigned instType, BasicBlock* insert_bb = nullptr);
     virtual ~Instruction();
+    virtual std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&){return {-1,0};};
     BasicBlock* getParent();
     bool isUncond() const { return instType == UNCOND; };
     bool isCond() const { return instType == COND; };
@@ -141,6 +142,7 @@ class AllocaInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    SymbolEntry* getEntry() { return se; }
 
    private:
     SymbolEntry* se;
@@ -155,6 +157,7 @@ class LoadInstruction : public Instruction {
     void output() const;
     void genMachineCode(AsmBuilder*);
     Operand* getDef() { return operands[0]; }
+    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
     std::vector<Operand*> getUse() {
@@ -200,9 +203,11 @@ class BinaryInstruction : public Instruction {
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
     void replaceDef(Operand* new_);
+    bool isDivConst() { return opcode==DIV && operands[2]->isConst(); }
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
+    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     std::string getHash();
     bool isConstExp();
     void setDef(Operand* def) {
@@ -234,6 +239,7 @@ class CmpInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
+    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     bool genNode();
     bool reGenNode();
     std::string getHash();
@@ -479,6 +485,7 @@ class PhiInstruction : public Instruction {
                 ret.push_back(ope);
         return ret;
     }
+    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     bool genNode();
     bool reGenNode();
     std::string getHash();
@@ -593,6 +600,7 @@ class ShlInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
+    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     Operand* getDef() { return operands[0]; }
     bool genNode();
     std::string getHash();
@@ -618,6 +626,7 @@ class AshrInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
+    std::pair<int, int> getLatticeValue(std::map<Operand*, std::pair<int, int>>&);
     Operand* getDef() { return operands[0]; }
     bool genNode();
     std::string getHash();

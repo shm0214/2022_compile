@@ -9,6 +9,16 @@ using std::stringstream;
 
 int MachineBlock::label = 0;
 
+MachineOperand::MachineOperand(int tp, LL val, bool fpu) {
+    this->type = tp;
+    this->fpu = fpu;
+    if (tp == MachineOperand::IMM) {
+        this->val = val;
+    } else {
+        this->reg_no = val;  // reg_no can be float if larger than 15(pc)
+    }
+}
+
 MachineOperand::MachineOperand(int tp, int val, bool fpu) {
     this->type = tp;
     this->fpu = fpu;
@@ -121,7 +131,7 @@ void MachineOperand::output() {
     switch (this->type) {
         case IMM:
             if (!fpu) {
-                fprintf(yyout, "#%d", this->val);
+                fprintf(yyout, "#%lld", this->val);
             } else {
                 uint32_t temp = reinterpret_cast<uint32_t&>(this->fval);
                 fprintf(yyout, "#%u", temp);
@@ -295,6 +305,7 @@ FuseMInstruction::FuseMInstruction(MachineBlock* p,
     src1->setParent(this);
     src2->setParent(this);
     src3->setParent(this);
+    dst->setDef(this);
 }
 void FuseMInstruction::output() {
     switch (this->op) {
@@ -344,6 +355,7 @@ BinaryMInstruction::BinaryMInstruction(MachineBlock* p,
     dst->setParent(this);
     src1->setParent(this);
     src2->setParent(this);
+    dst->setDef(this);
 }
 
 void BinaryMInstruction::output() {
@@ -392,6 +404,39 @@ void BinaryMInstruction::output() {
     fprintf(yyout, "\n");
 }
 
+SmullMInstruction::SmullMInstruction(MachineBlock* p,
+                                       MachineOperand* dst,
+                                       MachineOperand* dst1,
+                                       MachineOperand* src1,
+                                       MachineOperand* src2,
+                                       int cond) {
+    this->parent = p;
+    this->type = MachineInstruction::SMULL;
+    this->cond = cond;
+    this->def_list.push_back(dst);
+    this->def_list.push_back(dst1);
+    this->use_list.push_back(src1);
+    this->use_list.push_back(src2);
+    dst->setParent(this);
+    dst1->setParent(this);
+    src1->setParent(this);
+    src2->setParent(this);
+    dst->setDef(this);
+    dst1->setDef(this);
+}
+
+void SmullMInstruction::output() {
+    fprintf(yyout, "\tumull ");
+    this->def_list[0]->output();
+    fprintf(yyout, ", ");
+    this->def_list[1]->output();
+    fprintf(yyout, ", ");
+    this->use_list[0]->output();
+    fprintf(yyout, ", ");
+    this->use_list[1]->output();
+    fprintf(yyout, "\n");
+}
+
 LoadMInstruction::LoadMInstruction(MachineBlock* p,
                                    int op,
                                    MachineOperand* dst,
@@ -411,6 +456,7 @@ LoadMInstruction::LoadMInstruction(MachineBlock* p,
     src1->setParent(this);
     if (src2)
         src2->setParent(this);
+    dst->setDef(this);
 }
 
 void LoadMInstruction::output() {
@@ -426,7 +472,7 @@ void LoadMInstruction::output() {
                 uint32_t temp = reinterpret_cast<uint32_t&>(fval);
                 fprintf(yyout, "=%u\n", temp);
             } else {
-                fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
+                fprintf(yyout, "=%lld\n", this->use_list[0]->getVal());
             }
             return;
         }
@@ -456,7 +502,7 @@ void LoadMInstruction::output() {
                 uint32_t temp = reinterpret_cast<uint32_t&>(fval);
                 fprintf(yyout, "=%u\n", temp);
             } else {
-                fprintf(yyout, "=%d\n", this->use_list[0]->getVal());
+                fprintf(yyout, "=%lld\n", this->use_list[0]->getVal());
             }
             return;
         }
@@ -546,8 +592,9 @@ MovMInstruction::MovMInstruction(MachineBlock* p,
     this->use_list.push_back(src);
     dst->setParent(this);
     src->setParent(this);
+    dst->setDef(this);
     if (num) {
-        assert(op == MOVASR || op == MOVLSL);
+        assert(op == MOVASR || op == MOVLSL || op == MOVLSR);
         this->use_list.push_back(num);
         num->setParent(this);
     }
@@ -557,6 +604,7 @@ void MovMInstruction::output() {
     switch (this->op) {
         case MovMInstruction::MOV:
         case MovMInstruction::MOVLSL:
+        case MovMInstruction::MOVLSR:
         case MovMInstruction::MOVASR:
             fprintf(yyout, "\tmov");
             break;
@@ -581,6 +629,10 @@ void MovMInstruction::output() {
         fprintf(yyout, ", LSL");
         this->use_list[1]->output();
     }
+    if (op == MOVLSR) {
+        fprintf(yyout, ", LSR");
+        this->use_list[1]->output();
+    }
     if (op == MOVASR) {
         fprintf(yyout, ", ASR");
         this->use_list[1]->output();
@@ -600,6 +652,7 @@ BranchMInstruction::BranchMInstruction(MachineBlock* p,
     // if (op != BL) {
     this->use_list.push_back(dst);
     dst->setParent(this);
+    dst->setDef(this);
     // }else{
     if (op == BL) {
         auto label = dst->getLabel().substr(1);
@@ -780,6 +833,7 @@ VcvtMInstruction::VcvtMInstruction(MachineBlock* p,
     this->use_list.push_back(src);
     dst->setParent(this);
     src->setParent(this);
+    dst->setDef(this);
 }
 
 VmrsMInstruction::VmrsMInstruction(MachineBlock* p) {
@@ -1353,8 +1407,10 @@ MachineBlock* MachineFunction::getNext(MachineBlock* block) {
 
 void MachineBlock::insertBefore(MachineInstruction* a, MachineInstruction* b) {
     auto it = find(inst_list.begin(), inst_list.end(), b);
-    if (it != inst_list.end())
+    if (it != inst_list.end()){
         inst_list.insert(it, a);
+        a->setParent(b->getParent());
+    }        
 }
 
 void MachineFunction::InsertAfter(MachineBlock* a, MachineBlock* b) {
@@ -1371,6 +1427,10 @@ void MachineBlock::insertFront(MachineInstruction* in) {
 
 int FuseMInstruction::latency() {
     return 3;
+}
+
+int SmullMInstruction::latency(){
+    return 4;
 }
 
 int BinaryMInstruction::latency() {

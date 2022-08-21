@@ -120,7 +120,7 @@ int main(int argc, char* argv[]) {
         vn.pass();
         s.pass();
         // 速度较慢
-        so.pass();
+        // so.pass();
         lop.pass();
         s.checkCond();
         ai.pass();
@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
         ph.pass();
         so.pass1();
         s.pass();
-        // ssad.pass();
+        ssad.pass();
     }
     if (dump_ir) {
         unit.output();

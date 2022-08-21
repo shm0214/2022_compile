@@ -6,7 +6,6 @@
 #include <vector>
 #include "AsmBuilder.h"
 #include "Operand.h"
-#include "SSAGraph.h"
 #include "Type.h"
 
 class SSAGraphNode;
@@ -58,6 +57,8 @@ class Instruction {
     std::vector<Operand*> getOperands() { return operands; }
     virtual bool genNode() { return true; }
     SSAGraphNode* getNode() { return node; }
+    void setNode(SSAGraphNode* node){this->node=node;}
+    bool reGenNode();
     virtual std::string getHash() { return ""; }
     bool isIntMul();
     bool isIntDiv();
@@ -202,14 +203,18 @@ class BinaryInstruction : public Instruction {
     std::vector<Operand*> getUse() {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
-    bool genNode();
     std::string getHash();
     bool isConstExp();
-    Instruction* copy();
     void setDef(Operand* def) {
         operands[0] = def;
         def->setDef(this);
     }
+    bool isAdd(){return this->opcode==ADD;};
+    bool isSub(){return this->opcode==SUB;};
+    bool isMul(){return this->opcode==MUL;};
+    bool isDIV(){return this->opcode==DIV;};
+    bool genNode();
+    Instruction* copy();
 };
 
 class CmpInstruction : public Instruction {
@@ -230,6 +235,7 @@ class CmpInstruction : public Instruction {
         return std::vector<Operand*>({operands[1], operands[2]});
     }
     bool genNode();
+    bool reGenNode();
     std::string getHash();
     bool isConstExp();
     Instruction* copy();
@@ -484,6 +490,8 @@ class PhiInstruction : public Instruction {
         operands[0] = def;
         def->setDef(this);
     }
+    void removeSrc(BasicBlock* block);
+    bool findSrc(BasicBlock* block);
     // only remove use in operands
     // used for starighten::checkphi
     void removeUse(Operand* use);
@@ -515,6 +523,7 @@ class FptosiInstruction : public Instruction {
     }
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
 };
 
 class SitofpInstruction : public Instruction {
@@ -540,6 +549,7 @@ class SitofpInstruction : public Instruction {
     }
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
 };
 
 class BitcastInstruction : public Instruction {

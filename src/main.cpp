@@ -14,6 +14,7 @@
 #include "InstructionScheduling.h"
 #include "LinearScan.h"
 #include "LocalValueNumber.h"
+#include "LoopOptimization.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
 #include "MachineStraighten.h"
@@ -103,6 +104,7 @@ int main(int argc, char* argv[]) {
         Mem2reg m2r(&unit);
         SSADestruction ssad(&unit);
         CopyProp cp(&unit);
+        LoopOptimization lop(&unit);
         ValueNumber vn(&unit);
         TreeHeightBalance thb(&unit);
         InsReorder ir(&unit);
@@ -113,11 +115,13 @@ int main(int argc, char* argv[]) {
         g2l.pass();
         s.pass();
         m2r.pass();
+        
         dce.pass();
         vn.pass();
         s.pass();
         // 速度较慢
-        so.pass();
+        // so.pass();
+        lop.pass();
         s.checkCond();
         ai.pass();
         dce.pass();
@@ -132,6 +136,7 @@ int main(int argc, char* argv[]) {
         s.pass();
         ir.pass();
         ph.pass();
+        lop.pass1();
         vn.pass();
         s.checkCond();
         s.pass();

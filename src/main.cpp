@@ -115,11 +115,10 @@ int main(int argc, char* argv[]) {
         g2l.pass();
         s.pass();
         m2r.pass();
-        
         dce.pass();
         vn.pass();
         s.pass();
-        // 速度较慢
+        // 速度较慢 maybe something wrong 
         // so.pass();
         lop.pass();
         s.checkCond();
@@ -165,7 +164,7 @@ int main(int argc, char* argv[]) {
         mdce.pass();
         ms.pass();
         if (!flag) {
-            // derive wrong
+            // derich  wrong
             po.pass1();
             mdce.pass();
             lvn.pass();

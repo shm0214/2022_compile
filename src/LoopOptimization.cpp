@@ -180,6 +180,8 @@ bool LoopOptimization::defInstructionInLoop(Operand * op,std::vector<BasicBlock*
 bool LoopOptimization::OperandIsLoopConst(Operand * op,std::vector<Instruction*> LoopConstInstructions){
     //只有一个定值能到达,做了ssa，则只有一个def
     for(auto ins:LoopConstInstructions){
+        if(ins->isStore())
+            continue;
         if(ins->getDef()==op){
             return true;
         }
@@ -207,9 +209,26 @@ std::vector<Instruction*> LoopOptimization::calculateLoopConstant(std::vector<Ba
                         //先做int吧
                         for(auto operand:useOperands){
                             Type * operand_type=operand->getEntry()->getType();
-                            if(operand_type->isInt()||operand_type->isFloat()){
+                            if(operand_type->isInt()){
                                 IntType* operand_inttype=(IntType*)operand_type;
                                 if(operand_inttype->isConst()){
+                                    LoopConst[func][Loop].insert(operand);
+                                    constant_count++;
+                                }
+                                //定值点不在循环里,所有给它赋值的语句都在LOOP外面
+                                else if(!defInstructionInLoop(operand,Loop)){
+                                    LoopConst[func][Loop].insert(operand);
+                                    constant_count++;
+                                }
+                                //只有一个到达定值
+                                else if(OperandIsLoopConst(operand,LoopConstInstructions)){
+                                    LoopConst[func][Loop].insert(operand);
+                                    constant_count++;
+                                }
+                            }
+                            else if(operand_type->isFloat()){
+                                FloatType* operand_floattype=(FloatType*)operand_type;
+                                if(operand_floattype->isConst()){
                                     LoopConst[func][Loop].insert(operand);
                                     constant_count++;
                                 }
@@ -230,6 +249,138 @@ std::vector<Instruction*> LoopOptimization::calculateLoopConstant(std::vector<Ba
                             LoopConstInstructions.push_back(ins);
                             ifAddNew=true;
                         }
+                    }
+                    else if(ins->isAlloc()){//无限制
+                        LoopConstInstructions.push_back(ins);
+                        LoopConst[func][Loop].insert(ins->getDef());
+                        ifAddNew=true;
+                    }
+                    else if(ins->isGep()){
+                        std::vector<Operand*> useOperands = ins->getUse();
+                        int constant_count=0;
+                        for(auto useOp:useOperands){
+                            Type * operand_type=useOp->getEntry()->getType();
+                            if(operand_type->isInt()){
+                                IntType* operand_inttype=(IntType*)operand_type;
+                                if(operand_inttype->isConst()){
+                                    LoopConst[func][Loop].insert(useOp);
+                                    constant_count++;
+                                }
+                                //定值点不在循环里,所有给它赋值的语句都在LOOP外面
+                                else if(!defInstructionInLoop(useOp,Loop)){
+                                    LoopConst[func][Loop].insert(useOp);
+                                    constant_count++;
+                                }
+                                //只有一个到达定值
+                                else if(OperandIsLoopConst(useOp,LoopConstInstructions)){
+                                    LoopConst[func][Loop].insert(useOp);
+                                    constant_count++;
+                                }
+                            }
+                            else if(operand_type->isPtr()){
+                                PointerType* operand_ptrtype=(PointerType*)operand_type;
+                                if(useOp->isGlobal()){
+                                    LoopConst[func][Loop].insert(useOp);
+                                    constant_count++;
+                                }
+                                //定值点不在循环里,所有给它赋值的语句都在LOOP外面
+                                else if(!defInstructionInLoop(useOp,Loop)){
+                                    LoopConst[func][Loop].insert(useOp);
+                                    constant_count++;
+                                }
+                                //只有一个到达定值
+                                else if(OperandIsLoopConst(useOp,LoopConstInstructions)){
+                                    LoopConst[func][Loop].insert(useOp);
+                                    constant_count++;
+                                }
+                            }
+                        }
+                        if(constant_count==2){
+                            // ins->output();
+                            LoopConstInstructions.push_back(ins);
+                            ifAddNew=true;
+                        }
+                    }
+                    else if(ins->isBitcast()){
+                        Operand* useOp = ins ->getUse()[0];
+                        int constant_count=0;
+                        Type * operand_type=useOp->getEntry()->getType();
+                        if(operand_type->isPtr()){
+                            PointerType* operand_ptrtype=(PointerType*)operand_type;
+                            if(useOp->isGlobal()){
+                                LoopConst[func][Loop].insert(useOp);
+                                constant_count++;
+                            }
+                            //定值点不在循环里,所有给它赋值的语句都在LOOP外面
+                            else if(!defInstructionInLoop(useOp,Loop)){
+                                LoopConst[func][Loop].insert(useOp);
+                                constant_count++;
+                            }
+                            //只有一个到达定值
+                            else if(OperandIsLoopConst(useOp,LoopConstInstructions)){
+                                LoopConst[func][Loop].insert(useOp);
+                                constant_count++;
+                            }
+                        }
+                        if(constant_count==1){
+                            // ins->output();
+                            LoopConstInstructions.push_back(ins);
+                            ifAddNew=true;
+                        }
+                    }
+                    else if(ins->isCall()){
+                        auto funcSE = (IdentifierSymbolEntry*)(((CallInstruction*)ins)->getFuncSE());
+                        if(funcSE->getName() == "llvm.memset.p0.i32"){
+                            std::vector<Operand*> useOperands = ins->getUse();
+                            Operand* firstOp = useOperands[0];
+                            Operand* thirdOp = useOperands[2];
+                            if(OperandIsLoopConst(firstOp,LoopConstInstructions)&&(OperandIsLoopConst(thirdOp,LoopConstInstructions)||thirdOp->isConst())){
+                                LoopConstInstructions.push_back(ins);
+                                ifAddNew=true;
+                            }
+                        }
+                    }
+                    else if(ins->isStore()){
+                        std::vector<Operand*> useOperands = ins->getUse();
+                        Operand* addrOp = useOperands[0];
+                        Operand* valueOp = useOperands[1];
+                        int constant_count = 0;
+                        if(OperandIsLoopConst(addrOp,LoopConstInstructions)||addrOp->isGlobal()||!defInstructionInLoop(addrOp,Loop)){
+                            constant_count++;
+                        }
+                        if(OperandIsLoopConst(valueOp,LoopConstInstructions)||valueOp->isConst()||!defInstructionInLoop(valueOp,Loop)){
+                            constant_count++;
+                        }
+                        if(constant_count==2){
+                            LoopConstInstructions.push_back(ins);
+                            //store 不增加新的def
+                        }
+                    }
+                    else if(ins->isLoad()){
+                        // int constant_count = 0;
+                        // Operand* useOp = ins->getUse()[0];
+                        // Type * operand_type=useOp->getEntry()->getType();
+                        // if(operand_type->isPtr()){
+                        //     PointerType* operand_ptrtype=(PointerType*)operand_type;
+                        //     if(useOp->isGlobal()){
+                        //         LoopConst[func][Loop].insert(useOp);
+                        //         constant_count++;
+                        //     }
+                        //     //定值点不在循环里,所有给它赋值的语句都在LOOP外面
+                        //     else if(!defInstructionInLoop(useOp,Loop)){
+                        //         LoopConst[func][Loop].insert(useOp);
+                        //         constant_count++;
+                        //     }
+                        //     //只有一个到达定值
+                        //     else if(OperandIsLoopConst(useOp,LoopConstInstructions)){
+                        //         LoopConst[func][Loop].insert(useOp);
+                        //         constant_count++;
+                        //     }
+                        // }
+                        // if(constant_count==1){
+                        //     LoopConstInstructions.push_back(ins);
+                        //     ifAddNew=true;
+                        // }
                     }
                 }
                 ins=ins->getNext();
@@ -293,7 +444,7 @@ void LoopOptimization::CodePullUp(Function* func,std::vector<std::vector<BasicBl
         // printLoopConst(LoopConstInstructions);
         // std::cout<<LoopConstInstructions.size()<<std::endl;
         BasicBlock * headBlock=Loop[0];
-        BasicBlock * predBB=new BasicBlock(func);
+        BasicBlock * predBB = new BasicBlock(func);
         bool ifAddFirst=true;
         for(auto ins:LoopConstInstructions){
             BasicBlock* fartherBB=ins->getParent();
@@ -1163,13 +1314,31 @@ void LoopOptimization::printSCC(std::vector<SSAGraphNode*> SCC){
 //     }
 // }
 
+void LoopOptimization::dealwithNoPreBB(Function* func){
+    std::vector<BasicBlock*> temp;
+    std::vector<BasicBlock*> blocklist = func -> getBlockList();
+    for (auto it = blocklist.begin(); it != blocklist.end(); it++) {
+        if ((*it)->getNumOfPred() == 0 && *it != func->getEntry()) {
+            for (auto it1 = (*it)->pred_begin(); it1 != (*it)->pred_end();
+                 it1++) {
+                (*it1)->removePred(*it);
+            }
+            temp.push_back(*it);
+            // ret = true;
+        }
+    }
+    for (auto b : temp)
+        func->remove(b);
+}
 
 void LoopOptimization::pass(){
     for(auto func=unit->begin();func!=unit->end();func++){
         calculateFinalDomBBSet(*func);
         std::vector<std::pair<BasicBlock*,BasicBlock*>> BackEdges=getBackEdges(*func);
         std::vector<std::vector<BasicBlock*>> LoopList=calculateLoopList(*func,BackEdges);
+        // printLoop(LoopList);
         CodePullUp(*func,LoopList,BackEdges);
+        dealwithNoPreBB(*func);
         //外提后会产生新的块 需要重新计算循环
         calculateFinalDomBBSet(*func);
         BackEdges=getBackEdges(*func);
@@ -1179,11 +1348,24 @@ void LoopOptimization::pass(){
         //strength reduction
         // (*func)->genSSAGraph();
         // OSR((*func)->getSSAGraph(),*func,LoopList);
+        // auto& blocklist = func->getBlockList();
+
         LoopUnroll Ln;
         Ln.setDomBBset(DomBBSet);
         std::vector<std::vector<BasicBlock*>> InnerLoopList = Ln.calculateInnerLoop(LoopList);
         Ln.findLoop(InnerLoopList);
         Ln.Unroll();
+    }
+}
+
+void LoopOptimization::pass1(){
+    for(auto func=unit->begin();func!=unit->end();func++){
+        calculateFinalDomBBSet(*func);
+        std::vector<std::pair<BasicBlock*,BasicBlock*>> BackEdges=getBackEdges(*func);
+        std::vector<std::vector<BasicBlock*>> LoopList=calculateLoopList(*func,BackEdges);
+        // printLoop(LoopList);
+        CodePullUp(*func,LoopList,BackEdges);
+        dealwithNoPreBB(*func);
     }
 }
 

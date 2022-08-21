@@ -136,6 +136,7 @@ int main(int argc, char* argv[]) {
         s.pass();
         ir.pass();
         ph.pass();
+        lop.pass1();
         vn.pass();
         s.checkCond();
         s.pass();

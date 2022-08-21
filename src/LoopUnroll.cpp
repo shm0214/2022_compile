@@ -130,7 +130,7 @@ Operand* LoopUnroll::getBeginOp(BasicBlock* bb,Operand* strideOp,std::stack<Inst
     return beginOp;
 }
 
-void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,Operand* strideOp){
+void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,Operand* strideOp,bool ifall){
     std::vector<Instruction*> preInstructionList;
     std::vector<Instruction*> nextInstructionList;
     std::vector<Instruction*> phis;
@@ -289,6 +289,31 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
         //     replaceMap[item.first]=item.second;
         // }
     }
+    //如果是完全张开的话
+    if(ifall){
+        //去除块中的比较跳转指令，并且修改phi即可
+        for(auto phi:phis){
+            PhiInstruction* p = (PhiInstruction*) phi;
+            Operand* phiOp;
+            for(auto item:p->getSrcs()){
+                if(item.first!=bb){
+                    phiOp = item.second;
+                }
+            }
+            BinaryInstruction * newDefBin = new BinaryInstruction(BinaryInstruction::ADD,phi->getDef(),phiOp,new Operand(new ConstantSymbolEntry(phiOp->getEntry()->getType(),0)),nullptr);
+            Instruction* phiNext = phi->getNext();
+            bb->remove(phi);
+            bb->insertBefore(newDefBin,phiNext);
+        }
+
+        CondBrInstruction* cond = (CondBrInstruction*)cmp->getNext();
+        UncondBrInstruction* newUnCond = new UncondBrInstruction(cond->getFalseBranch(),nullptr); 
+        bb->remove(cmp);
+        bb->remove(cond);
+        bb->insertBack(newUnCond);
+        bb->removePred(bb);
+        bb->removeSucc(bb);
+    }
 }
 
 //只考虑+1的情况先 不管浮点？
@@ -446,7 +471,7 @@ void LoopUnroll::normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Op
         }
     }
 
-    specialCopyInstructions(bodybb,UNROLLNUM,endOp,strideOp);
+    specialCopyInstructions(bodybb,UNROLLNUM,endOp,strideOp,false);
 
     //更改resoutSucc
     for(auto bodyinstr = resoutCondSucc->begin(); bodyinstr != resoutCondSucc->end(); bodyinstr = bodyinstr->getNext()){
@@ -687,7 +712,7 @@ void LoopUnroll::Unroll(){
                     //body中的跳转指令不copy
                     //循环内部是小于count 所以count初始值直接设置为0即可
                     if(count<=MAXUNROLLNUM)
-                        specialCopyInstructions(loop->getbody(),count,endOp,strideOp);
+                        specialCopyInstructions(loop->getbody(),count,endOp,strideOp,true);
                     else{//特殊展开
 
                     }
@@ -699,7 +724,7 @@ void LoopUnroll::Unroll(){
                     }
                     //循环内部是小于count 所以count初始值直接设置为0即可
                     if(count<=MAXUNROLLNUM)
-                        specialCopyInstructions(loop->getbody(),count,endOp,strideOp);
+                        specialCopyInstructions(loop->getbody(),count,endOp,strideOp,true);
                     else{//特殊展开
 
                     }
@@ -723,7 +748,7 @@ void LoopUnroll::Unroll(){
                     //body中的跳转指令不copy
                     //循环内部是小于count 所以count初始值直接设置为0即可
                     if(count<=MAXUNROLLNUM)
-                        specialCopyInstructions(loop->getbody(),count,endOp,strideOp);
+                        specialCopyInstructions(loop->getbody(),count,endOp,strideOp,true);
                     else{//特殊展开
 
                     }
@@ -735,7 +760,7 @@ void LoopUnroll::Unroll(){
                     }
                     //循环内部是小于count 所以count初始值直接设置为0即可
                     if(count<=MAXUNROLLNUM)
-                        specialCopyInstructions(loop->getbody(),count,endOp,strideOp);
+                        specialCopyInstructions(loop->getbody(),count,endOp,strideOp,true);
                     else{//特殊展开
 
                     }

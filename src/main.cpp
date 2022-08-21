@@ -115,7 +115,7 @@ int main(int argc, char* argv[]) {
         dce.pass();
         vn.pass();
         s.pass();
-        lop.pass();
+        // lop.pass();
         // 速度较慢
         so.pass();
         s.checkCond();

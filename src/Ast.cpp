@@ -1544,8 +1544,12 @@ double BinaryExpr::getValue() {
                 val = val1 * val2;
                 break;
             case DIV:
-                if (val2 != 0)
+                if (val2 != 0){
                     val = val1 / val2;
+                    if(dst->getEntry()->getType()->isInt()){
+                        val = (int)(val);
+                    }                        
+                }                    
                 break;
             case MOD:
                 val = (int)(val1) % (int)(val2);

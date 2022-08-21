@@ -426,7 +426,7 @@ SmullMInstruction::SmullMInstruction(MachineBlock* p,
 }
 
 void SmullMInstruction::output() {
-    fprintf(yyout, "\tsmull ");
+    fprintf(yyout, "\tumull ");
     this->def_list[0]->output();
     fprintf(yyout, ", ");
     this->def_list[1]->output();

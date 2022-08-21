@@ -94,23 +94,19 @@ void Div2Mul::div2mul(MachineFunction* func){
                     if((d > 0) && ((d & (d-1)) == 0)){
                         auto off = new MachineOperand(MachineOperand::IMM, d-1);
                         auto off1 = new MachineOperand(MachineOperand::IMM, 31);
-                        auto off2 = new MachineOperand(MachineOperand::IMM, 30);
                         auto tmp = new MachineOperand(
                                     MachineOperand::VREG,
                                     SymbolTable::getLabel());
 
-                        MachineInstruction* inst1 = new MovMInstruction(nullptr, MovMInstruction::MOVASR,
-                                                tmp, inst->getUse()[0], MachineInstruction::NONE, off1);
+                        MachineInstruction* inst1 = new BinaryMInstruction(nullptr, BinaryMInstruction::AND,
+                                                inst->getDef()[0], inst->getUse()[0], off);
                         MachineInstruction* inst2 = new MovMInstruction(nullptr, MovMInstruction::MOVLSR,
-                                                tmp, tmp, MachineInstruction::NONE, off2);
+                                                tmp, inst->getDef()[0], MachineInstruction::NONE, off1);
                         MachineInstruction* inst3 = new BinaryMInstruction(nullptr, BinaryMInstruction::ADD,
-                                                inst->getDef()[0], inst->getUse()[0], tmp);
-                        MachineInstruction* inst4 = new BinaryMInstruction(nullptr, BinaryMInstruction::AND,
-                                                inst->getDef()[0], inst->getDef()[0], off);
-                        bb->insertBefore(inst4, inst);
-                        bb->insertBefore(inst3, inst4);
-                        bb->insertBefore(inst2, inst3);
-                        bb->insertBefore(inst1, inst2);
+                                                inst->getDef()[0], inst->getDef()[0], tmp);
+                        bb->insertBefore(inst1, inst);
+                        bb->insertBefore(inst2, inst);
+                        bb->insertBefore(inst3, inst);
                         bb->remove(inst);
                     }
                 }

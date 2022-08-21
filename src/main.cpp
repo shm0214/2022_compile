@@ -6,6 +6,8 @@
 #include "CleanAsmAddZero.h"
 #include "ConstAsm.h"
 #include "CopyProp.h"
+#include "CondCopyProp.h"
+#include "ElimComSubexpr.h"
 #include "DeadCodeElimination.h"
 #include "ElimUnreachCode.h"
 #include "Div2Mul.h"
@@ -101,6 +103,8 @@ int main(int argc, char* argv[]) {
         SSADestruction ssad(&unit);
         CopyProp cp(&unit);
         ValueNumber vn(&unit);
+        CondCopyProp cc(&unit);
+        ElimComSubexpr ec(&unit);
         TreeHeightBalance thb(&unit);
         InsReorder ir(&unit);
         AutoInline ai(&unit);
@@ -111,10 +115,9 @@ int main(int argc, char* argv[]) {
         s.pass();
         m2r.pass();
         dce.pass();
-        // unit.output(); //
-        vn.pass();
-        // unit.output(); //
-        // return 0; //
+        vn.pass();  // 拆分srem导致结果错误
+        cc.pass();
+        ec.pass();
         s.pass();        
         // 速度较慢
         so.pass();

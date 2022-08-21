@@ -1,8 +1,8 @@
 %code top{
     #include <iostream>
-    #include <cstring>
     #include <assert.h>
     #include "parser.h"
+    #include <cstring>
     #include <stack>
     extern Ast ast;
 

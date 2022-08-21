@@ -176,9 +176,9 @@ int main(int argc, char* argv[]) {
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);
         InstructionScheduling is(&mUnit);
-        // po.pass();
-        // mdce.pass();
-        // ms.pass();
+        po.pass();
+        mdce.pass();
+        ms.pass();
         // is.pass();
     }
     if (dump_asm)

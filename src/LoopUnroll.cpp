@@ -178,7 +178,7 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
                 nextIns->replaceUse(useOp,begin_final_Map[useOp]);
             }
             else{
-                useOp->addUse(nextIns);
+                // useOp->addUse(nextIns);
             }
         }
         // nextInstructionList.push_back(preIns->copy());
@@ -251,9 +251,6 @@ void LoopUnroll::specialCopyInstructions(BasicBlock* bb,int num,Operand* endOp,O
                     if(newMap.find(useOp)!=newMap.end()){
                         nextIns->replaceUse(useOp,newMap[useOp]);
                     }
-                    // else{
-                    //     useOp->addUse(nextIns);
-                    // }
                 }
                 bb->insertBefore(nextIns,cmp);
             }

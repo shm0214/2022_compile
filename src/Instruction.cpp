@@ -1444,6 +1444,12 @@ void FptosiInstruction::output() const {
             dst->getType()->toStr().c_str());
 }
 
+void FptosiInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
+}
+
 FptosiInstruction::~FptosiInstruction() {
     operands[0]->setDef(nullptr);
     if (operands[0]->usersNum() == 0)
@@ -1467,6 +1473,12 @@ void SitofpInstruction::output() const {
     fprintf(yyout, "  %s = sitofp %s %s to %s\n", dst->toStr().c_str(),
             src->getType()->toStr().c_str(), src->toStr().c_str(),
             dst->getType()->toStr().c_str());
+}
+
+void SitofpInstruction::replaceDef(Operand* new_) {
+    operands[0]->removeDef(this);
+    operands[0] = new_;
+    new_->setDef(this);
 }
 
 SitofpInstruction::~SitofpInstruction() {

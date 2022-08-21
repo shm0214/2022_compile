@@ -522,6 +522,7 @@ class FptosiInstruction : public Instruction {
     }
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
 };
 
 class SitofpInstruction : public Instruction {
@@ -547,6 +548,7 @@ class SitofpInstruction : public Instruction {
     }
     Operand* getDef() { return operands[0]; }
     void replaceUse(Operand* old, Operand* new_);
+    void replaceDef(Operand* new_);
 };
 
 class BitcastInstruction : public Instruction {

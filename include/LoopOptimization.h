@@ -70,8 +70,10 @@ public:
     void rewrite(Operand* _new,Operand* _old,Function* func);
     Operand* apply(IV_record* iv,std::map<IV_record*,Operand*>&NodeHashTable,Function* func);
     void printSCC(std::vector<SSAGraphNode*> SCC);
-    
+    void dealwithNoPreBB(Function* func);
+
     void pass();
+    void pass1();
 
 };
 

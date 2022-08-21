@@ -37,7 +37,7 @@ public:
     void Unroll();
     bool isRegionConst(Operand* i, Operand* c);
     Operand* getBeginOp(BasicBlock* bb,Operand* strideOp,std::stack<Instruction*>& Insstack);
-    void specialCopyInstructions(BasicBlock* bb,int count,Operand* endOp,Operand* strideOp);
+    void specialCopyInstructions(BasicBlock* bb,int count,Operand* endOp,Operand* strideOp,bool ifall);
     void normalCopyInstructions(BasicBlock* condbb,BasicBlock* bodybb,Operand* beginOp,Operand* endOp,Operand* strideOp);
 };
 

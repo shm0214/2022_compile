@@ -1073,14 +1073,14 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
             case MOD: {
                 // c = a % b
                 // c = a / b
-                if(optimize && operands[2]->isConst()){
-                    int b = operands[2]->getConstVal();
-                    if((b & (b-1)) == 0){
-                        cur_inst = new BinaryMInstruction(
-                            cur_block, BinaryMInstruction::MOD, dst, src1, src2);
-                        break;
-                    }
-                }
+                // if(optimize && operands[2]->isConst()){
+                //     int b = operands[2]->getConstVal();
+                //     if(b > 0 && b < 256 && (b & (b-1)) == 0){
+                //         cur_inst = new BinaryMInstruction(
+                //             cur_block, BinaryMInstruction::MOD, dst, src1, src2);
+                //         break;
+                //     }
+                // }
                 // c1 = a / b
                 auto dst1 = genMachineVReg();
                 cur_inst = new BinaryMInstruction(

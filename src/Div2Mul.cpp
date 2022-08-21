@@ -54,7 +54,6 @@ void Div2Mul::div2mul(MachineFunction* func){
                         bb->remove(inst);
                     }
                     else {
-                        // printf("not 2m\n");
                         int a = 0;
                         if(d % (int(1) << s) == 0){
                             d = d / (int(1) << s);
@@ -89,7 +88,7 @@ void Div2Mul::div2mul(MachineFunction* func){
                         }
                     }
                 }
-                else if(inst->isModConst()){
+                else if(inst->isMod()){
                     int d = inst->getUse()[1]->getDef()->getUse()[0]->getVal();
                     if((d > 0) && ((d & (d-1)) == 0)){
                         auto off = new MachineOperand(MachineOperand::IMM, d-1);
@@ -101,7 +100,7 @@ void Div2Mul::div2mul(MachineFunction* func){
                         MachineInstruction* inst1 = new BinaryMInstruction(nullptr, BinaryMInstruction::AND,
                                                 inst->getDef()[0], inst->getUse()[0], off);
                         MachineInstruction* inst2 = new MovMInstruction(nullptr, MovMInstruction::MOVLSR,
-                                                tmp, inst->getDef()[0], MachineInstruction::NONE, off1);
+                                                tmp, inst->getUse()[0], MachineInstruction::NONE, off1);
                         MachineInstruction* inst3 = new BinaryMInstruction(nullptr, BinaryMInstruction::ADD,
                                                 inst->getDef()[0], inst->getDef()[0], tmp);
                         bb->insertBefore(inst1, inst);

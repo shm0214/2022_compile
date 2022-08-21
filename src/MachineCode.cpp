@@ -1552,9 +1552,6 @@ string BinaryMInstruction::getHash() {
             case DIV:
                 ss << "div";
                 break;
-            case MOD:
-                ss << "mod";
-                break;
             case AND:
                 ss << "and";
                 break;

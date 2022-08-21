@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
     if (dump_ast)
         ast.output();
     ast.typeCheck();
-    ast.genCode(&unit);
+    ast.genCode(&unit);    
     if (optimize) {
         ElimUnreachCode euc(&unit);
         DeadCodeElimination dce(&unit);
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]) {
         ec.pass();
         s.pass();
         // 速度较慢 maybe something wrong 
-        so.pass();
+        // so.pass();
         lop.pass();
         s.checkCond();
         ai.pass();
@@ -158,7 +158,6 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     unit.genMachineCode(&mUnit);
-
     if (optimize) {
         Div2Mul d2m(&mUnit);
         MachineDeadCodeElimination mdce(&mUnit);
@@ -168,7 +167,7 @@ int main(int argc, char* argv[]) {
         PeepholeOptimization po(&mUnit);
         PartialRedundancyElimination pre(&mUnit);
         LocalValueNumber lvn(&mUnit);
-        d2m.pass();
+        // d2m.pass();
         caaz.pass();
         ca.pass();
         // 效果一般 而且会导致编译时间长一些 不开了

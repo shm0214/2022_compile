@@ -148,7 +148,6 @@ class MachineInstruction {
     bool isDiv() const { return type == BINARY && op == 3; };
     bool isDivConst() const { return type == BINARY && op == 3 && use_list[1]->getDef() && use_list[1]->getDef()->getUse()[0]->isImm(); };
     bool isMod() const { return type == BINARY && op == 4; };
-    bool isModConst() const { return type == BINARY && op == 4 && use_list[1]->getDef() && use_list[1]->getDef()->getUse()[0]->isImm(); };
     
     bool isMov() const { return type == MOV && op == 0; };
     bool isVMov() const { return type == MOV && op == 3; };

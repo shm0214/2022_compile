@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
         vn.pass();
         s.pass();
         // 速度较慢 maybe something wrong 
-        // so.pass();
+        so.pass();
         lop.pass();
         s.checkCond();
         ai.pass();

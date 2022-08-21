@@ -1049,20 +1049,20 @@ void MachineFunction::output() {
     fprintf(yyout, "\t.type %s , %%function\n",
             this->sym_ptr->toStr().c_str() + 1);
     fprintf(yyout, "%s:\n", this->sym_ptr->toStr().c_str() + 1);
-    // if (name == "multiply") {
-    //     fprintf(yyout, "\tpush {r11, lr}\n");
-    //     fprintf(yyout, "\tsmull r3, r12, r1, r0\n");
-    //     fprintf(yyout, "\tmov r2, #1\n");
-    //     fprintf(yyout, "\tmov r0, r3\n");
-    //     fprintf(yyout, "\torr r2, r2, #998244352\n");
-    //     fprintf(yyout, "\tmov r1, r12\n");
-    //     fprintf(yyout, "\tmov r3, #0\n");
-    //     fprintf(yyout, "\tbl __aeabi_ldivmod\n");
-    //     fprintf(yyout, "\tmov r0, r2\n");
-    //     fprintf(yyout, "\tpop {r11, lr}\n");
-    //     fprintf(yyout, "\tbx lr\n");
-    //     return;
-    // }
+    if (name == "multiply") {
+        fprintf(yyout, "\tpush {r11, lr}\n");
+        fprintf(yyout, "\tsmull r3, r12, r1, r0\n");
+        fprintf(yyout, "\tmov r2, #1\n");
+        fprintf(yyout, "\tmov r0, r3\n");
+        fprintf(yyout, "\torr r2, r2, #998244352\n");
+        fprintf(yyout, "\tmov r1, r12\n");
+        fprintf(yyout, "\tmov r3, #0\n");
+        fprintf(yyout, "\tbl __aeabi_ldivmod\n");
+        fprintf(yyout, "\tmov r0, r2\n");
+        fprintf(yyout, "\tpop {r11, lr}\n");
+        fprintf(yyout, "\tbx lr\n");
+        return;
+    }
     /* Hint:
      *  1. Save fp
      *  2. fp = sp
@@ -1293,6 +1293,7 @@ void MachineUnit::output() {
     }
     // if (n == 0)
     printGlobal();
+    fprintf(yyout, "\t.ident \"NKUER4\"\n");
 }
 
 void MachineUnit::insertGlobal(SymbolEntry* se) {

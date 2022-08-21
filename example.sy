@@ -1,5 +1,6 @@
+//test rem
 int main(){
-    int a = 10;
-    int b = a % 7;
-    return b;
+    int a;
+    a = 10;
+    return a % 2;
 }

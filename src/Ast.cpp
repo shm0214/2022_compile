@@ -1548,7 +1548,8 @@ double BinaryExpr::getValue() {
             case DIV:
                 if (val2 != 0){
                     val = val1 / val2;
-                    if(dst->getEntry()->getType()->isInt()){
+                    fprintf(stderr, "here\n");
+                    if(dst->getType()->isInt()){
                         val = (int)(val);
                     }                        
                 }                    

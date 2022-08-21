@@ -8,6 +8,7 @@
 #include "Function.h"
 #include "Type.h"
 extern FILE* yyout;
+extern bool optimize;
 
 Instruction::Instruction(unsigned instType, BasicBlock* insert_bb) {
     prev = next = this;
@@ -1072,7 +1073,7 @@ void BinaryInstruction::genMachineCode(AsmBuilder* builder) {
             case MOD: {
                 // c = a % b
                 // c = a / b
-                if(operands[2]->isConst()){
+                if(optimize && operands[2]->isConst()){
                     int b = operands[2]->getConstVal();
                     if((b & (b-1)) == 0){
                         cur_inst = new BinaryMInstruction(

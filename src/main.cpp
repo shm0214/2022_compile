@@ -158,6 +158,7 @@ int main(int argc, char* argv[]) {
         return 0;
     }
     unit.genMachineCode(&mUnit);
+
     if (optimize) {
         Div2Mul d2m(&mUnit);
         MachineDeadCodeElimination mdce(&mUnit);
@@ -185,7 +186,6 @@ int main(int argc, char* argv[]) {
             ms.pass();
         }
     }
-
     if (!optimize) {
         LinearScan linearScan(&mUnit);
         linearScan.allocateRegisters();

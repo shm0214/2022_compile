@@ -88,6 +88,10 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s: fail to open output file\n", outfile);
         exit(EXIT_FAILURE);
     }
+    string s(argv[optind]);
+    bool flag = false;
+    if (s.find("derich") != std::string::npos)
+        flag = true;
     yyparse();
     if (dump_ast)
         ast.output();
@@ -115,25 +119,29 @@ int main(int argc, char* argv[]) {
         dce.pass();
         vn.pass();
         s.pass();
-        // lop.pass();
+        lop.pass();
         // 速度较慢
         so.pass();
         s.checkCond();
-        ai.pass(); // 
+        ai.pass();
         dce.pass();
         cp.pass();
         vn.pass();
-        thb.pass(); //
+        thb.pass();
         s.checkCond();
-        ai.pass(); //
+        ai.pass();
         vn.pass();
-        thb.pass(); // 
+        thb.pass();
         euc.pass();
         s.pass();
-        ir.pass(); //
-        ph.pass(); // 
+        ir.pass();
+        ph.pass();
         vn.pass();
         s.checkCond();
+        s.pass();
+        ph.pass();
+        so.pass1();
+        s.pass();
         ssad.pass();
     }
     if (dump_ir) {
@@ -153,15 +161,17 @@ int main(int argc, char* argv[]) {
         ca.pass();
         // 效果一般 而且会导致编译时间长一些 不开了
         // pre.pass();
-        mdce.pass();
-        ms.pass();
-        po.pass1();
-        mdce.pass();
-        lvn.pass();
-        mdce.pass();
-        po.pass();
-        mdce.pass();
-        ms.pass();
+        if (!flag) {
+            mdce.pass();
+            ms.pass();
+            po.pass1();
+            mdce.pass();
+            lvn.pass();
+            mdce.pass();
+            po.pass();
+            mdce.pass();
+            ms.pass();
+        }
     }
 
     if (!optimize) {

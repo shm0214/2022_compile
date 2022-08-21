@@ -125,6 +125,7 @@ void Starighten::fuseBlock(Function* func, BasicBlock* i, BasicBlock* j) {
     for (auto it = j->begin(); it != j->end();) {
         auto temp = it->getNext();
         i->insertBack(it);
+        it->setParent(i);
         it = temp;
     }
     tail = i->rbegin();

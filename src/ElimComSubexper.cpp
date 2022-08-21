@@ -140,13 +140,10 @@ void ElimComSubexpr::local_elim_cse(BasicBlock* bb, VAEB AEB) {
                         new StoreInstruction(p->getDef(), dst, nullptr);
                     bb->insertBefore(inst1, p);
                     bb->remove(p);
-                    // inst->output();
-                    // inst1->output();
                 }
                 Instruction* inst2 = new StoreInstruction(def, dst, nullptr);
                 bb->insertBefore(inst2, iter);
                 bb->remove(iter);
-                // inst2->output();
             } else {
                 AEB.push_back(t);
             }

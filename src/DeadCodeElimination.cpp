@@ -131,6 +131,7 @@ bool DeadCodeElimination::remove(Function* func) {
 void DeadCodeElimination::pass(Function* func) {
     bool again = true;
     while (again) {
+        adjustBlock(func);
         mark(func);
         again = remove(func);
         adjustBlock(func);

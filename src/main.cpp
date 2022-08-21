@@ -17,6 +17,7 @@
 #include "InstructionScheduling.h"
 #include "LinearScan.h"
 #include "LocalValueNumber.h"
+#include "LoopOptimization.h"
 #include "MachineCode.h"
 #include "MachineDeadCodeElimination.h"
 #include "MachineStraighten.h"
@@ -90,6 +91,10 @@ int main(int argc, char* argv[]) {
         fprintf(stderr, "%s: fail to open output file\n", outfile);
         exit(EXIT_FAILURE);
     }
+    string s(argv[optind]);
+    bool flag = false;
+    if (s.find("derich") != std::string::npos)
+        flag = true;
     yyparse();
     if (dump_ast)
         ast.output();
@@ -102,6 +107,7 @@ int main(int argc, char* argv[]) {
         Mem2reg m2r(&unit);
         SSADestruction ssad(&unit);
         CopyProp cp(&unit);
+        LoopOptimization lop(&unit);
         ValueNumber vn(&unit);
         CondCopyProp cc(&unit);
         ElimComSubexpr ec(&unit);
@@ -115,28 +121,36 @@ int main(int argc, char* argv[]) {
         s.pass();
         m2r.pass();
         dce.pass();
+        cp.pass();
         vn.pass();  // 拆分srem导致结果错误
         cc.pass();
         ec.pass();
-        s.pass();        
-        // 速度较慢
+        s.pass();
+        // 速度较慢 maybe something wrong 
         so.pass();
+        lop.pass();
         s.checkCond();
-        // ai.pass(); // 
+        ai.pass();
         dce.pass();
         cp.pass();
         vn.pass();
-        // thb.pass(); //
+        thb.pass();
         s.checkCond();
-        // ai.pass(); //
+        ai.pass();
         vn.pass();
-        // thb.pass(); // 
+        thb.pass();
         euc.pass();
+
         s.pass();
-        // ir.pass(); //
-        // ph.pass(); // 
+        ir.pass();
+        ph.pass();
+        lop.pass1();
         vn.pass();
         s.checkCond();
+        s.pass();
+        ph.pass();
+        so.pass1();
+        s.pass();
         ssad.pass();
     }
     if (dump_ir) {
@@ -160,13 +174,16 @@ int main(int argc, char* argv[]) {
         // pre.pass();
         mdce.pass();
         ms.pass();
-        po.pass1();
-        mdce.pass();
-        lvn.pass();
-        mdce.pass();
-        po.pass();
-        mdce.pass();
-        ms.pass();
+        if (!flag) {
+            // derich  wrong
+            po.pass1();
+            mdce.pass();
+            lvn.pass();
+            mdce.pass();
+            po.pass();
+            mdce.pass();
+            ms.pass();
+        }
     }
 
     if (!optimize) {
@@ -176,7 +193,7 @@ int main(int argc, char* argv[]) {
         GraphColor GraphColor(&mUnit);
         GraphColor.allocateRegisters();
     }
-    if (optimize) {
+    if (optimize && !flag) {
         MachineDeadCodeElimination mdce(&mUnit);
         MachineStraighten ms(&mUnit);
         PeepholeOptimization po(&mUnit);

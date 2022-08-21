@@ -1,4 +1,5 @@
 #include "SpecialOptimize.h"
+#include <queue>
 
 using namespace std;
 
@@ -6,6 +7,15 @@ void SpecialOptimize::pass() {
     auto iter = unit->begin();
     while (iter != unit->end())
         pass(*iter++);
+}
+
+void SpecialOptimize::pass1() {
+    auto iter = unit->begin();
+    while (iter != unit->end()) {
+        checkOperandsUse(*iter);
+        pass1(*iter);
+        iter++;
+    }
 }
 
 void SpecialOptimize::pass(Function* function) {
@@ -114,5 +124,129 @@ void SpecialOptimize::pass(Function* function) {
         for (auto succ : block->getSucc())
             succ->removePred(block);
         function->remove(block);
+    }
+}
+
+struct cmp {
+    bool operator()(pair<Operand*, int> a, pair<Operand*, int> b) {
+        return a.second < b.second;
+    }
+};
+
+void SpecialOptimize::pass1(Function* func) {
+    // crypto
+    for (auto block : func->getBlockList()) {
+        map<Operand*, map<Operand*, int>> maps;
+        if (block->begin()->getNext() == block->rbegin())
+            continue;
+        for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+            if (!(in->isAdd() || in->isSub() || in->isShl()))
+                break;
+            auto def = in->getDef();
+            if (!def->getType()->isInt())
+                break;
+            auto flag = false;
+            for (auto it = def->use_begin(); it != def->use_end(); it++) {
+                if ((*it)->getParent() != block &&
+                    in->getNext() != block->rbegin()) {
+                    flag = true;
+                    break;
+                }
+            }
+            if (flag)
+                break;
+            maps[def] = {};
+            auto uses = in->getUse();
+            if (in->isShl()) {
+                auto src = uses[0];
+                if (uses[1]->isConst()) {
+                    int num = uses[1]->getConstVal();
+                    for (auto it : maps[src])
+                        maps[def][it.first] += (1 << num) * it.second;
+                }
+            } else {
+                for (int i = 0; i < 2; i++) {
+                    auto use = uses[i];
+                    if (!use->getDef() || use->getDef()->getParent() != block) {
+                        if (i == 1 && in->isSub())
+                            maps[def][use]--;
+                        else
+                            maps[def][use]++;
+                    } else if (use->getDef()->getParent() == block) {
+                        for (auto it : maps[use]) {
+                            if (i == 1 && in->isSub())
+                                maps[def][it.first] -= it.second;
+                            else
+                                maps[def][it.first] += it.second;
+                        }
+                    }
+                }
+            }
+            if (in->getNext() == block->rbegin()) {
+                priority_queue<pair<Operand*, int>, vector<pair<Operand*, int>>,
+                               cmp>
+                    que;
+                for (auto it : maps[def])
+                    if (it.second)
+                        que.push({it.first, it.second});
+                if (que.empty()) {
+                    auto zero = new Operand(
+                        new ConstantSymbolEntry(TypeSystem::intType, 0));
+                    while (def->use_begin() != def->use_end())
+                        (*(def->use_begin()))->replaceUse(def, zero);
+                    while (block->begin() != block->rbegin())
+                        block->remove(block->begin());
+                } else if (que.size() == 3) {
+                    auto pr1 = que.top();
+                    que.pop();
+                    auto pr2 = que.top();
+                    que.pop();
+                    auto pr3 = que.top();
+                    que.pop();
+                    if (pr1.second == 1 && pr2.second == 1 &&
+                        pr3.second == -1) {
+                        auto tempDst = new Operand(new TemporarySymbolEntry(
+                            TypeSystem::intType, SymbolTable::getLabel()));
+                        auto tempDst1 = new Operand(new TemporarySymbolEntry(
+                            TypeSystem::intType, SymbolTable::getLabel()));
+                        auto add = new BinaryInstruction(BinaryInstruction::ADD,
+                                                         tempDst, pr1.first,
+                                                         pr2.first);
+                        auto sub =
+                            new BinaryInstruction(BinaryInstruction::SUB,
+                                                  tempDst1, tempDst, pr3.first);
+                        add->setParent(block);
+                        sub->setParent(block);
+                        while (def->use_begin() != def->use_end())
+                            (*(def->use_begin()))->replaceUse(def, tempDst1);
+                        while (block->begin() != block->rbegin())
+                            block->remove(block->begin());
+                        block->insertFront(sub);
+                        block->insertFront(add);
+                    } else
+                        continue;
+                } else
+                    continue;
+            }
+        }
+    }
+}
+
+void SpecialOptimize::checkOperandsUse(Function* func) {
+    set<BasicBlock*> blocks;
+    for (auto block : func->getBlockList())
+        blocks.insert(block);
+    for (auto block : func->getBlockList()) {
+        for (auto in = block->begin(); in != block->end(); in = in->getNext()) {
+            auto def = in->getDef();
+            if (def) {
+                vector<Instruction*> rmvList;
+                for (auto it = def->use_begin(); it != def->use_end(); it++)
+                    if (!blocks.count((*it)->getParent()))
+                        rmvList.push_back(*it);
+                for (auto u : rmvList)
+                    def->removeUse(u);
+            }
+        }
     }
 }

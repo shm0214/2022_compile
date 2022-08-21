@@ -118,7 +118,6 @@ class Function {
     void computeReverseDomFrontier();
     int getEssential();
     BasicBlock* getMarkBranch(BasicBlock* block);
-    void genSSAGraph();
     void computeStores();
     std::set<Operand*>& getStores() { return stores; }
     bool hasCall() { return call; }
@@ -133,6 +132,9 @@ class Function {
     int getInstNum() { return instNum; }
     void addStoredGlobal(Operand* ope) { storedGlobals.insert(ope); }
     std::set<Operand*> getStoredGlobals() { return storedGlobals; }
+    void genSSAGraph();
+    std::vector<SSAGraphNode*>& getSSAGraph(){return nodes;};
+    void addNodeToSSAGraph(SSAGraphNode* node){nodes.push_back(node);};
 };
 
 #endif

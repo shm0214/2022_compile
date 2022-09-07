@@ -1,5 +1,0 @@
-int main(){
-    int a = getint();
-    int b = a % 16;
-    return b;
-}

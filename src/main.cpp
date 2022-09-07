@@ -4,13 +4,13 @@
 #include "Ast.h"
 #include "AutoInline.h"
 #include "CleanAsmAddZero.h"
+#include "CondCopyProp.h"
 #include "ConstAsm.h"
 #include "CopyProp.h"
-#include "CondCopyProp.h"
-#include "ElimComSubexpr.h"
 #include "DeadCodeElimination.h"
-#include "ElimUnreachCode.h"
 #include "Div2Mul.h"
+#include "ElimComSubexpr.h"
+#include "ElimUnreachCode.h"
 #include "Global2Local.h"
 #include "GraphColor.h"
 #include "InsReorder.h"
@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
     if (dump_ast)
         ast.output();
     ast.typeCheck();
-    ast.genCode(&unit);    
+    ast.genCode(&unit);
     if (optimize) {
         ElimUnreachCode euc(&unit);
         DeadCodeElimination dce(&unit);
@@ -126,7 +126,7 @@ int main(int argc, char* argv[]) {
         cc.pass();
         ec.pass();
         s.pass();
-        // 速度较慢 maybe something wrong 
+        // 速度较慢 maybe something wrong
         so.pass();
         lop.pass();
         s.checkCond();

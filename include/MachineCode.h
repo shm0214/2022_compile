@@ -350,6 +350,9 @@ class MachineBlock {
     std::vector<MachineInstruction*>::iterator begin() {
         return inst_list.begin();
     };
+    std::vector<MachineInstruction*>::reverse_iterator rbegin() {
+        return inst_list.rbegin();
+    };
     std::vector<MachineInstruction*>::iterator end() {
         return inst_list.end();
     };

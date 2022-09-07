@@ -112,6 +112,48 @@ void LinearScan::computeLiveIntervals() {
 
         intervals.push_back(interval);
     }
+    for (auto& interval : intervals) {
+        auto uses = interval->uses;
+        auto begin = interval->start;
+        auto end = interval->end;
+        for (auto block : func->getBlocks()) {
+            auto liveIn = block->getLiveIn();
+            auto liveOut = block->getLiveOut();
+            bool in = false;
+            bool out = false;
+            for (auto use : uses)
+                if (liveIn.count(use)) {
+                    in = true;
+                    break;
+                }
+            for (auto use : uses)
+                if (liveOut.count(use)) {
+                    out = true;
+                    break;
+                }
+            if (in && out) {
+                begin = std::min(begin, (*(block->begin()))->getNo());
+                end = std::max(end, (*(block->rbegin()))->getNo());
+            } else if (!in && out) {
+                for (auto i : block->getInsts())
+                    if (i->getDef().size() > 0 &&
+                        i->getDef()[0] == *(uses.begin())) {
+                        begin = std::min(begin, i->getNo());
+                        break;
+                    }
+                end = std::max(end, (*(block->rbegin()))->getNo());
+            } else if (in && !out) {
+                begin = std::min(begin, (*(block->begin()))->getNo());
+                int temp = 0;
+                for (auto use : uses)
+                    if (use->getParent()->getParent() == block)
+                        temp = std::max(temp, use->getParent()->getNo());
+                end = std::max(temp, end);
+            }
+        }
+        interval->start = begin;
+        interval->end = end;
+    }
     bool change;
     change = true;
     while (change) {
@@ -130,8 +172,14 @@ void LinearScan::computeLiveIntervals() {
                         change = true;
                         w1->defs.insert(w2->defs.begin(), w2->defs.end());
                         w1->uses.insert(w2->uses.begin(), w2->uses.end());
-                        w1->start = std::min(w1->start, w2->start);
-                        w1->end = std::max(w1->end, w2->end);
+                        // w1->start = std::min(w1->start, w2->start);
+                        // w1->end = std::max(w1->end, w2->end);
+                        auto w1Min = std::min(w1->start, w1->end);
+                        auto w1Max = std::max(w1->start, w1->end);
+                        auto w2Min = std::min(w2->start, w2->end);
+                        auto w2Max = std::max(w2->start, w2->end);
+                        w1->start = std::min(w1Min, w2Min);
+                        w1->end = std::max(w1Max, w2Max);
                         auto it =
                             std::find(intervals.begin(), intervals.end(), w2);
                         if (it != intervals.end())
@@ -259,19 +307,18 @@ void LinearScan::genSpillCode() {
                         def->getParent()->getParent(), StoreMInstruction::STR,
                         temp, fp, new MachineOperand(*operand));
                 } else {
-                    
                     auto reg = new MachineOperand(MachineOperand::VREG,
                                                   SymbolTable::getLabel());
                     MachineInstruction* tmp_inst = new BinaryMInstruction(
                         def->getParent()->getParent(), BinaryMInstruction::ADD,
                         reg, fp, new MachineOperand(*operand));
-                    
+
                     inst1->insertAfter(tmp_inst);
                     inst1 = tmp_inst;
 
-                    inst = new StoreMInstruction(
-                        def->getParent()->getParent(), StoreMInstruction::VSTR,
-                        temp, new MachineOperand(*reg));
+                    inst = new StoreMInstruction(def->getParent()->getParent(),
+                                                 StoreMInstruction::VSTR, temp,
+                                                 new MachineOperand(*reg));
                 }
             } else {
                 if (!def->isFloat()) {
